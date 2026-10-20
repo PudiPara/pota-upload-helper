@@ -10,7 +10,7 @@ import urllib.request
 API = "https://api.pota.app"
 PARK_RE = re.compile(r"\b([A-Z0-9]{1,4}-\d{4,5})\b")
 APP_NAME = "POTA Upload Helper"
-VERSION = "1.3.1"
+VERSION = "1.3.2"
 
 
 def _data_dir():

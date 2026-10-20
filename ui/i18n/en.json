@@ -166,6 +166,8 @@
  "upd.install.dl": "It will be downloaded to your Downloads folder.",
  "upd.page": "Open the Releases page",
  "upd.go": "Update now",
+ "upd.modal.title": "A new version is available",
+ "upd.later": "Later",
  "upd.downloading": "Downloading…",
  "upd.manual": "The new app was placed at <b>{path}</b>. Quit this app, move it to your Applications folder and open it.",
  "upd.done": "Updated to v{v}. Restarting…",

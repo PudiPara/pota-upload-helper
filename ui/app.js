@@ -473,7 +473,7 @@
     const on = st.listeners.filter((l) => l.enabled);
     const bad = on.some((l) => recvClass(recvState(l)) === "is-bad");
     $("#recvSummary").textContent = !on.length ? t("set.sum.none") : bad ? t("set.sum.bad") : t("set.sum.ok", { n: on.length });
-    if (!$("#view-settings").hidden) $$("#listeners .lis").forEach((el) => {
+    if (!$("#view-config").hidden) $$("#listeners .lis").forEach((el) => {
       const l = st.listeners[+el.dataset.i]; const s = recvState(l);
       const box = el.querySelector(".lis-state"); box.textContent = s.text; box.className = "lis-state " + recvClass(s);
     });
@@ -507,16 +507,32 @@
     const pg = $("#updatePage"); if (pg) pg.addEventListener("click", () => api.open_url(r.page));
   }
   $("#checkUpdate").addEventListener("click", () => checkUpdate(false));
-  $("#updateGo").addEventListener("click", async () => {
+  async function installUpdate(go, txt) {           // from the settings box or the startup modal
     if (!upd || !upd.asset) return;
-    const go = $("#updateGo"), txt = $("#updateText");
     go.disabled = true; go.textContent = t("upd.downloading");
     const r = await api.install_update(upd.asset);
     if (!r.ok) { go.disabled = false; go.textContent = t("upd.go"); txt.textContent = r.error; return; }
     go.hidden = true;
     if (r.manual) { txt.innerHTML = t("upd.manual", { path: esc(r.manual) }); api.open_out(r.manual_dir); }
     else txt.textContent = t("upd.done", { v: upd.latest });
-  });
+  }
+  $("#updateGo").addEventListener("click", () => installUpdate($("#updateGo"), $("#updateText")));
+  // At startup: check first and, when a newer release exists, ask in a modal (after the terms, if those are up).
+  async function promptUpdate() {
+    await checkUpdate(true);
+    if (!upd || !upd.newer) return;
+    const show = () => {
+      $("#updModalText").innerHTML = t("upd.available", { latest: esc(upd.latest), current: esc(upd.current) }) + " " +
+        (upd.can_install ? esc(t(upd.translocated ? "upd.install.dl" : "upd.install.swap"))
+          : `<button class="link" id="updModalPage">${esc(t("upd.page"))}</button>`);
+      const pg = $("#updModalPage"); if (pg) pg.addEventListener("click", () => api.open_url(upd.page));
+      $("#updModalGo").hidden = !upd.can_install; $("#updModalGo").disabled = false; $("#updModalGo").textContent = t("upd.go");
+      $("#updModal").hidden = false;
+    };
+    if ($("#terms").hidden) show(); else st.afterTerms = show;
+  }
+  $("#updModalLater").addEventListener("click", () => ($("#updModal").hidden = true));
+  $("#updModalGo").addEventListener("click", () => installUpdate($("#updModalGo"), $("#updModalText")));
 
   // ---------- terms ----------
   function showTerms(mustAccept) {
@@ -528,6 +544,7 @@
   $("#termsAccept").addEventListener("click", () => {
     if (st.termsAccepted !== TERMS_VERSION) { st.termsAccepted = TERMS_VERSION; api.save({ terms_accepted: TERMS_VERSION }); }
     $("#terms").hidden = true;
+    if (st.afterTerms) { st.afterTerms(); st.afterTerms = null; }
   });
 
   // ---------- settings (設定): callsigns, language, app ----------
@@ -586,7 +603,7 @@
     setSource(st.source);
     if (s.live) enterRunning(s.live.parks, s.live.start);
     if (st.termsAccepted !== TERMS_VERSION) showTerms(true);
-    setTimeout(() => checkUpdate(true), 5000);       // quiet: only speaks up when a newer release exists
+    setTimeout(promptUpdate, 1500);                 // the first thing after the window is up
   }
   if (window.pywebview && window.pywebview.api) boot();
   else window.addEventListener("pywebviewready", boot);

@@ -61,7 +61,9 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
   On Windows the window calls are posted to the UI thread with `BeginInvoke` and not awaited
   (`window._run_steps`): the API thread holds the GIL during a WinForms call that messages the UI
   thread, which is waiting for the GIL to answer JavaScript -> deadlock.
-- **Updates** compare `VERSION` with the latest release tag and download the OS zip; installers (DMG,
+- **Updates** are checked right after start (`promptUpdate` in app.js): a newer release opens a modal
+  (今すぐ更新 / あとで; after the terms modal if that is up); the 設定 page has the same box. They
+  compare `VERSION` with the latest release tag and download the OS zip; installers (DMG,
   Inno Setup per-user in `{localappdata}\Programs`) exist for first installs. Bump `VERSION` for every
   release (the tag and the updater key on it).
 - **Updater on Windows**: `update.cmd` waits for this PID, swaps the exe, starts the new one. It runs
