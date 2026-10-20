@@ -398,8 +398,10 @@
         <span class="act-date">${fmtDate(a.date)}<small>UTC</small></span>
         <span class="plates">${plates(a.parks)}</span>
         <span class="act-n${a.qsos < 10 ? " is-short" : ""}">${a.qsos} QSO</span>
+        <button type="button" class="link act-view" data-date="${esc(a.date)}">${esc(t("build.view"))}</button>
         ${st.source === "app" ? `<button type="button" class="link act-del" data-date="${esc(a.date)}">${esc(t("build.delete"))}</button>` : ""}
       </label>`).join("");
+    $$("#acts .act-view").forEach((b) => b.addEventListener("click", (e) => { e.preventDefault(); openEditor(b.dataset.date); }));
     // Delete needs a second press (no window.confirm in the web view); the first press arms it for 4 s.
     $$("#acts .act-del").forEach((b) => b.addEventListener("click", async (e) => {
       e.preventDefault();
@@ -420,6 +422,50 @@
       $("#actHint").textContent = st.selected.size ? t("build.hint.selected", { n: st.selected.size }) : t("build.hint.all");
     }));
   }
+  // ---------- editor: the QSOs of one activation day; cells save on change (app log only) ----------
+  const ed = { date: "", path: null };
+  async function openEditor(date) {
+    ed.date = date; ed.path = st.source === "adif" ? st.adif : null;
+    $("#editorTitle").textContent = t("ed.title", { date: fmtDate(date) });
+    $("#editor").hidden = false;
+    await loadEditor();
+  }
+  async function loadEditor() {
+    const r = await api.activation_qsos(ed.date, ed.path);
+    const note = $("#editorNote");
+    if (!r.ok) { $("#editorRows").innerHTML = ""; note.textContent = r.error; note.hidden = false; return; }
+    note.textContent = r.editable ? "" : t("ed.readonly"); note.hidden = r.editable;
+    const cell = (q, f, cls) => r.editable
+      ? `<input class="${cls || ""}" data-f="${f}" value="${esc(q[f])}" spellcheck="false" autocomplete="off">`
+      : `<span class="${cls || ""}">${esc(q[f])}</span>`;
+    $("#editorRows").innerHTML = r.rows.length ? r.rows.map((q) => `
+      <tr data-uid="${esc(q.uid || "")}">
+        <td>${cell(q, "time")}</td><td>${cell(q, "call", "ed-call")}</td><td>${cell(q, "band")}</td><td>${cell(q, "mode")}</td>
+        <td><span class="plates">${plates(q.my)}</span></td>
+        <td>${r.editable ? `<input data-f="parks" value="${esc(q.parks.join(","))}" placeholder="JP-0000" spellcheck="false" autocomplete="off">`
+                         : `<span class="plates">${plates(q.parks)}</span>`}</td>
+        <td>${r.editable ? `<button type="button" class="link ed-del">${esc(t("ed.delete"))}</button>` : ""}</td>
+      </tr>`).join("") : `<tr><td colspan="7" class="muted">${esc(t("ed.empty"))}</td></tr>`;
+    const F = { time: "TIME_ON", call: "CALL", band: "BAND", mode: "MODE", parks: "parks" };
+    $$("#editorRows input").forEach((i) => i.addEventListener("change", async () => {
+      const res = await api.save_qso(i.closest("tr").dataset.uid, { [F[i.dataset.f]]: i.value.trim() });
+      toast(res.ok ? t("ed.saved") : res.error);
+      loadEditor();
+    }));
+    $$("#editorRows .ed-del").forEach((b) => b.addEventListener("click", async () => {
+      if (!b.classList.contains("is-armed")) {
+        b.classList.add("is-armed"); b.textContent = t("build.deleteArmed");
+        setTimeout(() => { b.classList.remove("is-armed"); b.textContent = t("ed.delete"); }, 4000);
+        return;
+      }
+      const res = await api.delete_qso(b.closest("tr").dataset.uid);
+      if (!res.ok) { toast(res.error); return; }
+      toast(t("ed.deleted"));
+      $("#logCount").textContent = res.log_count ? " " + t("build.count", { n: res.log_count }) : "";
+      loadEditor();
+    }));
+  }
+  $("#editorClose").addEventListener("click", () => { $("#editor").hidden = true; loadActs(ed.path || undefined); });
   $("#pickAdif").addEventListener("click", async () => { const r = await api.pick_adif(); if (r) renderActs(r); });
   $("#pickOut").addEventListener("click", async () => { const p = await api.pick_out(); if (p) { st.out = p; $("#outPath").textContent = p; } });
 
