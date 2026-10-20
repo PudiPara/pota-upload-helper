@@ -62,7 +62,7 @@ zip 版（`POTA-Upload-Helper-macOS.zip` / `POTA-Upload-Helper-Windows.zip`）�
 
 **受け取れるのは同じパソコンのロガーからだけです。** 受信口は `127.0.0.1` で待ち受けるので、別のパソコンのロガーからは届きません。
 
-**Windows で WSJT-X / JTDX のマルチキャストを使う場合**：Windows ではマルチキャストの受信口もループバック（`127.0.0.1`）で待ち受けます。WSJT-X の Settings → Reporting → **Outgoing interfaces** に **loopback** を含めてください。この Windows の組み合わせは、まだ実際の Windows では試せていません。届かないときは [Issue](../../issues) で知らせてもらえると助かります。マルチキャストを使わず、WSJT-X の UDP Server を `127.0.0.1` にする方法なら確実に受け取れます（ただしその場合、ほかのアプリと同時には受け取れません）。
+**Windows で WSJT-X / JTDX のマルチキャストを使う場合**：Windows ではマルチキャストの受信口もループバック（`127.0.0.1`）で待ち受けます。WSJT-X の Settings → Reporting → **Outgoing interfaces** に **loopback** を含めてください。この組み合わせは Windows 11 で動作を確認しています。届かないときは [Issue](../../issues) で知らせてもらえると助かります。マルチキャストを使わず、WSJT-X の UDP Server を `127.0.0.1` にする方法なら確実に受け取れます（ただしその場合、ほかのアプリと同時には受け取れません）。
 
 ほかのアプリ（OpsLog など）にも同じデータを渡したいときは、受信口の「転送先」にそのアプリのアドレスとポートを入れます。
 

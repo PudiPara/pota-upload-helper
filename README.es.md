@@ -62,7 +62,7 @@ Crea entradas en «Enlace con el log» (las que quieras). **Sirve cualquier prog
 
 **Solo los programas de log del mismo ordenador pueden enviar.** Las entradas escuchan en `127.0.0.1`; un log en otro PC no las alcanza.
 
-**Multicast de WSJT-X / JTDX en Windows**: en Windows la entrada multicast también escucha en loopback (`127.0.0.1`). En WSJT-X, Settings → Reporting → **Outgoing interfaces**, incluye **loopback**. Esta configuración de Windows aún no se ha probado en un Windows real; si no llega nada, abre un [issue](../../issues). Poner el UDP Server de WSJT-X en `127.0.0.1` (sin multicast) siempre funciona, pero entonces otros programas no pueden recibir a la vez.
+**Multicast de WSJT-X / JTDX en Windows**: en Windows la entrada multicast también escucha en loopback (`127.0.0.1`). En WSJT-X, Settings → Reporting → **Outgoing interfaces**, incluye **loopback**. Esta configuración se ha comprobado en Windows 11; si no llega nada, abre un [issue](../../issues). Poner el UDP Server de WSJT-X en `127.0.0.1` (sin multicast) siempre funciona, pero entonces otros programas no pueden recibir a la vez.
 
 Para pasar los mismos datos a otro programa (OpsLog…), pon su dirección y puerto en «Reenviar a».
 
