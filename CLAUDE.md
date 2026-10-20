@@ -60,7 +60,9 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
   uid and stores the record under the new key, `qsolog.delete_uid`), ADIF files are view-only.
 - **Deleting an activation** (アップロード作成, app log only): `qsolog.delete_activation(date)` soft-deletes
   that UTC day's QSOs that carry my park; two presses in the UI since `window.confirm` is unavailable.
-- **Window close ≠ finish.** `finish_live` stops, builds and resets; `shutdown` only stops threads.
+- **Window close ≠ finish.** `finish_live` stops, builds **the whole UTC day** (every park of the day gets
+  its file with all of its QSOs, so a park shared by several sessions is never cut down to the last
+  session) and resets; `shutdown` only stops threads.
 - **Bar mode** is a resize/move/on-top of the one window (pywebview can't do a second window cheaply);
   `window.confirm` is unavailable in the web view, so "finish with unconfirmed" needs a second press.
   On Windows the window calls are posted to the UI thread with `BeginInvoke` and not awaited
