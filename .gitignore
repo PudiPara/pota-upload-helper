@@ -1,7 +1,11 @@
 data/
 out/
+build/
+dist/
+*.spec
 __pycache__/
 *.adi
 *.adif
 *.pyc
 .DS_Store
+!tests/*.adi

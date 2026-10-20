@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>POTA Upload Helper</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <path d="M20 4 L34 11 V22 C34 30 27 35 20 37 C13 35 6 30 6 22 V11 Z" fill="none" stroke="currentColor" stroke-width="2.2"/>
+        <path d="M13 26 L20 14 L27 26 Z" fill="currentColor"/>
+        <path d="M20 14 V9 M16.5 10.5 C18.5 8.5 21.5 8.5 23.5 10.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div class="brand-name">POTA Upload Helper</div>
+        <div class="brand-sub" id="version"></div>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="画面">
+      <button class="nav-item is-active" data-view="live">
+        <span class="nav-dot" id="liveDot" hidden></span>
+        <span>運用中</span>
+        <small>スポットを記録</small>
+      </button>
+      <button class="nav-item" data-view="build">
+        <span>アップロード作成</span>
+        <small>pota.app 用ファイル</small>
+      </button>
+      <button class="nav-item" data-view="settings">
+        <span>ロガーとの接続</span>
+        <small id="recvSummary">UDP 受信</small>
+      </button>
+    </nav>
+
+    <div class="rail-foot">
+      <label class="field-compact">
+        <span>自分のコール</span>
+        <input id="call" spellcheck="false" autocomplete="off">
+      </label>
+      <button class="link" id="openData">データの保存場所を開く</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- ======================= live ======================= -->
+    <section class="view" id="view-live">
+      <div class="trailhead" id="liveIdle">
+        <h1>今日の公園は？</h1>
+        <p class="lede">運用を始めたら記録を開始してください。公園から出ている局を 1 分ごとに控えておくので、相手が QRT しても P2P や 2fer を後から判定できます。</p>
+        <div class="park-input">
+          <input id="parks" placeholder="JP-1281" spellcheck="false" autocomplete="off" aria-label="自分の公園">
+          <button class="btn btn-primary" id="startLive">記録を始める</button>
+        </div>
+        <p class="hint">2fer・3fer はカンマで区切ります（JP-1281,JP-1285）</p>
+        <div class="plates plates-lg" id="parksPreview"></div>
+        <p class="error" id="liveError" hidden></p>
+      </div>
+
+      <div id="liveRun" hidden>
+        <header class="sign">
+          <div class="sign-parks" id="signParks"></div>
+          <div class="sign-side">
+            <div class="clock" id="elapsed" aria-label="経過時間">00:00:00</div>
+            <div class="sign-status" id="liveStatus"></div>
+            <button class="btn btn-quiet" id="stopLive">記録を止める</button>
+          </div>
+          <div class="tally" aria-live="polite">
+            <div class="tally-n"><strong id="qsoCount">0</strong><span>QSO</span></div>
+            <div class="tally-bar"><i id="qsoBar"></i></div>
+            <div class="tally-note" id="qsoNote">あと 10 QSO でアクティベーション成立</div>
+          </div>
+        </header>
+
+        <div class="live-grid">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>交信</h2>
+              <span class="count" id="p2pCount"></span>
+            </div>
+            <ol class="qsos" id="qsos"></ol>
+            <div class="empty" id="qsosEmpty">
+              <p>ロガーからの QSO を待っています。</p>
+              <p class="muted">届かないときは「ロガーとの接続」を確認してください。</p>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>公園から出ている局</h2>
+              <div class="seg" role="radiogroup" aria-label="表示する局">
+                <button role="radio" data-prefix="JP" class="is-on">日本</button>
+                <button role="radio" data-prefix="">全世界</button>
+              </div>
+            </div>
+            <ol class="spots" id="spots"></ol>
+            <div class="empty" id="spotsEmpty">
+              <p>まだ見つかっていません。</p>
+              <p class="muted">1 分ごとにスポットを確認しています。</p>
+            </div>
+            <div class="count count-foot" id="liveCount"></div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= build ======================= -->
+    <section class="view" id="view-build" hidden>
+      <h1 class="view-title">アップロード用ファイルを作る</h1>
+
+      <ol class="steps">
+        <li class="step">
+          <div class="step-head"><span class="step-n">1</span>使うログ</div>
+          <div class="seg seg-src" role="radiogroup" aria-label="使うログ">
+            <button role="radio" data-src="app" class="is-on">アプリが受け取ったログ<span id="logCount"></span></button>
+            <button role="radio" data-src="adif">ADIF ファイル</button>
+          </div>
+          <div class="filebox" id="filebox" hidden>
+            <div class="filebox-text">
+              <div class="filebox-name" id="adifName">まだ選ばれていません</div>
+              <div class="filebox-path" id="adifPath">RUMlogNG なら「Logbook → Export all QSOs as ADIF」</div>
+            </div>
+            <button class="btn" id="pickAdif">ファイルを選ぶ</button>
+          </div>
+        </li>
+
+        <li class="step">
+          <div class="step-head"><span class="step-n">2</span>アクティベーションを選ぶ
+            <span class="step-aside" id="actHint">選ばなければ全部作ります</span></div>
+          <div class="acts" id="acts"><p class="muted pad">ADIF を選ぶとここに一覧が出ます。</p></div>
+        </li>
+
+        <li class="step">
+          <div class="step-head"><span class="step-n">3</span>作成</div>
+          <div class="opts">
+            <label class="switch">
+              <input type="checkbox" id="online" checked>
+              <span class="switch-ui"></span>
+              <span>pota.app のハンターログで P2P を確認する</span>
+            </label>
+            <div class="outrow">
+              <span class="muted">保存先</span>
+              <span class="outpath" id="outPath"></span>
+              <button class="link" id="pickOut">変更</button>
+            </div>
+            <details class="more">
+              <summary>自分の公園を上書きする</summary>
+              <input id="override" placeholder="JP-1281,JP-1285" spellcheck="false">
+              <p class="hint">ロガーに自分の公園を入れ忘れた日だけ使います。</p>
+            </details>
+          </div>
+          <button class="btn btn-primary btn-wide" id="runBuild">アップロード用ファイルを作成</button>
+        </li>
+      </ol>
+
+      <section class="results" id="results" hidden>
+        <div class="results-head">
+          <h2 id="resultsTitle"></h2>
+          <div class="results-actions">
+            <button class="btn" id="openOut">保存先を開く</button>
+            <button class="btn" id="openPota">pota.app を開く</button>
+          </div>
+        </div>
+        <div id="resultsBody"></div>
+      </section>
+    </section>
+    <!-- ======================= settings ======================= -->
+    <section class="view" id="view-settings" hidden>
+      <h1 class="view-title">ロガーとの接続</h1>
+      <p class="lede">ロガーが記録した QSO を UDP で受け取ります。形式は N1MM（RUMlogNG・N1MM Logger+ など）、WSJT-X（WSJT-X・JTDX）、ADIF（JTAlert・GridTracker・Log4OM など）。届いたデータの形式はアプリが自動で判別します。</p>
+      <div class="listeners" id="listeners"></div>
+      <div class="listeners-actions">
+        <button class="btn" id="addListener">受信口を追加</button>
+        <button class="btn btn-primary" id="saveListeners">保存して受信し直す</button>
+      </div>
+      <p class="error" id="listenError" hidden></p>
+      <aside class="howto">
+        <h2>RUMlogNG の設定</h2>
+        <p>Preferences → UDP の「Contact info」を <strong>Contact info N1MM</strong> にして、Host を <strong>127.0.0.1</strong>、Port をここの受信口と同じ番号にします。ほかのアプリ（OpsLog など）にも渡したいときは、この受信口の「転送先」にそのアプリの受信ポートを入れてください。</p>
+        <h2>WSJT-X / JTDX</h2>
+        <p>Settings → Reporting の UDP Server を <strong>224.0.0.1</strong>（マルチキャスト）にすると、RUMlog や GridTracker と同時に受け取れます。</p>
+      </aside>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
