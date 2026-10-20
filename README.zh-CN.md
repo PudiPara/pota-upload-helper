@@ -60,6 +60,10 @@
 | WSJT-X | WSJT-X、JTDX | Settings → Reporting 的 UDP Server。设为 `224.0.0.1`（组播）可与其他程序同时接收 |
 | ADIF | JTAlert、GridTracker、Log4OM 等 | 各软件的“通过 UDP 发送 ADIF”设置 |
 
+**只接收同一台电脑上的日志软件。** 接收口在 `127.0.0.1` 上监听，其他电脑上的日志软件无法发送过来。
+
+**在 Windows 上使用 WSJT-X / JTDX 组播时**：Windows 上组播接收口也在回环地址（`127.0.0.1`）上监听。请在 WSJT-X 的 Settings → Reporting → **Outgoing interfaces** 中勾选 **loopback**。这种 Windows 组合尚未在真实的 Windows 上测试；收不到时请通过 [Issue](../../issues) 告诉我们。把 WSJT-X 的 UDP Server 设为 `127.0.0.1`（不用组播）一定能收到，但这样其他程序就无法同时接收。
+
 若要把同样的数据传给其他程序（如 OpsLog），在接收口的“转发到”填入其地址和端口。
 
 **两个接收口都开也不会重复**：WSJT-X 的 QSO 会到达两次，一次直接来自 WSJT-X，一次来自收到它的日志软件（开始时间和结束时间相差约 1 分钟）。同一呼号、同一波段且相差 3 分钟以内视为同一次通联，P2P 判断和删除也同时作用。反之，与同一电台在同一波段 3 分钟内通联两次也会合并为一条。

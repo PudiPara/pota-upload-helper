@@ -111,15 +111,26 @@ def parse_packet(data):
 LOOPBACK = "127.0.0.1"
 
 
-def bind_address(group):
-    """Where a listener binds. Unicast listeners take packets from this computer only
-    (loggers send to 127.0.0.1), so nothing on the network can feed QSOs in.
-    A multicast listener (WSJT-X on 224.0.0.1) must bind the group itself to receive it;
-    Windows can't bind a multicast address, so there it binds the wildcard and the
-    group membership does the filtering."""
-    if not group:
+def bind_address(group, windows=None):
+    """Where a listener binds. Nothing ever binds every interface: QSOs come only from
+    programs on this computer.
+      unicast              127.0.0.1
+      multicast, macOS/Linux   the group itself (224.0.0.1); membership on the default interface,
+                           which also delivers what local programs send (verified with WSJT-X)
+      multicast, Windows   127.0.0.1 - Windows can't bind a multicast address, so the socket
+                           binds loopback and joins the group there; WSJT-X must send on the
+                           loopback interface (Settings → Reporting → Outgoing interfaces).
+                           Not tested on a Windows machine yet."""
+    windows = os.name == "nt" if windows is None else windows
+    if not group or windows:
         return LOOPBACK
-    return "" if os.name == "nt" else group
+    return group
+
+
+def membership_interface(windows=None):
+    """The local interface a multicast listener joins its group on (see bind_address)."""
+    windows = os.name == "nt" if windows is None else windows
+    return LOOPBACK if windows else "0.0.0.0"
 
 
 def describe_state(state):
@@ -176,7 +187,7 @@ class Receiver:
         group = (cfg.get("multicast") or "").strip()
         s.bind((bind_address(group), int(cfg["port"])))
         if group:
-            mreq = struct.pack("4s4s", socket.inet_aton(group), socket.inet_aton("0.0.0.0"))
+            mreq = struct.pack("4s4s", socket.inet_aton(group), socket.inet_aton(membership_interface()))
             s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
         s.settimeout(1.0)
         return s

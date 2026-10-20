@@ -60,6 +60,10 @@ Crea entradas en «Enlace con el log» (las que quieras). **Sirve cualquier prog
 | WSJT-X | WSJT-X, JTDX | Settings → Reporting, UDP Server. Con `224.0.0.1` (multicast) otros programas reciben a la vez |
 | ADIF | JTAlert, GridTracker, Log4OM… | la opción «enviar ADIF por UDP» del programa |
 
+**Solo los programas de log del mismo ordenador pueden enviar.** Las entradas escuchan en `127.0.0.1`; un log en otro PC no las alcanza.
+
+**Multicast de WSJT-X / JTDX en Windows**: en Windows la entrada multicast también escucha en loopback (`127.0.0.1`). En WSJT-X, Settings → Reporting → **Outgoing interfaces**, incluye **loopback**. Esta configuración de Windows aún no se ha probado en un Windows real; si no llega nada, abre un [issue](../../issues). Poner el UDP Server de WSJT-X en `127.0.0.1` (sin multicast) siempre funciona, pero entonces otros programas no pueden recibir a la vez.
+
 Para pasar los mismos datos a otro programa (OpsLog…), pon su dirección y puerto en «Reenviar a».
 
 **Dos entradas activas no duplican nada**: un QSO de WSJT-X llega dos veces, de WSJT-X y del log que lo recibió (con un minuto de diferencia: hora de inicio y de fin). Mismo indicativo, misma banda, menos de 3 minutos = un solo contacto; las decisiones P2P y los borrados se aplican a ambos. A cambio, dos contactos con la misma estación en la misma banda en menos de 3 minutos también se funden en uno.
