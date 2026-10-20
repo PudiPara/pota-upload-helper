@@ -231,12 +231,13 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
                              % (r["QSO_DATE"], r["TIME_ON"][:4], r["CALL"], ",".join(s_parks)))
         # One line per QSO for the logger (RUMlogNG: Logbook → Import ADIF with "No Dupes" +
         # "Update QSO record"): parks comma-joined, never split. The logger keys on time,
-        # band and mode, and RUMlogNG logs a WSJT-X QSO at its end time - use TIME_OFF then.
+        # band and mode (case-sensitive: "Data-U" != "DATA-U"), and RUMlogNG logs a WSJT-X
+        # QSO at its end time - so use the logger's own mode spelling and TIME_OFF.
         changed = bool(theirs) and sorted(theirs) != sorted(log_parks)
         if confirmed_only or changed:
             u = {"CALL": r["CALL"], "QSO_DATE": r.get("QSO_DATE_OFF") or r["QSO_DATE"],
                  "TIME_ON": r.get("TIME_OFF") or r.get("TIME_ON"), "BAND": r.get("BAND"),
-                 "MODE": r.get("MODE"), "SUBMODE": r.get("SUBMODE"),
+                 "MODE": r.get("LOGGER_MODE") or r.get("MODE"), "SUBMODE": r.get("SUBMODE"),
                  "MY_SIG": "POTA", "MY_SIG_INFO": ",".join(mp_list), "MY_POTA_REF": ",".join(mp_list)}
             if theirs:
                 u.update({"SIG": "POTA", "SIG_INFO": ",".join(theirs), "POTA_REF": ",".join(theirs)})

@@ -67,6 +67,7 @@ class P2PDecisionTest(unittest.TestCase):
     def test_build_uses_only_confirmed(self):
         recs = [rec("JS6UHQ/6", "040828", P2P_CANDIDATE="JP-0157,JP-1788"),      # candidate, never answered
                 rec("JA0WSJ", "041500", TIME_OFF="041612", P2P_DECISION="yes", SIG="POTA", SIG_INFO="JP-0005", POTA_REF="JP-0005"),
+                rec("JA4DAT", "041700", MODE="DATA-U", LOGGER_MODE="Data-U", P2P_DECISION="no"),
                 rec("JA1AAA", "041000", P2P_DECISION="yes", SIG="POTA", SIG_INFO="JP-0001", POTA_REF="JP-0001"),
                 rec("JA2BBB", "041100", P2P_DECISION="no", P2P_CANDIDATE="JP-0009"),
                 rec("JA3CCC", "041200", P2P_DECISION="manual", SIG="POTA", SIG_INFO="JP-0003,JP-0004", POTA_REF="JP-0003,JP-0004")]
@@ -85,7 +86,8 @@ class P2PDecisionTest(unittest.TestCase):
         self.assertEqual(srcs, {"JA1AAA": "確認済み", "JA3CCC": "手入力", "JA0WSJ": "確認済み"})
         # the logger update file: one line per QSO, parks comma-joined, logger's (end) time
         upd = {r["CALL"]: r for r in read_adif(os.path.join(out, builder.LOGGER_FILE))}
-        self.assertEqual(res["logger_records"], 5)
+        self.assertEqual(res["logger_records"], 6)
+        self.assertEqual(upd["JA4DAT"]["MODE"], "Data-U")            # the logger's spelling, so its import matches
         self.assertEqual(upd["JA0WSJ"]["TIME_ON"], "041612")       # WSJT-X copy: the logger stored the end time
         self.assertEqual(upd["JA3CCC"]["SIG_INFO"], "JP-0003,JP-0004")
         self.assertEqual(upd["JA3CCC"]["MY_SIG_INFO"], "JP-1281")
