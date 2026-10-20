@@ -28,8 +28,16 @@ Data dir: macOS `~/Library/Application Support/POTA Upload Helper/`, Windows `%A
 "Park trail-sign" identity. Tokens in `ui/app.css :root`: pine `#173F30`, paper `#EDF1EB`, ink `#1D2621`, moss `#6E8A77`, amber `#D9962B` (= 2fer). Park refs are always rendered as plates (`plate()` in app.js); 2fer = plates joined by an amber `+`. System fonts (Hiragino / Yu Gothic UI), tabular numerals, dark mode via `prefers-color-scheme`. Escape every network/user string with `esc()` before inserting HTML.
 
 ## Status (2026-10-20)
-- v1.0.0 released; CI green on macOS and Windows. The owner downloaded and launched the macOS Release build on 2026-10-20 — ask what worked. Before that, checks only rendered `ui/` in Chromium with a mock bridge. First job: run `pip install -r requirements.txt && python3 app.py` on the Mac, and open the Release `.app`, and fix anything that breaks (pywebview dialogs, `create_file_dialog` return types, window close, multicast on macOS).
+- v1.0.0 released; CI green on macOS and Windows.
+- Verified from source on the owner's Mac (python 3.9 from Xcode CLT, pywebview 6.2.1): all three views, folder dialog, spot recording with park name + 2fer plates, live P2P from UDP QSOs, upload build (2fer duplicated per park, `logger_p2p_fix.adi`), clean exit on window close. Nothing in the core flow was broken.
+- Changes after that check: `FileDialog` constants (the bare `OPEN_DIALOG`/`FOLDER_DIALOG` are deprecated in pywebview 6), and CI now writes `NSLocalNetworkUsageDescription` into the macOS Info.plist and re-signs ad hoc, so macOS 15+ shows the "Local Network" prompt needed to receive multicast from WSJT-X. Not yet confirmed with the Release build: ask the owner whether WSJT-X QSOs arrive in the `.app`; if not, System Settings → Privacy → Local Network is the first place to look.
 - Verified against the owner's real log: activation 2026-05-06 JP-1281 → 62 QSO, 11 P2P (9 were missing in RUMlog), JI1IKC/P 2fer JP-1206+JP-1946 split correctly; 35 activations total = pota.app count.
+
+## Developing on the owner's Mac
+- `scripts/dev.sh` runs from source with `POTA_HELPER_DATA=./data` (git-ignored) so the real log is untouched. `scripts/dev.sh --debug` opens the WebKit inspector.
+- RUMlogNG, the Release `.app` and other loggers on this Mac all listen on UDP 2237 (and 2333/2334). Never send test packets there — a unicast packet lands in one of them and RUMlogNG would log it. Give the dev app its own listener port (`data/settings.json`, e.g. 22237) and use `scripts/send_test_qso.py 22237 CALL [--n1mm|--delete]`.
+- `python3` here is Xcode's (3.9). If it says the Xcode license is not agreed, run `sudo xcodebuild -license accept` once.
+- `gh` is not logged in on this Mac; CI/Release status must be read on github.com (or `gh auth login`).
 
 ## Owner's station context
 - Logger: RUMlogNG (Mac). Prefs → UDP has two "Contact info" outputs, both **N1MM** now: `127.0.0.1:2333` → OpsLog (inbound "RUMlog N1MM"), `127.0.0.1:12060` → QSO Upload Utility (HamQTH/HRDlog). Club Log is synced by RUMlog itself.

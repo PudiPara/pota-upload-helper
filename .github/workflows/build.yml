@@ -35,6 +35,15 @@ jobs:
           pyinstaller --noconfirm --windowed --name "POTA Upload Helper" \
             --osx-bundle-identifier com.jl1fva.pota-upload-helper \
             --add-data "ui:ui" app.py
+          # macOS 15+ asks for "Local Network" permission before an app may receive
+          # multicast (WSJT-X on 224.0.0.1); the prompt needs this usage string.
+          APP="dist/POTA Upload Helper.app"
+          VER="$(python3 -c 'import potacommon; print(potacommon.VERSION)')"
+          plutil -replace CFBundleShortVersionString -string "$VER" "$APP/Contents/Info.plist"
+          plutil -replace CFBundleVersion -string "$VER" "$APP/Contents/Info.plist"
+          plutil -replace NSLocalNetworkUsageDescription -string "ロガー（WSJT-X や RUMlogNG）から UDP で QSO を受け取るために使います。" "$APP/Contents/Info.plist"
+          plutil -replace NSHumanReadableCopyright -string "JL1FVA" "$APP/Contents/Info.plist"
+          codesign --force --deep --sign - "$APP"   # re-seal after editing Info.plist
           cd dist && ditto -c -k --keepParent "POTA Upload Helper.app" "../${{ matrix.asset }}"
 
       - name: Build Windows app
