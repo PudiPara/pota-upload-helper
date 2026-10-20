@@ -71,8 +71,6 @@ def parse_n1mm(root):
     if not rec.get("BAND") and g("band"):
         rec["BAND"] = N1MM_BANDS.get(g("band"), g("band") + "m" if g("band").isdigit() else g("band"))
     mode = g("mode").upper()
-    if g("mode"):
-        rec["LOGGER_MODE"] = g("mode")     # the logger's own spelling ("Data-U"): its ADIF import matches on it
     if mode in ("FT8", "FT4", "JS8", "JT65", "JT9", "PSK31", "RTTY", "CW", "SSB", "USB", "LSB", "FM", "AM"):
         rec["MODE"] = {"USB": "SSB", "LSB": "SSB"}.get(mode, mode)
         if mode == "FT4":

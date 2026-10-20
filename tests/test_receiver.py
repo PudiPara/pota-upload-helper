@@ -22,9 +22,7 @@ class ReceiverTest(unittest.TestCase):
              b'<txfreq>704100</txfreq><mode>FT8</mode><snt>-05</snt><rcv>-10</rcv><ID>abc</ID></contactinfo>')
         (act, rec, uid), = parse_packet(x)
         self.assertEqual((act, uid, rec["CALL"], rec["BAND"], rec["TIME_ON"]), ("upsert", "abc", "JA1AAA/P", "40m", "022605"))
-        self.assertEqual(rec["LOGGER_MODE"], "FT8")
-        (_, rec2, _), = parse_packet(x.replace(b"<mode>FT8</mode>", b"<mode>Data-U</mode>"))
-        self.assertEqual((rec2["MODE"], rec2["LOGGER_MODE"]), ("DATA-U", "Data-U"))
+
 
     def test_n1mm_delete(self):
         (act, rec, uid), = parse_packet(b"<?xml version='1.0'?><contactdelete><call>JA1AAA</call>"

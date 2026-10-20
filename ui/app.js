@@ -317,9 +317,6 @@
           <span class="p2p-call">${esc(p.call)}</span><span class="plates">${plates(p.parks)}</span>
           <span class="src ${c}">${l}</span></div>`; }).join("")}</div>` : '<div class="p2p-none">P2P はありませんでした</div>'}
       </article>`).join("") +
-      (r.logger_file ? `<div class="loggerbox"><h3>ロガーにも公園を入れるには</h3>
-          <p><b>${esc(r.logger_file)}</b>（${r.logger_records} 件、2fer はカンマ区切りで 1 行）を保存先に書きました${r.p2p_fixes ? `。相手の公園がロガーに無かった QSO が ${r.p2p_fixes} 件あります` : ""}。</p>
-          <p>RUMlogNG なら Logbook → Import ADIF でこのファイルを選び、<b>No Dupes</b> と <b>Update QSO record</b> をオンにして My Park・P2P・POTA を上書き対象にしてください。既存の QSO に自分の公園と相手の公園が入ります。</p></div>` : "") +
       (files.length && r.notes && r.notes.length ? `<div class="notes"><h3>確認してください</h3><ul>${r.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul></div>` : "") +
       (!files.length && r.notes && r.notes.length ? `<p class="muted">${esc(r.notes[0])}</p>` : "");
   }
