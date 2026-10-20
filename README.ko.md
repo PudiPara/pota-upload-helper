@@ -60,6 +60,10 @@ zip판(`POTA-Upload-Helper-macOS.zip` / `POTA-Upload-Helper-Windows.zip`)도 첨
 | WSJT-X | WSJT-X, JTDX | Settings → Reporting의 UDP Server. `224.0.0.1`(멀티캐스트)로 하면 다른 앱과 동시에 받을 수 있습니다 |
 | ADIF | JTAlert, GridTracker, Log4OM 등 | 각 소프트웨어의 ‘ADIF를 UDP로 보내기’ 설정 |
 
+**같은 컴퓨터의 로거에서만 받을 수 있습니다.** 수신은 `127.0.0.1`에서 대기하므로 다른 컴퓨터의 로거에서는 도착하지 않습니다.
+
+**Windows에서 WSJT-X / JTDX 멀티캐스트를 쓰는 경우**: Windows에서는 멀티캐스트 수신도 루프백(`127.0.0.1`)에서 대기합니다. WSJT-X의 Settings → Reporting → **Outgoing interfaces**에 **loopback**을 포함하세요. 이 Windows 조합은 아직 실제 Windows에서 시험하지 못했습니다. 도착하지 않으면 [Issue](../../issues)로 알려 주세요. 멀티캐스트 대신 WSJT-X의 UDP Server를 `127.0.0.1`로 하면 확실히 받을 수 있습니다(다만 그 경우 다른 앱과 동시에는 받을 수 없습니다).
+
 같은 데이터를 다른 앱(OpsLog 등)에도 넘기려면 수신의 ‘전달 대상’에 그 앱의 주소와 포트를 넣습니다.
 
 **둘 다 켜도 중복되지 않습니다**: WSJT-X의 QSO는 WSJT-X에서 직접, 그리고 그것을 받은 로거에서 다시 보내는 것까지 두 번 도착합니다(시작 시각과 종료 시각으로 1분쯤 차이). 같은 호출부호·같은 밴드·3분 이내면 같은 교신으로 한 건으로 합치고, P2P 판단과 삭제도 둘 다에 반영합니다. 반대로 같은 국과 같은 밴드에서 3분 안에 두 번 교신해도 한 건이 됩니다.

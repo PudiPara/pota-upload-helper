@@ -54,9 +54,14 @@ class BindTest(unittest.TestCase):
     """Unicast listeners take packets from this computer only (CodeQL: no binding to all interfaces)."""
 
     def test_bind_address(self):
-        from receiver import bind_address
-        self.assertEqual(bind_address(""), "127.0.0.1")
-        self.assertEqual(bind_address("224.0.0.1"), "" if os.name == "nt" else "224.0.0.1")
+        from receiver import bind_address, membership_interface
+        for win in (False, True):
+            self.assertEqual(bind_address("", windows=win), "127.0.0.1")
+            self.assertNotIn(bind_address("224.0.0.1", windows=win), ("", "0.0.0.0"))   # never every interface
+        self.assertEqual(bind_address("224.0.0.1", windows=False), "224.0.0.1")
+        self.assertEqual(bind_address("224.0.0.1", windows=True), "127.0.0.1")
+        self.assertEqual(membership_interface(windows=True), "127.0.0.1")
+        self.assertEqual(membership_interface(windows=False), "0.0.0.0")
 
     def test_unicast_listener_receives_on_loopback_only(self):
         import socket

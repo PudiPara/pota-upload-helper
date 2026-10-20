@@ -60,6 +60,10 @@ Utwórz odbiorniki w „Połączenie z logiem” (ile chcesz). **Zadziała każd
 | WSJT-X | WSJT-X, JTDX | Settings → Reporting, UDP Server. Z `224.0.0.1` (multicast) inne programy odbierają równocześnie |
 | ADIF | JTAlert, GridTracker, Log4OM… | ustawienie „wysyłaj ADIF przez UDP” programu |
 
+**Wysyłać mogą tylko programy logujące z tego samego komputera.** Odbiorniki nasłuchują na `127.0.0.1`; log na innym PC do nich nie dotrze.
+
+**Multicast WSJT-X / JTDX w Windows**: w Windows odbiornik multicast także nasłuchuje na loopback (`127.0.0.1`). W WSJT-X, Settings → Reporting → **Outgoing interfaces**, zaznacz **loopback**. Ta konfiguracja Windows nie była jeszcze testowana na prawdziwym Windows; jeśli nic nie dociera, zgłoś [issue](../../issues). Ustawienie UDP Server WSJT-X na `127.0.0.1` (bez multicastu) działa zawsze, ale wtedy inne programy nie odbierają równocześnie.
+
 Aby przekazać te same dane innemu programowi (OpsLog…), wpisz jego adres i port w „Przekaż do”.
 
 **Dwa włączone odbiorniki niczego nie dublują**: QSO z WSJT-X przychodzi dwa razy, z WSJT-X i z logu, który je odebrał (około minuty różnicy: czas początku i końca). Ten sam znak, to samo pasmo, mniej niż 3 minuty = jedna łączność; decyzje P2P i usunięcia dotyczą obu. Druga strona medalu: dwie łączności z tą samą stacją na tym samym paśmie w ciągu 3 minut też stają się jedną.

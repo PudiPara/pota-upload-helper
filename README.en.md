@@ -60,6 +60,10 @@ Create listeners under "Logger link" (as many as you like). **Any logger that ca
 | WSJT-X | WSJT-X, JTDX | Settings → Reporting, UDP Server. `224.0.0.1` (multicast) lets other programs receive at the same time |
 | ADIF | JTAlert, GridTracker, Log4OM, … | the program's "send ADIF over UDP" setting |
 
+**Only loggers on the same computer can send to it.** Listeners bind to `127.0.0.1`, so a logger on another PC cannot reach them.
+
+**WSJT-X / JTDX multicast on Windows**: on Windows the multicast listener also binds loopback (`127.0.0.1`). In WSJT-X, Settings → Reporting → **Outgoing interfaces**, include **loopback**. This Windows setup has not been tested on a real Windows machine yet; if nothing arrives, please open an [issue](../../issues). Setting WSJT-X's UDP Server to `127.0.0.1` (no multicast) always works, but then other programs cannot receive at the same time.
+
 To pass the same data on to another program (OpsLog, …), put its address and port in the listener's "Forward to".
 
 **Both listeners on never doubles anything**: a WSJT-X QSO arrives twice, from WSJT-X and again from the logger that received it (about a minute apart: start vs end time). Same callsign, same band, less than 3 minutes apart = one contact; P2P decisions and deletions apply to both. The flip side: two contacts with the same station on the same band within 3 minutes also become one.
