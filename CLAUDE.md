@@ -1,69 +1,85 @@
 # CLAUDE.md — POTA Upload Helper
 
-Owner: JL1FVA (藤原 雅也). Talk to the owner in Japanese. UI copy is Japanese.
+Talk to the owner in Japanese. UI copy is in `ui/i18n/*.json` (ja is the master). Personal and
+station details are in `CLAUDE.local.md` (git-ignored); keep them out of this file.
 
-## What this is
-Desktop app (macOS Apple Silicon + Windows) for POTA activators. The owner's intended flow (agreed 2026-10-20):
-open the logger and this app → type the park → the window becomes a small always-on-top **bar** above the logger →
-each QSO arrives over UDP → if the other station was spotted at a park the row asks 「P2P の可能性 … はい / いいえ」
-(never automatic); with no spot (Phone/CW) the operator types the park into the row → at 10 QSOs a full-window banner →
-「この公園での運用を終了」 stops recording, writes this park's upload file(s) to the out dir and returns to the park prompt
-for the next park. Logging itself stays in the logger; this app never writes the logger's log.
-- **運用中**: records POTA spots every 60 s (api.pota.app/spot/activator) so the other station's park(s) are known even after they QRT. `Api.set_bar` shrinks/moves the window (`BAR_W×BAR_H`, `on_top`); `Api.finish_live` = stop + `builder.build(confirmed_only=True)` on the session's QSOs.
-- **アクティベート中**: its own page (works without recording): `Api.spots_now` fetches api.pota.app/spot/activator (cached 45 s), `spotlogger.summarize_spots` folds spots into one row per station (parks = reference + park numbers in the comment, merged over that station's spots of the last 15 min → 2fer), the page filters client-side (region prefix, band from kHz, mode group CW/Phone/Data, call/park search, 2fer only) and refreshes every 60 s while shown.
-- **ロガーとの接続**: receives QSOs over UDP like OpsLog (N1MM XML, WSJT-X binary msg 12 incl. multicast, ADIF / ADIF-in-XML), optional raw forwarding to another app. QSOs go to the app's SQLite log with `P2P_CANDIDATE` (from spots) and, once answered, `P2P_DECISION` = yes | no | manual | log (log = SIG_INFO came from the logger). `qsolog.set_p2p` applies a decision to the WSJT-X and logger copies of the same contact; `upsert` carries a decision over when the logger re-sends.
-- **アップロード作成**: writes one ADIF per (my park, UTC date), named `CALL@PARK-YYYYMMDD.adi`, ready for pota.app. P2P park(s) from: 1) pota.app public hunter log (verified), 2) the operator's decision (app log, `confirmed_only`), 3) recorded spots (ADIF-file builds only), 4) SIG_INFO/POTA_REF in the log. Their 2fer → QSO duplicated per park; my 2fer → one file per park (Cartesian product). POTA uploads do not accept multi-value refs (as of 2024).
-- **Writing parks back to the logger: dropped (owner's decision 2026-10-20).** Over UDP it is impossible (RUMlogNG ignores a record whose time/band/mode already exist; its AppleScript only fills the entry form). The only way was RUMlogNG's ADIF import with "No Dupes" + "Update QSO record" (matches time, band and mode, mode case-sensitive), which worked in tests but needs manual steps every time, so the owner chose not to have it. Decisions live only in the app log and the upload files; no `logger_*.adi` is written any more.
-- Not done yet: nearby parks from the current location (map / list to pick from) — the owner wants it after the flow above is solid.
+## What it is
+A desktop app (macOS Apple Silicon + Windows, pywebview) for POTA activators. The flow:
+type the park → the window becomes a small always-on-top **bar** above the logger → each QSO the
+logger sends over UDP appears in the bar → if the other station was spotted at a park the row asks
+「P2P の可能性 … はい / いいえ」 (never automatic); with no spot the operator types the park →
+10 QSOs shows a banner → 「この公園での運用を終了」 writes this park's pota.app upload file(s) and
+returns to the park prompt. Logging stays in the logger; this app never writes the logger's log.
 
-## Layout
-| file | role |
-|---|---|
-| `app.py` | pywebview window + `Api` class (JS bridge: `window.pywebview.api.*`) |
-| `ui/index.html`, `ui/app.css`, `ui/app.js` | the whole UI (no framework, no build step) |
-| `builder.py` | `build()` / `list_activations()` / `live_p2p()` – P2P matching and file output |
-| `spotlogger.py` | `SpotLogger` thread – spots → `spots-YYYYMMDD.jsonl`, sessions → `sessions.json`; `summarize_spots()` for the アクティベート中 page |
-| `receiver.py` | `Receiver` UDP listeners + `parse_packet()` |
-| `qsolog.py` | SQLite log; dedupes the same QSO from WSJT-X and the logger (±3 min, base call, band); honours logger edits/deletes |
-| `potacommon.py` | API fetch (urllib, falls back to `curl`), ADIF read/write, `base_call`, `split_parks`, data dir, settings, `VERSION` |
-| `updater.py` | in-app update from GitHub Releases: `check()` (latest release via api.github.com, asset per OS), `install()` (download, macOS: swap the `.app` and relaunch via `open -n`; Windows: a cmd helper swaps the `.exe` after exit), `cleanup()` removes `*.old` at start. Only from a frozen build; translocated macOS copies get the new app in ~/Downloads instead |
-| `pota_build.py`, `pota_spotlog.py` | CLI wrappers |
-| `tests/` | `python3 -m unittest discover -s tests` (offline) |
-| `.github/workflows/build.yml` | every push to `main` builds macOS `.app` + Windows `.exe` (PyInstaller, `--icon assets/icon.*`), packages a DMG (drag to Applications) and an Inno Setup per-user installer (`installer/windows.iss`, `{localappdata}\Programs`, no admin, so the in-app updater can still swap the exe), uploads those plus the zips the updater downloads, and creates/updates the GitHub Release `v<VERSION>` |
-| `assets/icon.svg` → `icon.icns`, `icon.ico`, `icon-256.png` | app icon (pine rounded square, cream conifer, amber radio arcs). Edit the SVG and run `scripts/make_icons.py` (macOS only: qlmanage/sips/iconutil); the generated files are committed |
+## Modules and what each one owns
+| module | owns | must not |
+|---|---|---|
+| `potacommon.py` | stdlib helpers used everywhere: pota.app fetch (urllib, curl fallback), ADIF read/write, `base_call`, `split_parks`, `parks_in`, data dir + settings, `VERSION`, **the band table and mode groups** | know about spots, the log, or the UI |
+| `spots.py` | everything a pota.app spot means: `parks_of` (reference + references in the comment), `their_parks_at` (which park a station was at around a QSO; `SPOT_BEFORE/AFTER`, `TWOFER_GAP`), `candidate_for` (the P2P candidate for a received QSO), `summarize` (the アクティベート中 page rows incl. band/mode group), `SpotLogger` (records `spots-YYYYMMDD.jsonl` + `sessions.json` while activating), `load_spots/load_sessions` | decide P2P for the upload (builder) or store decisions (qsolog) |
+| `qsolog.py` | the SQLite log of received QSOs, dedupe of WSJT-X vs logger copies (±3 min, base call, band), the operator's P2P decision (`P2P_DECISION` yes/no/manual/log + `SIG_INFO`), `set_p2p` applied to all copies, `between` for a session window | parse UDP or talk to pota.app |
+| `receiver.py` | UDP listeners and packet parsing (N1MM XML, WSJT-X msg 12, ADIF text/XML), raw forwarding, listener state as **codes** + `describe_state` for the UI | store anything |
+| `builder.py` | upload files: hunter log (`hunter.json`), choosing activation QSOs (session window / MY_SIG_INFO / override), `build()` with `confirmed_only` for app-log records, one file per (my park, UTC date), their 2fer duplicated per park | guess from spots for app-log records (only the operator's decision + hunter log count) |
+| `updater.py` | GitHub Releases check, download, swap (.app / .exe), relaunch, cleanup | UI text (it raises translated errors only) |
+| `window.py` | `BarMode`: shrink/move/on-top the pywebview window and restore it | anything else |
+| `i18n.py` | `t(key, **kw)` from `ui/i18n/<lang>.json` with en → ja fallback | — |
+| `app.py` | `Api`: the JS bridge, sectioned (settings / listeners / activation / spots page / build / updates / misc). Validates input, translates errors, delegates. | contain radio logic; if a rule about spots, decisions or files is needed, it goes in the module above |
+| `ui/` | `index.html` (static text via `data-i18n*`), `app.js` (`t()` for dynamic text; draws what Python computed), `app.css` (design tokens), `i18n/` | compute bands, 2fer or decisions itself |
+| `tests/` | offline unit tests: `python3 -m unittest discover -s tests` | network |
+| `scripts/` | `dev.sh` (run from source with `./data`), `send_test_qso.py` (dev-only ports), `make_icons.py` | — |
+| `installer/windows.iss`, `assets/` | Inno Setup script; icon sources and generated `.icns/.ico` | — |
 
-Data dir: macOS `~/Library/Application Support/POTA Upload Helper/`, Windows `%APPDATA%\POTA Upload Helper\` (override with `POTA_HELPER_DATA`). Never commit logs/data (`.gitignore` blocks `*.adi`, `*.adif`, `data/`, `out/`).
+Boundaries to keep: a rule lives in exactly one module and the others call it. Both Python and JS
+need `base_call`/`split_parks`; that duplication is accepted and the two must match. The UI never
+re-derives data (band, mode group, candidate parks) that Python already sent.
 
-## Languages and terms
-- Every user-facing string lives in `ui/i18n/<lang>.json` (ja is the master; en, zh-CN, zh-TW, fr, de, es, it, pt-BR, ko, pl must have the same keys - `python3 -c` a key diff before committing). The UI applies them via `data-i18n` / `data-i18n-ph` / `data-i18n-html` attributes and `t("key", {params})` in app.js; the Python side uses `i18n.t()` (in builder.py imported as `tr` because `t` is a time variable there). Receiver states are codes (`off/error/badforward/listening/receiving`) translated by `Api._recv_texts`; builder's P2P sources are codes (`hunter/confirmed/manual/log/spot/logspot`) translated in the UI. Language = `settings.lang`, chosen from `navigator.language` on first run, switchable in the rail.
-- Example park references in copy are JP-1266 and, for a 2fer, JP-1266,JP-1206 (the owner's choice; JP-1281 stays only in tests and history).
-- Terms and disclaimer: `terms.body` in each dictionary, shown as a modal on first launch until accepted (`settings.terms_accepted` = TERMS_VERSION in app.js), and from the rail link; same text in `TERMS.md` and the README.
+## Decisions (and why)
+- **P2P is confirmed by the operator, never automatic.** Spots are a hint; the hunter log (the other
+  side's upload) is the only verified source and still overrides at build time, with a note.
+- **2fer rules**: a station's parks = the spot's reference + references in its comment, merged over its
+  spots within `TWOFER_GAP` (15 min). At build time, parks from *separate* spots near the QSO are a
+  2fer but `sure=False` (could be a rover) → a note. pota.app does not accept multi-value references, so
+  their 2fer = the QSO repeated per park; my 2fer = one file per park.
+- **Duplicates**: WSJT-X reports a QSO at its start, the logger at its end; same base call + band within
+  3 min = one contact in the log, the live list and the count. Decisions and deletes hit all copies.
+- **No write-back to the logger.** RUMlogNG ignores a UDP record whose time/band/mode already exist and
+  its AppleScript only logs new QSOs; its ADIF import with "No Dupes + Update QSO record" works but is
+  manual every time, so the owner dropped the feature. Decisions live only in the app log and files.
+- **Window close ≠ finish.** `finish_live` stops, builds and resets; `shutdown` only stops threads.
+- **Bar mode** is a resize/move/on-top of the one window (pywebview can't do a second window cheaply);
+  `window.confirm` is unavailable in the web view, so "finish with unconfirmed" needs a second press.
+- **Updates** compare `VERSION` with the latest release tag and download the OS zip; installers (DMG,
+  Inno Setup per-user in `{localappdata}\Programs`) exist for first installs. Bump `VERSION` for every
+  release (the tag and the updater key on it).
+- **Terms**: `terms.body` in each dictionary, modal on first launch until `settings.terms_accepted ==
+  TERMS_VERSION` (app.js), also `TERMS.md` and README. The app is not affiliated with POTA.
+- **Languages**: ja, en, zh-CN, zh-TW, fr, de, es, it, pt-BR, ko, pl; same keys in every file (check with a
+  key diff before committing); language from `navigator.language` on first run, switchable in the rail.
+- **Example park references** in copy: JP-1266, and JP-1266,JP-1206 for a 2fer.
 
 ## Design system (keep it)
-"Park trail-sign" identity. Tokens in `ui/app.css :root`: pine `#173F30`, paper `#EDF1EB`, ink `#1D2621`, moss `#6E8A77`, amber `#D9962B` (= 2fer). Park refs are always rendered as plates (`plate()` in app.js); 2fer = plates joined by an amber `+`. System fonts (Hiragino / Yu Gothic UI), tabular numerals, dark mode via `prefers-color-scheme`. Escape every network/user string with `esc()` before inserting HTML.
+"Park trail sign": green only for the signs (plates, the running header, primary buttons, active nav
+mark); surfaces neutral. Tokens in `ui/app.css :root` (light and dark). Park references are always
+plates (`plate()` in app.js); 2fer = plates joined by an amber `+`. Type scale 11.5 / 12.5 / 13.5 / 15 /
+17 / 20 / 26. Rows: line 1 who/where, line 2 details. Escape every network/user string with `esc()`.
 
-## Status (2026-10-20)
-- v1.0.0 released; CI green on macOS and Windows.
-- Verified from source on the owner's Mac (python 3.9 from Xcode CLT, pywebview 6.2.1): all three views, folder dialog, spot recording with park name + 2fer plates, live P2P from UDP QSOs, upload build (2fer duplicated per park, `logger_p2p_fix.adi`), clean exit on window close. Nothing in the core flow was broken.
-- 2026-10-20 (later): bar mode, per-row P2P confirmation / manual entry, 10-QSO banner, 終了 → build. Verified from source: bar above RUMlogNG, はい / 手入力 both land in the ADIF as 確認済み / 手入力, unanswered candidates are left non-P2P with a note, window grows back on 終了. `window.confirm` is not available in the embedded view - 終了 with unanswered candidates needs a second press instead.
-- Changes after that check: `FileDialog` constants (the bare `OPEN_DIALOG`/`FOLDER_DIALOG` are deprecated in pywebview 6), and CI now writes `NSLocalNetworkUsageDescription` into the macOS Info.plist and re-signs ad hoc, so macOS 15+ shows the "Local Network" prompt needed to receive multicast from WSJT-X. Not yet confirmed with the Release build: ask the owner whether WSJT-X QSOs arrive in the `.app`; if not, System Settings → Privacy → Local Network is the first place to look.
-- Verified against the owner's real log: activation 2026-05-06 JP-1281 → 62 QSO, 11 P2P (9 were missing in RUMlog), JI1IKC/P 2fer JP-1206+JP-1946 split correctly; 35 activations total = pota.app count.
+## Data and files
+macOS `~/Library/Application Support/POTA Upload Helper/`, Windows `%APPDATA%\POTA Upload Helper\`
+(override `POTA_HELPER_DATA`): `qsolog.db`, `spots-YYYYMMDD.jsonl`, `sessions.json`, `hunter.json`,
+`settings.json`. Output: `CALL@PARK-YYYYMMDD.adi` + `report.txt` in the chosen folder. Never commit data.
 
-## Developing on the owner's Mac
-- `scripts/dev.sh` runs from source with `POTA_HELPER_DATA=./data` (git-ignored) so the real log is untouched. `scripts/dev.sh --debug` opens the WebKit inspector.
-- RUMlogNG, the Release `.app` and other loggers on this Mac all listen on UDP 2237 (and 2333/2334). Never send test packets there — a unicast packet lands in one of them and RUMlogNG would log it. Give the dev app its own listener port (`data/settings.json`, e.g. 22237) and use `scripts/send_test_qso.py 22237 CALL [--n1mm|--delete]`.
-- `python3` here is Xcode's (3.9). If it says the Xcode license is not agreed, run `sudo xcodebuild -license accept` once.
-- Driving the app with the desktop-control tools: background `app_*` screenshots walk the accessibility tree and that walk has pressed buttons in the web view (it accepted the terms modal and changed the language select by itself). Use the full-screen tools when a state matters, and never trust a background screenshot as proof that a dialog did not appear.
-- `gh` is not logged in on this Mac; CI/Release status must be read on github.com (or `gh auth login`).
+## Working on it
+- `scripts/dev.sh [--debug]` runs from source with `POTA_HELPER_DATA=./data`; tests are offline.
+- CI (`.github/workflows/build.yml`): every push to `main` builds both OSes (PyInstaller, icon, macOS
+  Info.plist with `NSLocalNetworkUsageDescription` + ad-hoc re-sign, DMG, Inno Setup) and updates the
+  GitHub Release `v<VERSION>`.
+- macOS 15+ needs the "Local Network" permission to receive multicast; the usage string is in the
+  bundle. Translocated copies (opened from the DMG without moving to Applications) cannot self-update.
+- Desktop-control tools: background `app_*` screenshots walk the accessibility tree and that walk has
+  pressed buttons in the web view (accepted the terms modal, changed the language select). Use the
+  full-screen tools when a state matters.
+- Before adding a feature, write one line here: which module owns the new rule and what it must not
+  touch. Prefer extending the owning module over a shortcut in `app.py` or `app.js`.
 
-## Owner's station context
-- Logger: RUMlogNG (Mac). Prefs → UDP has two "Contact info N1MM" outputs: `127.0.0.1:2333` → OpsLog (inbound "RUMlog N1MM"), and since 2026-10-20 `127.0.0.1:2334` → **this app's "RUMlogNG (N1MM)" listener** (it used to go to QSO Upload Utility on 12060 for HamQTH/HRDlog; the owner disabled that and Club Log real-time sync (Prefs → Databases) so test QSOs never reach online services - re-enable both when testing is over).
-- WSJT-X sends to multicast `224.0.0.1:2237`; RUMlog, GridTracker, a QSLWorld bridge script and this app all listen there. A WSJT-X QSO therefore reaches the app twice (WSJT-X copy at start time, RUMlog's N1MM copy at end time, no `<ID>`); `qsolog.dedupe` and the live list merge them (±3 min, base call, band).
-- Verified end to end 2026-10-20 with real loggers: RUMlog manual QSO (Save QSO) and WSJT-X 「Log QSO」 both appeared in the bar with the right spot candidates (JS6UHQ/6 2fer JP-0157+JP-1788, JM7GTK/P JP-1028) and ended up as 確認済み in the ADIF. RUMlog manual entries take the rig's mode (`DATA-U`), which is not a valid ADIF mode - only a test artefact, real entries carry SSB/CW/FT8.
-- OpsLog still receives everything RUMlog logs (2333), so test QSOs land there too.
-- RUMlog ADIF exports omit `<SIG>POTA` on hunted parks (only SIG_INFO) — tools must not rely on SIG.
-
-## Ideas not done yet
-- Optional pota.app logged-in hunter log import (full history beyond the public last 25).
-- Code signing / notarization, Intel mac build. (App icon and installers done 2026-10-20; the Windows installer step has not been watched on CI yet - check the first run.)
-- Bump `VERSION` in `potacommon.py` for every release (CI uses it as the tag, the in-app updater compares it with the latest release tag). 1.1.0 = bar mode + P2P confirmation + updater.
+## Not done
+Nearby parks from the current location (map/list to pick from); code signing / notarization; Intel
+mac build; an English README.

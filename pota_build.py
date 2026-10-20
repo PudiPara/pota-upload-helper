@@ -2,7 +2,7 @@
 """Command-line upload builder (the app does the same in its "アップロード作成" tab).
 
     python3 pota_build.py export.adif
-    python3 pota_build.py export.adif --date 20261020 --my-parks JP-1281,JP-1285
+    python3 pota_build.py export.adif --date 20261020 --my-parks JP-1266,JP-1206
 """
 import argparse
 

@@ -314,11 +314,7 @@
   $("#donePota").addEventListener("click", () => api.open_url("https://pota.app/"));
 
   // ================================================================ spots page (like pota.app's list)
-  const MODE_GROUP = (m) => { m = String(m || "").toUpperCase();
-    return m === "CW" ? "cw" : /^(SSB|USB|LSB|FM|AM|PHONE|DV|DMR|C4FM)$/.test(m) ? "phone" : m ? "data" : ""; };
-  const bandOf = (khz) => { const k = parseFloat(khz) / 1000; const B = [[1.8, 2, "160m"], [3.5, 4, "80m"], [5, 5.5, "60m"], [7, 7.3, "40m"], [10.1, 10.15, "30m"],
-    [14, 14.35, "20m"], [18.068, 18.168, "17m"], [21, 21.45, "15m"], [24.89, 24.99, "12m"], [28, 29.7, "10m"], [50, 54, "6m"], [144, 148, "2m"], [430, 440, "70cm"]];
-    for (const [lo, hi, b] of B) if (k >= lo && k <= hi) return b; return ""; };
+  // band and mode group come computed from Python (spots.summarize); the page only filters.
   const sp = { items: [], worked: new Set(), region: "JP", group: "", band: "", q: "", twofer: false, timer: null };
   async function loadSpotsPage() {
     const r = await api.spots_now();
@@ -326,7 +322,7 @@
     if (!r.ok) { err.textContent = r.error; err.hidden = false; return; }
     err.hidden = true; sp.items = r.items; sp.worked = new Set(r.worked || []);
     $("#spotsAt").textContent = t("spots.at", { at: r.at, n: r.items.length });
-    const bands = [...new Set(sp.items.map((e) => bandOf(e.freq)).filter(Boolean))]
+    const bands = [...new Set(sp.items.map((e) => e.band).filter(Boolean))]
       .sort((a, b) => parseFloat(b) * (b.endsWith("cm") ? .01 : 1) - parseFloat(a) * (a.endsWith("cm") ? .01 : 1));
     const sel = $("#spotsBand"); const cur = sel.value;
     sel.innerHTML = `<option value="">${esc(t("spots.band.all"))}</option>` + bands.map((b) => `<option value="${b}">${b}</option>`).join("");
@@ -338,8 +334,8 @@
     const q = sp.q.toUpperCase();
     const list = sp.items.filter((e) =>
       (!sp.region || e.parks.some((p) => p.startsWith(sp.region))) &&
-      (!sp.group || MODE_GROUP(e.mode) === sp.group) &&
-      (!sp.band || bandOf(e.freq) === sp.band) &&
+      (!sp.group || e.group === sp.group) &&
+      (!sp.band || e.band === sp.band) &&
       (!sp.twofer || e.twofer) &&
       (!q || e.call.toUpperCase().includes(q) || e.parks.some((p) => p.includes(q))));
     $("#spotsPage").innerHTML = list.map((e) => spotRow(e, sp.worked.has(e.base), false, true)).join("");

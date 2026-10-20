@@ -44,7 +44,7 @@ class BuilderTest(unittest.TestCase):
 
     def test_summarize_spots(self):
         import datetime as dt
-        from spotlogger import summarize_spots
+        from spots import summarize as summarize_spots
         now = dt.datetime(2026, 10, 20, 4, 50, tzinfo=dt.timezone.utc)
         spots = [{"activator": "JS6UHQ/6", "reference": "JP-1788", "spotTime": "2026-10-20T04:41:00", "frequency": "21049", "mode": "SSB", "comments": "2fer JP-0157"},
                  {"activator": "JR5JAQ/P", "reference": "JP-2100", "spotTime": "2026-10-20T04:34:12", "frequency": "7001", "mode": "CW", "comments": "RBN"},
@@ -57,6 +57,25 @@ class BuilderTest(unittest.TestCase):
         self.assertEqual((rows["JA1OLD"]["parks"], rows["JA1OLD"]["twofer"]), (["JP-0001"], False))            # an hour apart: moved on
         self.assertEqual([r["base"] for r in summarize_spots(spots, now)], ["JS6UHQ", "JR5JAQ", "JA1OLD"])  # newest first
         self.assertEqual(rows["JS6UHQ"]["ago"], 9)
+
+    def test_bands_and_modes(self):
+        from potacommon import band_from_khz, band_from_mhz, mode_group
+        self.assertEqual(band_from_khz("7041"), "40m")
+        self.assertEqual(band_from_khz("21049"), "15m")
+        self.assertEqual(band_from_mhz(432.1), "70cm")
+        self.assertEqual(band_from_khz("abc"), "")
+        self.assertEqual([mode_group(m) for m in ("CW", "SSB", "ft8", "", None)], ["cw", "phone", "data", "", ""])
+
+    def test_parks_of_and_their_parks_at(self):
+        import spots
+        self.assertEqual(spots.parks_of({"reference": "JP-1788", "comments": "2fer JP-0157 and jp-1788 again"}), ["JP-1788", "JP-0157"])
+        one = [(100, ["JP-0001"], {})]
+        self.assertEqual(spots.their_parks_at(one, 110), (["JP-0001"], True))        # within SPOT_AFTER
+        self.assertEqual(spots.their_parks_at(one, 150), ([], True))                 # too long after
+        rover = [(100, ["JP-0001"], {}), (104, ["JP-0002"], {})]
+        self.assertEqual(spots.their_parks_at(rover, 108), (["JP-0001", "JP-0002"], False))   # separate spots: unsure
+        twofer = [(100, ["JP-0001", "JP-0002"], {})]
+        self.assertEqual(spots.their_parks_at(twofer, 108), (["JP-0001", "JP-0002"], True))   # one spot says both
 
     def test_helpers(self):
         self.assertEqual(base_call("JS2PHO/2"), "JS2PHO")

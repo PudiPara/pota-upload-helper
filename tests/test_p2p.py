@@ -13,6 +13,7 @@ from potacommon import read_adif  # noqa: E402
 import builder  # noqa: E402
 import potacommon  # noqa: E402
 import qsolog  # noqa: E402
+import spots  # noqa: E402
 
 
 def rec(call, t, **kw):
@@ -25,19 +26,19 @@ class P2PDecisionTest(unittest.TestCase):
     def setUp(self):
         # the other test modules share one data dir (DATA_DIR is fixed at import): use a private one
         data = tempfile.mkdtemp()
-        self._saved = (potacommon.DATA_DIR, builder.DATA_DIR, qsolog.DATA_DIR)
-        potacommon.DATA_DIR = builder.DATA_DIR = qsolog.DATA_DIR = data
+        self._saved = (potacommon.DATA_DIR, builder.DATA_DIR, qsolog.DATA_DIR, spots.DATA_DIR)
+        potacommon.DATA_DIR = builder.DATA_DIR = qsolog.DATA_DIR = spots.DATA_DIR = data
         with open(os.path.join(data, "spots-20261020.jsonl"), "w") as fh:
             fh.write(json.dumps({"seen": "2026-10-20T04:00:00", "spotTime": "2026-10-20T04:00:00",
                                  "activator": "JS6UHQ/6", "base": "JS6UHQ", "parks": ["JP-0157", "JP-1788"]}) + "\n")
         json.dump([], open(os.path.join(data, "hunter.json"), "w"))
 
     def tearDown(self):
-        potacommon.DATA_DIR, builder.DATA_DIR, qsolog.DATA_DIR = self._saved
+        potacommon.DATA_DIR, builder.DATA_DIR, qsolog.DATA_DIR, spots.DATA_DIR = self._saved
 
     def test_candidate_then_yes_survives_resend(self):
         r = rec("JS6UHQ/6", "040828")
-        cand = builder.live_p2p(r, spots_only=True)
+        cand = spots.candidate_for(r)
         self.assertEqual(cand, ["JP-0157", "JP-1788"])
         r["P2P_CANDIDATE"] = ",".join(cand)
         uid = qsolog.upsert(r, None, "WSJT-X")
