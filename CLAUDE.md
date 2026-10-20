@@ -60,6 +60,9 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
   uid and stores the record under the new key, `qsolog.delete_uid`), ADIF files are view-only.
 - **Deleting an activation** (アップロード作成, app log only): `qsolog.delete_activation(date)` soft-deletes
   that UTC day's QSOs that carry my park; two presses in the UI since `window.confirm` is unavailable.
+- **A QSO's own parks win.** `builder.find_activation_qsos`: override (手で上書き) → the record's
+  MY_POTA_REF/MY_SIG_INFO (set while recording) → the sessions.json window it fell in. Windows carry a
+  ±5 min margin and overlap when sessions follow each other quickly, so they are a fallback only.
 - **Window close ≠ finish.** `finish_live` stops, builds **the whole UTC day** (every park of the day gets
   its file with all of its QSOs, so a park shared by several sessions is never cut down to the last
   session) and resets; `shutdown` only stops threads.
