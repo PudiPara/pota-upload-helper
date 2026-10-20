@@ -82,7 +82,7 @@ class P2PDecisionTest(unittest.TestCase):
         self.assertEqual(sorted(by["JA3CCC"]), ["JP-0003", "JP-0004"])  # typed 2fer -> two records
         self.assertTrue(any("JS6UHQ/6" in n and "確認していない" in n for n in res["notes"]))
         srcs = {p["call"]: p["source"] for f in res["summary"] for p in f["p2p"]}
-        self.assertEqual(srcs, {"JA1AAA": "確認済み", "JA3CCC": "手入力", "JA0WSJ": "確認済み"})
+        self.assertEqual(srcs, {"JA1AAA": "confirmed", "JA3CCC": "manual", "JA0WSJ": "confirmed"})
         # the legacy path (ADIF from the logger) still guesses from spots
         res2 = builder.build(None, None, "JP-1281", "JL1FVA", out, offline=True, recs=recs[:1])
         self.assertEqual(res2["summary"][0]["p2p"][0]["parks"], ["JP-0157", "JP-1788"])

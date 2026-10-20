@@ -7,7 +7,36 @@
     call: "JL1FVA", prefix: "JP", spots: new Map(), qsos: new Map(), lastAt: 0, lastQ: 0,
     start: null, timer: null, poll: null, source: "app", adif: "", out: "", outDir: "",
     acts: [], selected: new Set(), listeners: [], receiver: {}, editing: null, bar: false, cheered: false,
+    lang: "ja", langs: [], termsAccepted: "",
   };
+  const TERMS_VERSION = "2026-10-20";
+
+  // ---------- i18n ----------
+  let L = {};
+  const t = (k, p) => String(L[k] != null ? L[k] : k).replace(/\{(\w+)\}/g, (_, n) => (p && p[n] != null ? p[n] : ""));
+  function pickLang(tag) {
+    const codes = st.langs.map(([c]) => c);
+    const low = String(tag || "").replace("_", "-").toLowerCase();
+    const exact = codes.find((c) => c.toLowerCase() === low); if (exact) return exact;
+    if (low.startsWith("zh")) return /hant|tw|hk|mo/.test(low) ? "zh-TW" : "zh-CN";
+    if (low.startsWith("pt")) return "pt-BR";
+    return codes.find((c) => c.split("-")[0] === low.split("-")[0]) || "en";
+  }
+  async function loadLang(lang) {
+    try { L = await (await fetch(`i18n/${lang}.json`, { cache: "no-store" })).json(); } catch (e) { L = {}; }
+    st.lang = lang; document.documentElement.lang = lang;
+    $$("[data-i18n]").forEach((el) => (el.textContent = t(el.dataset.i18n)));
+    $$("[data-i18n-ph]").forEach((el) => (el.placeholder = t(el.dataset.i18nPh)));
+    $$("[data-i18n-html]").forEach((el) => (el.innerHTML = t(el.dataset.i18nHtml)));   // our own dictionaries only
+    $("#termsBody").innerHTML = t("terms.body");
+    $("#lang").value = lang;
+  }
+  function rerender() {           // dynamic parts that hold translated text
+    renderListeners(); updateReceiver(st.receiver);
+    if (!$("#liveRun").hidden) { renderQsos(); renderSpots(); }
+    if (!$("#view-spots").hidden) renderSpotsPage();
+    if (st.source) renderActs({ items: st.acts, path: st.adif }, st.source === "adif" && !st.adif);
+  }
 
   // ---------- helpers ----------
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
@@ -23,16 +52,21 @@
     return `<span class="plate"><b>${esc(ref.slice(0, i + 1))}</b>${esc(ref.slice(i + 1))}</span>`;
   }
   const plates = (refs) => (refs || []).map(plate).join('<span class="plate-join" aria-hidden="true">+</span>');
-  const fmtDate = (d) => `${d.slice(0, 4)}年${+d.slice(4, 6)}月${+d.slice(6, 8)}日`;
-  const hhmm = (t) => `${esc(String(t).slice(0, 2))}:${esc(String(t).slice(2, 4))}`;
-  const mins = (t) => +String(t).slice(0, 2) * 60 + +String(t).slice(2, 4);
+  const fmtDate = (d) => {
+    try {
+      return new Date(Date.UTC(+d.slice(0, 4), +d.slice(4, 6) - 1, +d.slice(6, 8)))
+        .toLocaleDateString(st.lang, { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
+    } catch (e) { return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`; }
+  };
+  const hhmm = (tm) => `${esc(String(tm).slice(0, 2))}:${esc(String(tm).slice(2, 4))}`;
+  const mins = (tm) => +String(tm).slice(0, 2) * 60 + +String(tm).slice(2, 4);
   function fmtFreq(khz) {
     const k = parseFloat(khz);
     return k ? `${(k / 1000).toFixed(3)}<small>MHz</small>` : esc(khz || "");
   }
   function toast(msg) {
-    const t = $("#toast"); t.textContent = msg; t.hidden = false;
-    clearTimeout(toast.h); toast.h = setTimeout(() => (t.hidden = true), 2800);
+    const el = $("#toast"); el.textContent = msg; el.hidden = false;
+    clearTimeout(toast.h); toast.h = setTimeout(() => (el.hidden = true), 2800);
   }
   const utcMs = (iso) => Date.parse(iso.length === 16 ? iso + ":00Z" : iso + "Z");
   function segSet(group, attr, val) {
@@ -69,7 +103,7 @@
   async function startLive() {
     const parks = splitParks($("#parks").value);
     const err = $("#liveError");
-    if (!parks.length) { err.textContent = "公園番号を JP-1281 の形で入力してください。"; err.hidden = false; return; }
+    if (!parks.length) { err.textContent = t("live.err.park"); err.hidden = false; return; }
     err.hidden = true; $("#doneCard").hidden = true;
     const r = await api.start_live(parks.join(","), st.call);
     if (!r.ok) { err.textContent = r.error; err.hidden = false; return; }
@@ -84,7 +118,7 @@
     $("#signParks").innerHTML = parks.map((p) =>
       `<div class="sign-park">${refHtml(p)}<span class="name" data-ref="${esc(p)}"></span></div>`).join("");
     $("#barParks").innerHTML = parks.map(refHtml).join('<span class="plate-join" aria-hidden="true">+</span>');
-    $("#liveStatus").textContent = "最初のスポットを取得しています";
+    $("#liveStatus").textContent = t("live.status.first");
     for (const q of await api.session_qsos(start)) st.qsos.set(q.uid, q);
     st.lastQ = Date.now() / 1000 - 1;
     st.cheered = st.qsos.size >= 10;            // re-opened mid-activation: don't celebrate twice
@@ -100,8 +134,8 @@
   function tick() {
     const s = Math.max(0, Math.floor((Date.now() - st.start) / 1000));
     const p = (n) => String(n).padStart(2, "0");
-    const t = `${p(Math.floor(s / 3600))}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}`;
-    $("#elapsed").textContent = t; $("#barElapsed").textContent = t;
+    const tm = `${p(Math.floor(s / 3600))}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}`;
+    $("#elapsed").textContent = tm; $("#barElapsed").textContent = tm;
   }
   async function poll() {
     const r = await api.poll_live(st.lastAt, st.lastQ);
@@ -114,7 +148,7 @@
       if (q.action === "delete") {
         for (const [k, v] of st.qsos) if (baseCall(v.call) === baseCall(q.call) && v.date === q.date &&
           Math.abs(+v.time - +q.time) <= 3) st.qsos.delete(k);
-        toast(`${q.call} の QSO がロガーで削除されました`);
+        toast(t("live.deleted", { call: q.call }));
         continue;
       }
       if (q.date && st.start && Date.parse(`${q.date.slice(0, 4)}-${q.date.slice(4, 6)}-${q.date.slice(6, 8)}T${q.time.slice(0, 2)}:${q.time.slice(2, 4)}:00Z`) < st.start - 300000) continue;
@@ -130,41 +164,46 @@
     if (freshS.size || freshQ.size) { renderSpots(freshS); renderQsos(freshQ); }
   }
   function workedCalls() { return new Set([...st.qsos.values()].map((q) => baseCall(q.call))); }
+  function spotRow(e, worked, fresh, page) {
+    return `
+      <li class="spot${e.twofer ? " is-twofer" : ""}${worked ? " is-worked" : ""}${fresh ? " is-new" : ""}${page && e.ago >= 30 ? " is-stale" : ""}">
+        <span class="spot-time">${esc(e.time)}Z</span>
+        <span class="spot-call">${esc(e.call)}${worked ? `<span class="worked-tag">${t("spots.worked")}</span>` : ""}</span>
+        <span class="plates">${plates(e.parks)}${e.twofer ? `<span class="twofer-tag">${e.parks.length}fer</span>` : ""}</span>
+        <span class="spot-meta"><span class="spot-freq">${fmtFreq(e.freq)}</span>${e.mode ? `<span class="spot-mode">${esc(e.mode)}</span>` : ""}</span>
+        ${page ? `<span class="spot-ago">${e.ago ? t("spots.ago", { n: e.ago }) : t("spots.now")}</span>
+        <span class="spot-note" title="${esc(e.comments)}">${esc(e.comments)}</span>` : ""}
+      </li>`;
+  }
   function renderSpots(fresh) {
     const worked = workedCalls();
     const list = [...st.spots.values()].filter((e) => !st.prefix || e.parks.some((p) => p.startsWith(st.prefix)))
       .sort((a, b) => b.at - a.at);
-    $("#spots").innerHTML = list.map((e) => `
-      <li class="spot${e.twofer ? " is-twofer" : ""}${worked.has(baseCall(e.call)) ? " is-worked" : ""}${fresh && fresh.has(e.call) ? " is-new" : ""}">
-        <span class="spot-time">${esc(e.time)}Z</span>
-        <span class="spot-call">${esc(e.call)}</span>
-        <span class="spot-meta"><span class="spot-freq">${fmtFreq(e.freq)}</span>${e.mode ? `<span class="spot-mode">${esc(e.mode)}</span>` : ""}</span>
-        <span class="plates">${plates(e.parks)}${e.twofer ? `<span class="twofer-tag">${e.parks.length}fer</span>` : ""}</span>
-      </li>`).join("");
+    $("#spots").innerHTML = list.map((e) => spotRow(e, worked.has(baseCall(e.call)), fresh && fresh.has(e.call), false)).join("");
     $("#spotsEmpty").hidden = list.length > 0; $("#spots").hidden = list.length === 0;
     const tw = list.filter((e) => e.twofer).length;
-    $("#liveCount").textContent = list.length ? `${list.length} 局${tw ? `・2fer 以上 ${tw} 局` : ""}` : "";
+    $("#liveCount").textContent = list.length ? t("live.count", { n: list.length }) + (tw ? t("live.count2fer", { n: tw }) : "") : "";
   }
 
   // One QSO row. The P2P part is a small state machine:
-  //   candidate from spots, no answer yet  -> 「P2P の可能性」 [はい] [いいえ] [手で入力]
+  //   candidate from spots, no answer yet  -> ask: yes / no / type it
   //   no candidate, no answer              -> an input for the park number (Phone/CW: the other side tells you)
-  //   yes / manual / typed in the logger   -> P2P plates + 変更
-  //   no                                   -> 「P2P ではない」 + 変更
+  //   yes / manual / typed in the logger   -> P2P plates + change
+  //   no                                   -> "not P2P" + change
   function qsoRow(q, fresh) {
     const decided = q.decision && q.decision !== "no";
     const p2p = decided && q.parks.length;
     const editing = st.editing === q.uid;
-    const input = `<span class="p2p-in"><input data-in="${esc(q.uid)}" placeholder="相手の公園 JP-0000" spellcheck="false" autocomplete="off"
-        value="${esc(editing ? (q.parks || []).join(",") : "")}"><button class="chip chip-yes" data-act="manual" data-uid="${esc(q.uid)}">記録</button>
-        ${q.candidate.length || decided || q.decision === "no" ? `<button class="link" data-act="cancel" data-uid="${esc(q.uid)}">やめる</button>` : ""}</span>`;
+    const input = `<span class="p2p-in"><input data-in="${esc(q.uid)}" placeholder="${esc(t("row.ph"))}" spellcheck="false" autocomplete="off"
+        value="${esc(editing ? (q.parks || []).join(",") : "")}"><button class="chip chip-yes" data-act="manual" data-uid="${esc(q.uid)}">${t("row.record")}</button>
+        ${q.candidate.length || decided || q.decision === "no" ? `<button class="link" data-act="cancel" data-uid="${esc(q.uid)}">${t("row.cancel")}</button>` : ""}</span>`;
     let ctl;
     if (editing) ctl = input;
-    else if (p2p) ctl = `<span class="p2p-tag">P2P</span><span class="plates">${plates(q.parks)}</span><button class="link" data-act="edit" data-uid="${esc(q.uid)}">変更</button>`;
-    else if (q.decision === "no") ctl = `<span class="qso-none">P2P ではない</span><button class="link" data-act="edit" data-uid="${esc(q.uid)}">変更</button>`;
-    else if (q.candidate.length) ctl = `<span class="ask-text">P2P の可能性</span><span class="plates">${plates(q.candidate)}</span>
-        <button class="chip chip-yes" data-act="yes" data-uid="${esc(q.uid)}">はい、P2P</button><button class="chip" data-act="no" data-uid="${esc(q.uid)}">いいえ</button>
-        <button class="link" data-act="edit" data-uid="${esc(q.uid)}">手で入力</button>`;
+    else if (p2p) ctl = `<span class="p2p-tag">P2P</span><span class="plates">${plates(q.parks)}</span><button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.change")}</button>`;
+    else if (q.decision === "no") ctl = `<span class="qso-none">${t("row.none")}</span><button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.change")}</button>`;
+    else if (q.candidate.length) ctl = `<span class="ask-text">${t("row.ask")}</span><span class="plates">${plates(q.candidate)}</span>
+        <button class="chip chip-yes" data-act="yes" data-uid="${esc(q.uid)}">${t("row.yes")}</button><button class="chip" data-act="no" data-uid="${esc(q.uid)}">${t("row.no")}</button>
+        <button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.manual")}</button>`;
     else ctl = input;
     const ask = !decided && q.decision !== "no" && q.candidate.length && !editing;
     return `<li class="qso${p2p ? " is-p2p" : ""}${p2p > 1 ? " is-twofer" : ""}${ask ? " is-ask" : ""}${fresh && fresh.has(q.uid) ? " is-new" : ""}" data-uid="${esc(q.uid)}">
@@ -187,8 +226,8 @@
     const w = Math.min(100, (n / 10) * 100) + "%";
     $("#qsoBar").style.width = w; $("#barMeter").style.width = w;
     $(".tally").classList.toggle("is-done", n >= 10); $(".bar-tally").classList.toggle("is-done", n >= 10);
-    $("#qsoNote").textContent = n >= 10 ? `アクティベーション成立（${uniq} 局・バンド・モード）` : `あと ${10 - n} QSO でアクティベーション成立`;
-    $("#p2pCount").textContent = [p2p ? `P2P ${p2p} 件` : "", pending ? `確認待ち ${pending} 件` : ""].filter(Boolean).join("・");
+    $("#qsoNote").textContent = n >= 10 ? t("live.qsoNote.done", { n: uniq }) : t("live.qsoNote.left", { n: 10 - n });
+    $("#p2pCount").textContent = [p2p ? t("live.p2pCount", { n: p2p }) : "", pending ? t("live.pendingCount", { n: pending }) : ""].filter(Boolean).join(" · ");
     if (st.editing) { const el = $(`[data-in="${CSS.escape(st.editing)}"]`); if (el) el.focus(); }
     if (n >= 10 && !st.cheered) { st.cheered = true; cheer(); }
   }
@@ -205,7 +244,7 @@
     for (const ev of r.events) { const old = st.qsos.get(ev.uid); if (old) st.qsos.set(ev.uid, { ...old, ...ev }); }
     renderQsos();
     const q = st.qsos.get(uid);
-    if (q && q.parks.length) toast(`${q.call} を P2P（${q.parks.join(" + ")}）として記録しました`);
+    if (q && q.parks.length) toast(t("live.recorded", { call: q.call, parks: q.parks.join(" + ") }));
   }
   function onQsoClick(e) {
     const b = e.target.closest("[data-act]"); if (!b) return;
@@ -233,39 +272,39 @@
     st.prefix = b.dataset.prefix; segSet("#liveRun .seg", "prefix", st.prefix); api.save({ prefix: st.prefix }); renderSpots();
   }));
 
-  // ---- 終了: stop, write this park's upload file(s), back to the start
+  // ---- finish: stop, write this park's upload file(s), back to the start
+  const finishLabels = () => [$("#finishLive"), $("#barFinish")].forEach((b, i) => (b.textContent = i ? t("bar.finish") : t("live.finish")));
   async function finishLive() {
     const pending = [...st.qsos.values()].filter((q) => !q.decision && q.candidate.length).length;
     const btns = [$("#finishLive"), $("#barFinish")];
     if (pending && !st.finishArmed) {           // window.confirm is not available in the embedded view
       st.finishArmed = true;
-      btns.forEach((b) => (b.textContent = `未確認 ${pending} 件のまま終了`));
-      toast(`P2P の可能性がある QSO が ${pending} 件、未確認です。もう一度押すと P2P なしで書き出します`);
+      btns.forEach((b) => (b.textContent = t("live.finishArmed", { n: pending })));
+      toast(t("live.finishPending", { n: pending }));
       clearTimeout(finishLive.h);
-      finishLive.h = setTimeout(() => { st.finishArmed = false; btns.forEach((b, i) => (b.textContent = i ? "運用を終了" : "この公園での運用を終了")); }, 6000);
+      finishLive.h = setTimeout(() => { st.finishArmed = false; finishLabels(); }, 6000);
       return;
     }
     st.finishArmed = false; clearTimeout(finishLive.h);
-    btns.forEach((b) => { b.disabled = true; b.textContent = "作成しています…"; });
+    btns.forEach((b) => { b.disabled = true; b.textContent = t("live.working"); });
     const r = await api.finish_live(true);
-    btns.forEach((b, i) => { b.disabled = false; b.textContent = i ? "運用を終了" : "この公園での運用を終了"; });
+    btns.forEach((b) => (b.disabled = false)); finishLabels();
     clearInterval(st.timer); clearInterval(st.poll);
     await setBar(false);
     $("#liveRun").hidden = true; $("#liveIdle").hidden = false; $("#liveDot").hidden = true;
     const card = $("#doneCard"); card.hidden = false;
     if (!r.ok) {
-      $("#doneTitle").textContent = "記録は止めましたが、ファイルを作れませんでした";
-      $("#doneBody").innerHTML = `<p class="error">${esc(r.error)}</p><p class="muted">「アップロード作成」タブから作り直せます。</p>`;
+      $("#doneTitle").textContent = t("done.fail.title");
+      $("#doneBody").innerHTML = `<p class="error">${esc(r.error)}</p><p class="muted">${esc(t("done.fail.body"))}</p>`;
       return;
     }
     const files = r.summary || [];
     const s = r.session || {};
-    $("#doneTitle").textContent = files.length
-      ? `${(s.parks || []).join(" + ")} の運用を終了。${files.length} 個のファイルを作成しました`
-      : `${(s.parks || []).join(" + ")} の運用を終了しました`;
+    const parks = (s.parks || []).join(" + ");
+    $("#doneTitle").textContent = files.length ? t("done.title.files", { parks, n: files.length }) : t("done.title.nofiles", { parks });
     $("#doneBody").innerHTML = resultsHtml(r) + `<p class="muted">${esc(r.out_dir || "")}</p>`;
     st.outDir = r.out_dir;
-    toast(`記録を止めました（${(s.start || "").slice(11)}〜${(s.end || "").slice(11)} UTC）`);
+    toast(t("live.stopped", { start: (s.start || "").slice(11, 16), end: (s.end || "").slice(11, 16) }));
     $("#parks").focus();
   }
   $("#finishLive").addEventListener("click", finishLive);
@@ -286,11 +325,11 @@
     const err = $("#spotsError");
     if (!r.ok) { err.textContent = r.error; err.hidden = false; return; }
     err.hidden = true; sp.items = r.items; sp.worked = new Set(r.worked || []);
-    $("#spotsAt").textContent = `${r.at}Z 時点・${r.items.length} 局`;
+    $("#spotsAt").textContent = t("spots.at", { at: r.at, n: r.items.length });
     const bands = [...new Set(sp.items.map((e) => bandOf(e.freq)).filter(Boolean))]
       .sort((a, b) => parseFloat(b) * (b.endsWith("cm") ? .01 : 1) - parseFloat(a) * (a.endsWith("cm") ? .01 : 1));
     const sel = $("#spotsBand"); const cur = sel.value;
-    sel.innerHTML = '<option value="">全バンド</option>' + bands.map((b) => `<option value="${b}">${b}</option>`).join("");
+    sel.innerHTML = `<option value="">${esc(t("spots.band.all"))}</option>` + bands.map((b) => `<option value="${b}">${b}</option>`).join("");
     sel.value = bands.includes(cur) ? cur : "";
     renderSpotsPage();
     clearInterval(sp.timer); sp.timer = setInterval(() => { if (!$("#view-spots").hidden) loadSpotsPage(); else clearInterval(sp.timer); }, 60000);
@@ -303,17 +342,9 @@
       (!sp.band || bandOf(e.freq) === sp.band) &&
       (!sp.twofer || e.twofer) &&
       (!q || e.call.toUpperCase().includes(q) || e.parks.some((p) => p.includes(q))));
-    $("#spotsPage").innerHTML = list.map((e) => `
-      <li class="spot${e.twofer ? " is-twofer" : ""}${sp.worked.has(e.base) ? " is-worked" : ""}${e.ago >= 30 ? " is-stale" : ""}">
-        <span class="spot-time">${esc(e.time)}Z</span>
-        <span class="spot-call">${esc(e.call)}</span>
-        <span class="plates">${plates(e.parks)}${e.twofer ? `<span class="twofer-tag">${e.parks.length}fer</span>` : ""}</span>
-        <span class="spot-meta"><span class="spot-freq">${fmtFreq(e.freq)}</span>${e.mode ? `<span class="spot-mode">${esc(e.mode)}</span>` : ""}</span>
-        <span class="spot-ago">${e.ago ? `${e.ago} 分前` : "いま"}</span>
-        <span class="spot-note" title="${esc(e.comments)}">${esc(e.comments)}</span>
-      </li>`).join("");
+    $("#spotsPage").innerHTML = list.map((e) => spotRow(e, sp.worked.has(e.base), false, true)).join("");
     $("#spotsPageEmpty").hidden = list.length > 0; $("#spotsPage").hidden = list.length === 0;
-    $("#spotsSummary").textContent = sp.items.length ? `${list.length} 局を表示（全 ${sp.items.length} 局）` : "いま公園から出ている局";
+    $("#spotsSummary").textContent = sp.items.length ? t("spots.summary", { shown: list.length, total: sp.items.length }) : t("nav.spots.sub");
   }
   $$(".seg-region button").forEach((b) => b.addEventListener("click", () => { sp.region = b.dataset.region; segSet(".seg-region", "region", sp.region); renderSpotsPage(); }));
   $$(".seg-mode button").forEach((b) => b.addEventListener("click", () => { sp.group = b.dataset.modegroup; segSet(".seg-mode", "modegroup", sp.group); renderSpotsPage(); }));
@@ -333,16 +364,14 @@
   function renderActs(res, waitingFile) {
     if (st.source === "adif" && res.path !== undefined) {
       st.adif = res.path || st.adif;
-      $("#adifName").textContent = st.adif ? st.adif.split(/[\\/]/).pop() : "まだ選ばれていません";
-      $("#adifPath").textContent = st.adif || "RUMlogNG なら「Logbook → Export all QSOs as ADIF」";
+      $("#adifName").textContent = st.adif ? st.adif.split(/[\\/]/).pop() : t("build.file.none");
+      $("#adifPath").textContent = st.adif || t("build.file.hint");
     }
-    st.acts = res.items || []; st.selected.clear(); $("#actHint").textContent = "選ばなければ全部作ります";
+    st.acts = res.items || []; st.selected.clear(); $("#actHint").textContent = t("build.hint.all");
     if (res.error) { $("#acts").innerHTML = `<p class="pad error">${esc(res.error)}</p>`; return; }
-    if (waitingFile) { $("#acts").innerHTML = '<p class="pad muted">ADIF を選ぶとここに一覧が出ます。</p>'; return; }
+    if (waitingFile) { $("#acts").innerHTML = `<p class="pad muted">${esc(t("build.acts.waiting"))}</p>`; return; }
     if (!st.acts.length) {
-      $("#acts").innerHTML = st.source === "app"
-        ? '<p class="pad muted">まだアクティベーションの QSO を受け取っていません。運用中タブで記録を始め、ロガーから QSO が届くとここに並びます。</p>'
-        : '<p class="pad muted">自分の公園（MY_SIG_INFO）が入った QSO が見つかりません。運用中タブで記録した時間帯の QSO は自動で拾います。</p>';
+      $("#acts").innerHTML = `<p class="pad muted">${esc(t(st.source === "app" ? "build.acts.emptyApp" : "build.acts.emptyAdif"))}</p>`;
       return;
     }
     $("#acts").innerHTML = st.acts.map((a) => `
@@ -355,14 +384,13 @@
     $$("#acts input").forEach((i) => i.addEventListener("change", () => {
       i.checked ? st.selected.add(i.value) : st.selected.delete(i.value);
       i.closest(".act").classList.toggle("is-checked", i.checked);
-      $("#actHint").textContent = st.selected.size ? `${st.selected.size} 件を選択中` : "選ばなければ全部作ります";
+      $("#actHint").textContent = st.selected.size ? t("build.hint.selected", { n: st.selected.size }) : t("build.hint.all");
     }));
   }
   $("#pickAdif").addEventListener("click", async () => { const r = await api.pick_adif(); if (r) renderActs(r); });
   $("#pickOut").addEventListener("click", async () => { const p = await api.pick_out(); if (p) { st.out = p; $("#outPath").textContent = p; } });
 
-  const SRC = (s) => s.includes("ハンター") ? ["src-ok", "確定"] : s.includes("確認済み") ? ["src-ok", "確認済み"]
-    : s.includes("手入力") ? ["src-ok", "手入力"] : s.includes("スポット") ? ["src-spot", "スポット"] : ["src-log", "ログ"];
+  const SRC_CLASS = { hunter: "src-ok", confirmed: "src-ok", manual: "src-ok", spot: "src-spot", log: "src-log", logspot: "src-log" };
   function resultsHtml(r) {
     const files = r.summary || [];
     return files.map((f) => `
@@ -370,26 +398,26 @@
         <div class="file-head">
           ${plate(f.park)}
           <div><div class="file-date">${fmtDate(f.date)}</div><div class="file-name">${esc(f.file)}</div></div>
-          <div class="file-q${f.qsos < 10 ? " is-short" : ""}"><strong>${f.qsos}</strong><span>${f.qsos < 10 ? "QSO・10 未満" : "QSO"}</span></div>
+          <div class="file-q${f.qsos < 10 ? " is-short" : ""}"><strong>${f.qsos}</strong><span>${esc(t(f.qsos < 10 ? "res.qsoShort" : "res.qso"))}</span></div>
         </div>
-        ${f.p2p.length ? `<div class="p2p">${f.p2p.map((p) => { const [c, l] = SRC(p.source); return `
+        ${f.p2p.length ? `<div class="p2p">${f.p2p.map((p) => `
           <div class="p2p-row"><span class="muted">${hhmm(p.time)}</span>
           <span class="p2p-call">${esc(p.call)}</span><span class="plates">${plates(p.parks)}</span>
-          <span class="src ${c}">${l}</span></div>`; }).join("")}</div>` : '<div class="p2p-none">P2P はありませんでした</div>'}
+          <span class="src ${SRC_CLASS[p.source] || "src-log"}">${esc(t("src." + p.source))}</span></div>`).join("")}</div>` : `<div class="p2p-none">${esc(t("res.noP2P"))}</div>`}
       </article>`).join("") +
-      (files.length && r.notes && r.notes.length ? `<div class="notes"><h3>確認してください</h3><ul>${r.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul></div>` : "") +
+      (files.length && r.notes && r.notes.length ? `<div class="notes"><h3>${esc(t("res.notes"))}</h3><ul>${r.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul></div>` : "") +
       (!files.length && r.notes && r.notes.length ? `<p class="muted">${esc(r.notes[0])}</p>` : "");
   }
   $("#runBuild").addEventListener("click", async () => {
-    if (st.source === "adif" && !st.adif) { toast("先に ADIF を選んでください"); return; }
-    const btn = $("#runBuild"); btn.disabled = true; btn.textContent = "作成しています…";
+    if (st.source === "adif" && !st.adif) { toast(t("build.pickFirst")); return; }
+    const btn = $("#runBuild"); btn.disabled = true; btn.textContent = t("build.working");
     const r = await api.build({ source: st.source, adif: st.adif, dates: [...st.selected], override: $("#override").value,
                                 call: st.call, out: st.out, online: $("#online").checked });
-    btn.disabled = false; btn.textContent = "アップロード用ファイルを作成";
+    btn.disabled = false; btn.textContent = t("build.run");
     const box = $("#results"); box.hidden = false;
-    if (!r.ok) { $("#resultsTitle").textContent = "作成できませんでした"; $("#resultsBody").innerHTML = `<p class="error">${esc(r.error)}</p>`; return; }
+    if (!r.ok) { $("#resultsTitle").textContent = t("build.res.fail"); $("#resultsBody").innerHTML = `<p class="error">${esc(r.error)}</p>`; return; }
     const files = r.summary || [];
-    $("#resultsTitle").textContent = files.length ? `${files.length} 個のファイルを作成しました` : "作成するファイルがありません";
+    $("#resultsTitle").textContent = files.length ? t("build.res.files", { n: files.length }) : t("build.res.none");
     $("#resultsBody").innerHTML = resultsHtml(r);
     st.outDir = r.out_dir;
     box.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -399,21 +427,22 @@
 
   // ================================================================ settings
   const KINDS = [["n1mm", "N1MM"], ["wsjtx", "WSJT-X"], ["adif", "ADIF"]];
+  const recvState = (l) => { const s = st.receiver[l.name]; return s && typeof s === "object" ? s : { code: l.enabled ? "" : "off", text: l.enabled ? "" : t("set.off") }; };
+  const recvClass = (s) => (s.code === "error" || s.code === "badforward") ? "is-bad" : (s.code === "listening" || s.code === "receiving") ? "is-ok" : "";
   function renderListeners() {
     $("#listeners").innerHTML = st.listeners.map((l, i) => {
-      const s = st.receiver[l.name] || (l.enabled ? "" : "オフ");
-      const cls = /開けません|違います/.test(s) ? "is-bad" : /受信/.test(s) ? "is-ok" : "";
+      const s = recvState(l);
       return `<div class="lis" data-i="${i}">
-        <label class="switch" title="オン / オフ"><input type="checkbox" data-k="enabled" ${l.enabled ? "checked" : ""}><span class="switch-ui"></span></label>
-        <label>名前<input type="text" data-k="name" value="${esc(l.name)}"></label>
-        <label>形式<select data-k="kind">${KINDS.map(([v, t]) => `<option value="${v}"${l.kind === v ? " selected" : ""}>${t}</option>`).join("")}</select></label>
-        <label>ポート<input type="text" inputmode="numeric" data-k="port" value="${esc(l.port)}"></label>
-        <label>マルチキャスト<input type="text" data-k="multicast" placeholder="使わない" value="${esc(l.multicast)}"></label>
-        <label>転送先<input type="text" data-k="forward" placeholder="例 127.0.0.1:2335" value="${esc(l.forward)}"></label>
-        <button class="link lis-del" data-del="${i}">削除</button>
-        <div class="lis-state ${cls}">${esc(s)}</div>
+        <label class="switch" title="${esc(t("set.toggle"))}"><input type="checkbox" data-k="enabled" ${l.enabled ? "checked" : ""}><span class="switch-ui"></span></label>
+        <label>${esc(t("set.name"))}<input type="text" data-k="name" value="${esc(l.name)}"></label>
+        <label>${esc(t("set.kind"))}<select data-k="kind">${KINDS.map(([v, k]) => `<option value="${v}"${l.kind === v ? " selected" : ""}>${k}</option>`).join("")}</select></label>
+        <label>${esc(t("set.port"))}<input type="text" inputmode="numeric" data-k="port" value="${esc(l.port)}"></label>
+        <label>${esc(t("set.mc"))}<input type="text" data-k="multicast" placeholder="${esc(t("set.mc.ph"))}" value="${esc(l.multicast)}"></label>
+        <label>${esc(t("set.fwd"))}<input type="text" data-k="forward" placeholder="${esc(t("set.fwd.ph"))}" value="${esc(l.forward)}"></label>
+        <button class="link lis-del" data-del="${i}">${esc(t("set.del"))}</button>
+        <div class="lis-state ${recvClass(s)}">${esc(s.text)}</div>
       </div>`;
-    }).join("") || '<p class="muted">受信口がありません。「受信口を追加」から作ってください。</p>';
+    }).join("") || `<p class="muted">${esc(t("set.none"))}</p>`;
     $$("#listeners [data-k]").forEach((el) => el.addEventListener("change", () => {
       const l = st.listeners[+el.closest(".lis").dataset.i];
       l[el.dataset.k] = el.type === "checkbox" ? el.checked : el.value;
@@ -424,16 +453,15 @@
     if (!rs) return;
     st.receiver = rs;
     const on = st.listeners.filter((l) => l.enabled);
-    const bad = on.some((l) => /開けません/.test(rs[l.name] || ""));
-    $("#recvSummary").textContent = !on.length ? "受信していません" : bad ? "受信できない設定があります" : `${on.length} 個の受信口で待機中`;
+    const bad = on.some((l) => recvClass(recvState(l)) === "is-bad");
+    $("#recvSummary").textContent = !on.length ? t("set.sum.none") : bad ? t("set.sum.bad") : t("set.sum.ok", { n: on.length });
     if (!$("#view-settings").hidden) $$("#listeners .lis").forEach((el) => {
-      const l = st.listeners[+el.dataset.i]; const s = rs[l.name] || (l.enabled ? "" : "オフ");
-      const box = el.querySelector(".lis-state"); box.textContent = s;
-      box.className = "lis-state " + (/開けません|違います/.test(s) ? "is-bad" : /受信/.test(s) ? "is-ok" : "");
+      const l = st.listeners[+el.dataset.i]; const s = recvState(l);
+      const box = el.querySelector(".lis-state"); box.textContent = s.text; box.className = "lis-state " + recvClass(s);
     });
   }
   $("#addListener").addEventListener("click", () => {
-    st.listeners.push({ name: "受信口 " + (st.listeners.length + 1), kind: "n1mm", port: 2334, multicast: "", enabled: true, forward: "" });
+    st.listeners.push({ name: t("set.newName", { n: st.listeners.length + 1 }), kind: "n1mm", port: 2334, multicast: "", enabled: true, forward: "" });
     renderListeners();
   });
   $("#saveListeners").addEventListener("click", async () => {
@@ -441,7 +469,7 @@
     const err = $("#listenError");
     if (!r.ok) { err.textContent = r.error; err.hidden = false; return; }
     err.hidden = true; st.listeners = r.listeners; st.receiver = r.receiver || {}; renderListeners(); updateReceiver(st.receiver);
-    toast("保存しました。受信し直しています");
+    toast(t("set.saved"));
   });
   setInterval(async () => { if (api) updateReceiver((await api.poll_live(1e12, 1e12)).receiver); }, 4000);
 
@@ -449,31 +477,39 @@
   let upd = null;
   async function checkUpdate(quiet) {
     const box = $("#update"), txt = $("#updateText"), go = $("#updateGo");
-    if (!quiet) { box.hidden = false; txt.textContent = "確認しています…"; go.hidden = true; }
+    if (!quiet) { box.hidden = false; txt.textContent = t("upd.checking"); go.hidden = true; }
     const r = await api.check_update();
     if (!r.ok) { if (!quiet) txt.textContent = r.error; return; }
     upd = r;
-    if (!r.newer) { if (!quiet) { txt.textContent = `最新版です（v${r.current}）`; go.hidden = true; } return; }
-    box.hidden = false; go.hidden = !r.can_install; go.disabled = false; go.textContent = "今すぐ更新";
-    txt.innerHTML = `<strong>v${esc(r.latest)}</strong> が公開されています（いまは v${esc(r.current)}）。` +
-      (r.can_install ? (r.translocated ? "ダウンロードして「ダウンロード」フォルダに置きます。" : "ダウンロードして入れ替え、再起動します。")
-        : `<button class="link" id="updatePage">Releases ページを開く</button>`);
+    if (!r.newer) { if (!quiet) { txt.textContent = t("upd.latest", { v: r.current }); go.hidden = true; } return; }
+    box.hidden = false; go.hidden = !r.can_install; go.disabled = false; go.textContent = t("upd.go");
+    txt.innerHTML = t("upd.available", { latest: esc(r.latest), current: esc(r.current) }) +
+      (r.can_install ? esc(t(r.translocated ? "upd.install.dl" : "upd.install.swap"))
+        : `<button class="link" id="updatePage">${esc(t("upd.page"))}</button>`);
     const pg = $("#updatePage"); if (pg) pg.addEventListener("click", () => api.open_url(r.page));
   }
   $("#checkUpdate").addEventListener("click", () => checkUpdate(false));
   $("#updateGo").addEventListener("click", async () => {
     if (!upd || !upd.asset) return;
     const go = $("#updateGo"), txt = $("#updateText");
-    go.disabled = true; go.textContent = "ダウンロードしています…";
+    go.disabled = true; go.textContent = t("upd.downloading");
     const r = await api.install_update(upd.asset);
-    if (!r.ok) { go.disabled = false; go.textContent = "今すぐ更新"; txt.textContent = r.error; return; }
+    if (!r.ok) { go.disabled = false; go.textContent = t("upd.go"); txt.textContent = r.error; return; }
     go.hidden = true;
-    if (r.manual) {
-      txt.innerHTML = `新しいアプリを <b>${esc(r.manual)}</b> に置きました。このアプリを終了してから、それを「アプリケーション」フォルダへ移して開いてください。`;
-      api.open_out(r.manual_dir);
-    } else {
-      txt.textContent = `v${upd.latest} に更新しました。再起動します…`;
-    }
+    if (r.manual) { txt.innerHTML = t("upd.manual", { path: esc(r.manual) }); api.open_out(r.manual_dir); }
+    else txt.textContent = t("upd.done", { v: upd.latest });
+  });
+
+  // ---------- terms ----------
+  function showTerms(mustAccept) {
+    $("#termsBody").innerHTML = t("terms.body");
+    $("#termsAccept").textContent = mustAccept ? t("terms.accept") : t("done.close");
+    $("#terms").hidden = false;
+  }
+  $("#termsLink").addEventListener("click", () => showTerms(false));
+  $("#termsAccept").addEventListener("click", () => {
+    if (st.termsAccepted !== TERMS_VERSION) { st.termsAccepted = TERMS_VERSION; api.save({ terms_accepted: TERMS_VERSION }); }
+    $("#terms").hidden = true;
   });
 
   // ---------- rail ----------
@@ -481,21 +517,30 @@
   $("#call").addEventListener("change", (e) => {
     st.call = e.target.value.trim().toUpperCase() || "JL1FVA"; e.target.value = st.call; api.save({ call: st.call });
   });
+  $("#lang").addEventListener("change", async (e) => {
+    await api.save({ lang: e.target.value }); await loadLang(e.target.value); rerender();
+  });
 
   // ---------- boot ----------
   async function boot() {
     api = window.pywebview.api;
     const s = await api.get_state();
-    Object.assign(st, { call: s.call, prefix: s.prefix, out: s.out, adif: s.adif, source: s.source || "app", listeners: s.listeners });
+    Object.assign(st, { call: s.call, prefix: s.prefix, out: s.out, adif: s.adif, source: s.source || "app", listeners: s.listeners,
+                        langs: s.langs || [["ja", "日本語"]], termsAccepted: s.terms_accepted || "" });
+    $("#lang").innerHTML = st.langs.map(([c, name]) => `<option value="${esc(c)}">${esc(name)}</option>`).join("");
+    const lang = s.lang || pickLang(navigator.language);
+    if (!s.lang) api.save({ lang });
+    await loadLang(lang);
     $("#version").textContent = `v${s.version}`;
     $("#call").value = s.call;
     $("#parks").value = s.parks; renderPreview();
     $("#outPath").textContent = s.out;
-    $("#logCount").textContent = s.log_count ? `${s.log_count} 件` : "";
+    $("#logCount").textContent = s.log_count ? " " + t("build.count", { n: s.log_count }) : "";
     segSet("#liveRun .seg", "prefix", st.prefix);
     renderListeners(); updateReceiver(s.receiver);
     setSource(st.source);
     if (s.live) enterRunning(s.live.parks, s.live.start);
+    if (st.termsAccepted !== TERMS_VERSION) showTerms(true);
     setTimeout(() => checkUpdate(true), 5000);       // quiet: only speaks up when a newer release exists
   }
   if (window.pywebview && window.pywebview.api) boot();

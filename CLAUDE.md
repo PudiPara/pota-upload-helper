@@ -29,9 +29,15 @@ for the next park. Logging itself stays in the logger; this app never writes the
 | `updater.py` | in-app update from GitHub Releases: `check()` (latest release via api.github.com, asset per OS), `install()` (download, macOS: swap the `.app` and relaunch via `open -n`; Windows: a cmd helper swaps the `.exe` after exit), `cleanup()` removes `*.old` at start. Only from a frozen build; translocated macOS copies get the new app in ~/Downloads instead |
 | `pota_build.py`, `pota_spotlog.py` | CLI wrappers |
 | `tests/` | `python3 -m unittest discover -s tests` (offline) |
-| `.github/workflows/build.yml` | every push to `main` builds macOS `.app` + Windows `.exe` (PyInstaller) and creates/updates the GitHub Release `v<VERSION>` |
+| `.github/workflows/build.yml` | every push to `main` builds macOS `.app` + Windows `.exe` (PyInstaller, `--icon assets/icon.*`), packages a DMG (drag to Applications) and an Inno Setup per-user installer (`installer/windows.iss`, `{localappdata}\Programs`, no admin, so the in-app updater can still swap the exe), uploads those plus the zips the updater downloads, and creates/updates the GitHub Release `v<VERSION>` |
+| `assets/icon.svg` → `icon.icns`, `icon.ico`, `icon-256.png` | app icon (pine rounded square, cream conifer, amber radio arcs). Edit the SVG and run `scripts/make_icons.py` (macOS only: qlmanage/sips/iconutil); the generated files are committed |
 
 Data dir: macOS `~/Library/Application Support/POTA Upload Helper/`, Windows `%APPDATA%\POTA Upload Helper\` (override with `POTA_HELPER_DATA`). Never commit logs/data (`.gitignore` blocks `*.adi`, `*.adif`, `data/`, `out/`).
+
+## Languages and terms
+- Every user-facing string lives in `ui/i18n/<lang>.json` (ja is the master; en, zh-CN, zh-TW, fr, de, es, it, pt-BR, ko, pl must have the same keys - `python3 -c` a key diff before committing). The UI applies them via `data-i18n` / `data-i18n-ph` / `data-i18n-html` attributes and `t("key", {params})` in app.js; the Python side uses `i18n.t()` (in builder.py imported as `tr` because `t` is a time variable there). Receiver states are codes (`off/error/badforward/listening/receiving`) translated by `Api._recv_texts`; builder's P2P sources are codes (`hunter/confirmed/manual/log/spot/logspot`) translated in the UI. Language = `settings.lang`, chosen from `navigator.language` on first run, switchable in the rail.
+- Example park references in copy are JP-1266 and, for a 2fer, JP-1266,JP-1206 (the owner's choice; JP-1281 stays only in tests and history).
+- Terms and disclaimer: `terms.body` in each dictionary, shown as a modal on first launch until accepted (`settings.terms_accepted` = TERMS_VERSION in app.js), and from the rail link; same text in `TERMS.md` and the README.
 
 ## Design system (keep it)
 "Park trail-sign" identity. Tokens in `ui/app.css :root`: pine `#173F30`, paper `#EDF1EB`, ink `#1D2621`, moss `#6E8A77`, amber `#D9962B` (= 2fer). Park refs are always rendered as plates (`plate()` in app.js); 2fer = plates joined by an amber `+`. System fonts (Hiragino / Yu Gothic UI), tabular numerals, dark mode via `prefers-color-scheme`. Escape every network/user string with `esc()` before inserting HTML.
@@ -47,6 +53,7 @@ Data dir: macOS `~/Library/Application Support/POTA Upload Helper/`, Windows `%A
 - `scripts/dev.sh` runs from source with `POTA_HELPER_DATA=./data` (git-ignored) so the real log is untouched. `scripts/dev.sh --debug` opens the WebKit inspector.
 - RUMlogNG, the Release `.app` and other loggers on this Mac all listen on UDP 2237 (and 2333/2334). Never send test packets there — a unicast packet lands in one of them and RUMlogNG would log it. Give the dev app its own listener port (`data/settings.json`, e.g. 22237) and use `scripts/send_test_qso.py 22237 CALL [--n1mm|--delete]`.
 - `python3` here is Xcode's (3.9). If it says the Xcode license is not agreed, run `sudo xcodebuild -license accept` once.
+- Driving the app with the desktop-control tools: background `app_*` screenshots walk the accessibility tree and that walk has pressed buttons in the web view (it accepted the terms modal and changed the language select by itself). Use the full-screen tools when a state matters, and never trust a background screenshot as proof that a dialog did not appear.
 - `gh` is not logged in on this Mac; CI/Release status must be read on github.com (or `gh auth login`).
 
 ## Owner's station context
@@ -58,5 +65,5 @@ Data dir: macOS `~/Library/Application Support/POTA Upload Helper/`, Windows `%A
 
 ## Ideas not done yet
 - Optional pota.app logged-in hunter log import (full history beyond the public last 25).
-- App icon (`--icon`), code signing / notarization, Intel mac build.
+- Code signing / notarization, Intel mac build. (App icon and installers done 2026-10-20; the Windows installer step has not been watched on CI yet - check the first run.)
 - Bump `VERSION` in `potacommon.py` for every release (CI uses it as the tag, the in-app updater compares it with the latest release tag). 1.1.0 = bar mode + P2P confirmation + updater.

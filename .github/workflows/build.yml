@@ -34,6 +34,7 @@ jobs:
         run: |
           pyinstaller --noconfirm --windowed --name "POTA Upload Helper" \
             --osx-bundle-identifier com.jl1fva.pota-upload-helper \
+            --icon assets/icon.icns \
             --add-data "ui:ui" app.py
           # macOS 15+ asks for "Local Network" permission before an app may receive
           # multicast (WSJT-X on 224.0.0.1); the prompt needs this usage string.
@@ -44,19 +45,31 @@ jobs:
           plutil -replace NSLocalNetworkUsageDescription -string "ロガー（WSJT-X や RUMlogNG）から UDP で QSO を受け取るために使います。" "$APP/Contents/Info.plist"
           plutil -replace NSHumanReadableCopyright -string "JL1FVA" "$APP/Contents/Info.plist"
           codesign --force --deep --sign - "$APP"   # re-seal after editing Info.plist
-          cd dist && ditto -c -k --keepParent "POTA Upload Helper.app" "../${{ matrix.asset }}"
+          # zip: what the in-app updater downloads.  dmg: what people install from.
+          (cd dist && ditto -c -k --keepParent "POTA Upload Helper.app" "../POTA-Upload-Helper-macOS.zip")
+          rm -rf dmg && mkdir dmg && cp -R "$APP" dmg/ && ln -s /Applications dmg/Applications
+          hdiutil create -volname "POTA Upload Helper" -srcfolder dmg -ov -format UDZO POTA-Upload-Helper-macOS.dmg
 
       - name: Build Windows app
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          pyinstaller --noconfirm --onefile --windowed --name "POTA Upload Helper" --add-data "ui;ui" app.py
-          Compress-Archive -Path "dist/POTA Upload Helper.exe" -DestinationPath "${{ matrix.asset }}"
+          pyinstaller --noconfirm --onefile --windowed --name "POTA Upload Helper" --icon assets/icon.ico --add-data "ui;ui" app.py
+          # zip: what the in-app updater downloads.  Setup.exe: what people install from (Inno Setup, per-user).
+          Compress-Archive -Path "dist/POTA Upload Helper.exe" -DestinationPath "POTA-Upload-Helper-Windows.zip"
+          $ver = python -c "import potacommon; print(potacommon.VERSION)"
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; }
+          & $iscc "/DMyAppVersion=$ver" installer\windows.iss
+          if (-not (Test-Path "POTA-Upload-Helper-Setup.exe")) { throw "installer was not built" }
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.asset }}
-          path: ${{ matrix.asset }}
+          path: |
+            POTA-Upload-Helper-*.zip
+            POTA-Upload-Helper-*.dmg
+            POTA-Upload-Helper-Setup.exe
 
   release:
     needs: build
@@ -74,6 +87,8 @@ jobs:
           name: POTA Upload Helper ${{ steps.ver.outputs.v }}
           target_commitish: ${{ github.sha }}
           files: |
+            POTA-Upload-Helper-macOS.dmg
+            POTA-Upload-Helper-Setup.exe
             POTA-Upload-Helper-macOS.zip
             POTA-Upload-Helper-Windows.zip
           generate_release_notes: true

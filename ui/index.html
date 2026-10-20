@@ -11,9 +11,12 @@
   <aside class="rail">
     <div class="brand">
       <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
-        <path d="M20 4 L34 11 V22 C34 30 27 35 20 37 C13 35 6 30 6 22 V11 Z" fill="none" stroke="currentColor" stroke-width="2.2"/>
-        <path d="M13 26 L20 14 L27 26 Z" fill="currentColor"/>
-        <path d="M20 14 V9 M16.5 10.5 C18.5 8.5 21.5 8.5 23.5 10.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <rect x="1" y="1" width="38" height="38" rx="9" fill="#2B6B4E"/>
+        <path d="M20 11 L25.6 18.6 L23.4 18.6 L27.2 23.9 L24.4 23.9 L29 30 L11 30 L15.6 23.9 L12.8 23.9 L16.6 18.6 L14.4 18.6 Z" fill="#F4F1E4"/>
+        <rect x="18.4" y="29.4" width="3.2" height="4.4" rx=".6" fill="#F4F1E4"/>
+        <path d="M20 7.8 A3.2 3.2 0 0 1 23.2 11" fill="none" stroke="#F2C46B" stroke-width="1.7" stroke-linecap="round"/>
+        <path d="M20 5 A6 6 0 0 1 26 11" fill="none" stroke="#F2C46B" stroke-width="1.7" stroke-linecap="round"/>
+        <circle cx="20" cy="11" r="1.2" fill="#F2C46B"/>
       </svg>
       <div>
         <div class="brand-name">POTA Upload Helper</div>
@@ -21,37 +24,42 @@
       </div>
     </div>
 
-    <nav class="nav" aria-label="画面">
+    <nav class="nav" aria-label="views">
       <button class="nav-item is-active" data-view="live">
         <span class="nav-dot" id="liveDot" hidden></span>
-        <span>運用中</span>
-        <small>スポットを記録</small>
+        <span data-i18n="nav.live">運用中</span>
+        <small data-i18n="nav.live.sub">スポットを記録</small>
       </button>
       <button class="nav-item" data-view="spots">
-        <span>アクティベート中</span>
-        <small id="spotsSummary">いま公園から出ている局</small>
+        <span data-i18n="nav.spots">アクティベート中</span>
+        <small id="spotsSummary" data-i18n="nav.spots.sub">いま公園から出ている局</small>
       </button>
       <button class="nav-item" data-view="build">
-        <span>アップロード作成</span>
-        <small>pota.app 用ファイル</small>
+        <span data-i18n="nav.build">アップロード作成</span>
+        <small data-i18n="nav.build.sub">pota.app 用ファイル</small>
       </button>
       <button class="nav-item" data-view="settings">
-        <span>ロガーとの接続</span>
-        <small id="recvSummary">UDP 受信</small>
+        <span data-i18n="nav.settings">ロガーとの接続</span>
+        <small id="recvSummary" data-i18n="nav.settings.sub">UDP 受信</small>
       </button>
     </nav>
 
     <div class="rail-foot">
       <div class="update" id="update" hidden>
         <div class="update-text" id="updateText"></div>
-        <button class="btn btn-sm" id="updateGo" hidden>今すぐ更新</button>
+        <button class="btn btn-sm" id="updateGo" hidden data-i18n="upd.go">今すぐ更新</button>
       </div>
       <label class="field-compact">
-        <span>自分のコール</span>
+        <span data-i18n="rail.call">自分のコール</span>
         <input id="call" spellcheck="false" autocomplete="off">
       </label>
-      <button class="link" id="openData">データの保存場所を開く</button>
-      <button class="link" id="checkUpdate">アップデートを確認</button>
+      <label class="field-compact">
+        <span data-i18n="rail.lang">言語</span>
+        <select id="lang" class="lang-select"></select>
+      </label>
+      <button class="link" id="openData" data-i18n="rail.openData">データの保存場所を開く</button>
+      <button class="link" id="checkUpdate" data-i18n="rail.checkUpdate">アップデートを確認</button>
+      <button class="link" id="termsLink" data-i18n="terms.link">利用規約と免責事項</button>
     </div>
   </aside>
 
@@ -59,25 +67,25 @@
     <!-- ======================= live ======================= -->
     <section class="view" id="view-live">
       <div class="trailhead" id="liveIdle">
-        <h1>今日の公園は？</h1>
-        <p class="lede">運用を始めたら記録を開始してください。公園から出ている局を 1 分ごとに控えておくので、相手が QRT しても P2P や 2fer を後から判定できます。</p>
+        <h1 data-i18n="live.title">今日の公園は？</h1>
+        <p class="lede" data-i18n="live.lede">運用を始めたら記録を開始してください。</p>
         <div class="park-input">
-          <input id="parks" placeholder="JP-1281" spellcheck="false" autocomplete="off" aria-label="自分の公園">
-          <button class="btn btn-primary" id="startLive">記録を始める</button>
+          <input id="parks" placeholder="JP-1266" data-i18n-ph="live.parks.ph" spellcheck="false" autocomplete="off">
+          <button class="btn btn-primary" id="startLive" data-i18n="live.start">記録を始める</button>
         </div>
-        <p class="hint">2fer・3fer はカンマで区切ります（JP-1281,JP-1285）</p>
+        <p class="hint" data-i18n="live.hint">2fer・3fer はカンマで区切ります（JP-1266,JP-1206）</p>
         <div class="plates plates-lg" id="parksPreview"></div>
         <p class="error" id="liveError" hidden></p>
 
         <section class="done" id="doneCard" hidden aria-live="polite">
           <div class="done-head">
             <h2 id="doneTitle"></h2>
-            <button class="link" id="doneClose">閉じる</button>
+            <button class="link" id="doneClose" data-i18n="done.close">閉じる</button>
           </div>
           <div id="doneBody"></div>
           <div class="done-actions">
-            <button class="btn" id="doneOpen">保存先を開く</button>
-            <button class="btn" id="donePota">pota.app を開く</button>
+            <button class="btn" id="doneOpen" data-i18n="done.open">保存先を開く</button>
+            <button class="btn" id="donePota" data-i18n="done.pota">pota.app を開く</button>
           </div>
         </section>
       </div>
@@ -86,57 +94,57 @@
         <div class="bar" id="bar" hidden>
           <div class="bar-head">
             <div class="bar-parks" id="barParks"></div>
-            <div class="bar-tally" aria-label="QSO 数"><strong id="barCount">0</strong><span>/10</span><i class="bar-meter"><b id="barMeter"></b></i></div>
+            <div class="bar-tally"><strong id="barCount">0</strong><span>/10</span><i class="bar-meter"><b id="barMeter"></b></i></div>
             <div class="bar-clock" id="barElapsed">00:00:00</div>
-            <button class="bar-btn" id="barExpand">広げる</button>
-            <button class="bar-btn bar-btn-finish" id="barFinish">運用を終了</button>
+            <button class="bar-btn" id="barExpand" data-i18n="bar.expand">広げる</button>
+            <button class="bar-btn bar-btn-finish" id="barFinish" data-i18n="bar.finish">運用を終了</button>
           </div>
           <ol class="qsos qsos-bar" id="barQsos"></ol>
-          <div class="bar-empty" id="barEmpty">ロガーからの QSO を待っています。P2P の候補が出たら、ここで「はい」「いいえ」を押すか公園番号を入力してください。</div>
+          <div class="bar-empty" id="barEmpty" data-i18n="bar.empty">ロガーからの QSO を待っています。</div>
         </div>
 
         <header class="sign">
           <div class="sign-parks" id="signParks"></div>
           <div class="sign-side">
-            <div class="clock" id="elapsed" aria-label="経過時間">00:00:00</div>
+            <div class="clock" id="elapsed">00:00:00</div>
             <div class="sign-status" id="liveStatus"></div>
             <div class="sign-actions">
-              <button class="btn btn-quiet" id="toBar">バー表示にする</button>
-              <button class="btn btn-finish" id="finishLive">この公園での運用を終了</button>
+              <button class="btn btn-quiet" id="toBar" data-i18n="live.toBar">バー表示にする</button>
+              <button class="btn btn-finish" id="finishLive" data-i18n="live.finish">この公園での運用を終了</button>
             </div>
           </div>
           <div class="tally" aria-live="polite">
             <div class="tally-n"><strong id="qsoCount">0</strong><span>QSO</span></div>
             <div class="tally-bar"><i id="qsoBar"></i></div>
-            <div class="tally-note" id="qsoNote">あと 10 QSO でアクティベーション成立</div>
+            <div class="tally-note" id="qsoNote"></div>
           </div>
         </header>
 
         <div class="live-grid">
           <section class="panel">
             <div class="panel-head">
-              <h2>交信</h2>
+              <h2 data-i18n="live.qsos">交信</h2>
               <span class="count" id="p2pCount"></span>
             </div>
             <ol class="qsos" id="qsos"></ol>
             <div class="empty" id="qsosEmpty">
-              <p>ロガーからの QSO を待っています。</p>
-              <p class="muted">届かないときは「ロガーとの接続」を確認してください。</p>
+              <p data-i18n="live.qsosEmpty1">ロガーからの QSO を待っています。</p>
+              <p class="muted" data-i18n="live.qsosEmpty2">届かないときは「ロガーとの接続」を確認してください。</p>
             </div>
           </section>
 
           <section class="panel">
             <div class="panel-head">
-              <h2>公園から出ている局</h2>
-              <div class="seg" role="radiogroup" aria-label="表示する局">
-                <button role="radio" data-prefix="JP" class="is-on">日本</button>
-                <button role="radio" data-prefix="">全世界</button>
+              <h2 data-i18n="live.spots">公園から出ている局</h2>
+              <div class="seg" role="radiogroup">
+                <button role="radio" data-prefix="JP" class="is-on" data-i18n="live.seg.jp">日本</button>
+                <button role="radio" data-prefix="" data-i18n="live.seg.world">全世界</button>
               </div>
             </div>
             <ol class="spots" id="spots"></ol>
             <div class="empty" id="spotsEmpty">
-              <p>まだ見つかっていません。</p>
-              <p class="muted">1 分ごとにスポットを確認しています。</p>
+              <p data-i18n="live.spotsEmpty1">まだ見つかっていません。</p>
+              <p class="muted" data-i18n="live.spotsEmpty2">1 分ごとにスポットを確認しています。</p>
             </div>
             <div class="count count-foot" id="liveCount"></div>
           </section>
@@ -147,76 +155,76 @@
     <!-- ======================= spots: who is on the air now ======================= -->
     <section class="view view-wide" id="view-spots" hidden>
       <div class="spots-head">
-        <h1 class="view-title">いまアクティベート中の局</h1>
-        <div class="spots-meta"><span id="spotsAt"></span><button class="link" id="spotsRefresh">更新</button></div>
+        <h1 class="view-title" data-i18n="spots.title">いまアクティベート中の局</h1>
+        <div class="spots-meta"><span id="spotsAt"></span><button class="link" id="spotsRefresh" data-i18n="spots.refresh">更新</button></div>
       </div>
       <div class="filters">
-        <div class="seg seg-region" role="radiogroup" aria-label="地域">
-          <button role="radio" data-region="JP" class="is-on">日本</button>
-          <button role="radio" data-region="">全世界</button>
+        <div class="seg seg-region" role="radiogroup">
+          <button role="radio" data-region="JP" class="is-on" data-i18n="live.seg.jp">日本</button>
+          <button role="radio" data-region="" data-i18n="live.seg.world">全世界</button>
         </div>
-        <div class="seg seg-mode" role="radiogroup" aria-label="モード">
-          <button role="radio" data-modegroup="" class="is-on">すべて</button>
+        <div class="seg seg-mode" role="radiogroup">
+          <button role="radio" data-modegroup="" class="is-on" data-i18n="spots.mode.all">すべて</button>
           <button role="radio" data-modegroup="cw">CW</button>
           <button role="radio" data-modegroup="phone">Phone</button>
           <button role="radio" data-modegroup="data">Data</button>
         </div>
-        <select id="spotsBand" aria-label="バンド"><option value="">全バンド</option></select>
-        <input id="spotsSearch" placeholder="コール・公園番号で絞る" spellcheck="false" autocomplete="off" aria-label="検索">
-        <label class="switch switch-sm"><input type="checkbox" id="spotsTwofer"><span class="switch-ui"></span><span>2fer だけ</span></label>
+        <select id="spotsBand"><option value="" data-i18n="spots.band.all">全バンド</option></select>
+        <input id="spotsSearch" placeholder="コール・公園番号で絞る" data-i18n-ph="spots.search.ph" spellcheck="false" autocomplete="off">
+        <label class="switch switch-sm"><input type="checkbox" id="spotsTwofer"><span class="switch-ui"></span><span data-i18n="spots.twofer">2fer だけ</span></label>
       </div>
       <ol class="spots spots-page" id="spotsPage"></ol>
-      <div class="empty" id="spotsPageEmpty" hidden><p>条件に合う局がいません。</p></div>
+      <div class="empty" id="spotsPageEmpty" hidden><p data-i18n="spots.empty">条件に合う局がいません。</p></div>
       <p class="error" id="spotsError" hidden></p>
-      <p class="hint">pota.app のスポットを 1 分ごとに取り直します。公園番号はスポットの参照番号とコメント中の番号（「2fer JP-0157」など）を合わせたもので、同じ局が 15 分以内に別の公園でもスポットされていれば 2fer として並べます。</p>
+      <p class="hint" data-i18n="spots.hint">pota.app のスポットを 1 分ごとに取り直します。</p>
     </section>
 
     <!-- ======================= build ======================= -->
     <section class="view" id="view-build" hidden>
-      <h1 class="view-title">アップロード用ファイルを作る</h1>
+      <h1 class="view-title" data-i18n="build.title">アップロード用ファイルを作る</h1>
 
       <ol class="steps">
         <li class="step">
-          <div class="step-head"><span class="step-n">1</span>使うログ</div>
-          <div class="seg seg-src" role="radiogroup" aria-label="使うログ">
-            <button role="radio" data-src="app" class="is-on">アプリが受け取ったログ<span id="logCount"></span></button>
-            <button role="radio" data-src="adif">ADIF ファイル</button>
+          <div class="step-head"><span class="step-n">1</span><span data-i18n="build.step1">使うログ</span></div>
+          <div class="seg seg-src" role="radiogroup">
+            <button role="radio" data-src="app" class="is-on"><span data-i18n="build.src.app">アプリが受け取ったログ</span><span id="logCount"></span></button>
+            <button role="radio" data-src="adif" data-i18n="build.src.adif">ADIF ファイル</button>
           </div>
           <div class="filebox" id="filebox" hidden>
             <div class="filebox-text">
-              <div class="filebox-name" id="adifName">まだ選ばれていません</div>
-              <div class="filebox-path" id="adifPath">RUMlogNG なら「Logbook → Export all QSOs as ADIF」</div>
+              <div class="filebox-name" id="adifName"></div>
+              <div class="filebox-path" id="adifPath"></div>
             </div>
-            <button class="btn" id="pickAdif">ファイルを選ぶ</button>
+            <button class="btn" id="pickAdif" data-i18n="build.pick">ファイルを選ぶ</button>
           </div>
         </li>
 
         <li class="step">
-          <div class="step-head"><span class="step-n">2</span>アクティベーションを選ぶ
-            <span class="step-aside" id="actHint">選ばなければ全部作ります</span></div>
-          <div class="acts" id="acts"><p class="muted pad">ADIF を選ぶとここに一覧が出ます。</p></div>
+          <div class="step-head"><span class="step-n">2</span><span data-i18n="build.step2">アクティベーションを選ぶ</span>
+            <span class="step-aside" id="actHint"></span></div>
+          <div class="acts" id="acts"></div>
         </li>
 
         <li class="step">
-          <div class="step-head"><span class="step-n">3</span>作成</div>
+          <div class="step-head"><span class="step-n">3</span><span data-i18n="build.step3">作成</span></div>
           <div class="opts">
             <label class="switch">
               <input type="checkbox" id="online" checked>
               <span class="switch-ui"></span>
-              <span>pota.app のハンターログで P2P を確認する</span>
+              <span data-i18n="build.online">pota.app のハンターログで P2P を確認する</span>
             </label>
             <div class="outrow">
-              <span class="muted">保存先</span>
+              <span class="muted" data-i18n="build.out">保存先</span>
               <span class="outpath" id="outPath"></span>
-              <button class="link" id="pickOut">変更</button>
+              <button class="link" id="pickOut" data-i18n="build.change">変更</button>
             </div>
             <details class="more">
-              <summary>自分の公園を上書きする</summary>
-              <input id="override" placeholder="JP-1281,JP-1285" spellcheck="false">
-              <p class="hint">ロガーに自分の公園を入れ忘れた日だけ使います。</p>
+              <summary data-i18n="build.override">自分の公園を上書きする</summary>
+              <input id="override" placeholder="JP-1266,JP-1206" data-i18n-ph="build.override.ph" spellcheck="false">
+              <p class="hint" data-i18n="build.override.hint">ロガーに自分の公園を入れ忘れた日だけ使います。</p>
             </details>
           </div>
-          <button class="btn btn-primary btn-wide" id="runBuild">アップロード用ファイルを作成</button>
+          <button class="btn btn-primary btn-wide" id="runBuild" data-i18n="build.run">アップロード用ファイルを作成</button>
         </li>
       </ol>
 
@@ -224,36 +232,44 @@
         <div class="results-head">
           <h2 id="resultsTitle"></h2>
           <div class="results-actions">
-            <button class="btn" id="openOut">保存先を開く</button>
-            <button class="btn" id="openPota">pota.app を開く</button>
+            <button class="btn" id="openOut" data-i18n="build.open">保存先を開く</button>
+            <button class="btn" id="openPota" data-i18n="build.pota">pota.app を開く</button>
           </div>
         </div>
         <div id="resultsBody"></div>
       </section>
     </section>
+
     <!-- ======================= settings ======================= -->
     <section class="view" id="view-settings" hidden>
-      <h1 class="view-title">ロガーとの接続</h1>
-      <p class="lede">ロガーが記録した QSO を UDP で受け取ります。形式は N1MM（RUMlogNG・N1MM Logger+ など）、WSJT-X（WSJT-X・JTDX）、ADIF（JTAlert・GridTracker・Log4OM など）。届いたデータの形式はアプリが自動で判別します。</p>
+      <h1 class="view-title" data-i18n="set.title">ロガーとの接続</h1>
+      <p class="lede" data-i18n="set.lede">ロガーが記録した QSO を UDP で受け取ります。</p>
       <div class="listeners" id="listeners"></div>
       <div class="listeners-actions">
-        <button class="btn" id="addListener">受信口を追加</button>
-        <button class="btn btn-primary" id="saveListeners">保存して受信し直す</button>
+        <button class="btn" id="addListener" data-i18n="set.add">受信口を追加</button>
+        <button class="btn btn-primary" id="saveListeners" data-i18n="set.save">保存して受信し直す</button>
       </div>
       <p class="error" id="listenError" hidden></p>
       <aside class="howto">
-        <h2>同じ QSO が 2 つの受信口から届いたら</h2>
-        <p>WSJT-X の QSO は、WSJT-X から直接と、RUMlogNG が受けて送り直した分の 2 回届きます。同じコール・同じバンドで時刻の差が 3 分以内なら同じ交信として 1 件にまとめるので、両方オンにしても二重にはなりません。P2P の判断も削除も両方の控えに一緒に反映されます。逆に、同じ局と同じバンドで 3 分以内に 2 回交信した場合も 1 件になります。</p>
-        <h2>RUMlogNG の設定</h2>
-        <p>Preferences → UDP の「Contact info」を <strong>Contact info N1MM</strong> にして、Host を <strong>127.0.0.1</strong>、Port をここの受信口と同じ番号にします。ほかのアプリ（OpsLog など）にも渡したいときは、この受信口の「転送先」にそのアプリの受信ポートを入れてください。</p>
-        <h2>WSJT-X / JTDX</h2>
-        <p>Settings → Reporting の UDP Server を <strong>224.0.0.1</strong>（マルチキャスト）にすると、RUMlog や GridTracker と同時に受け取れます。</p>
+        <h2 data-i18n="set.howto.general.h">対応するロガー</h2>
+        <p data-i18n-html="set.howto.general.p"></p>
+        <ul class="howto-list" data-i18n-html="set.howto.loggers.p"></ul>
+        <p data-i18n-html="set.howto.fwd.p"></p>
+        <h2 data-i18n="set.howto.dup.h">同じ QSO が 2 つの受信口から届いたら</h2>
+        <p data-i18n-html="set.howto.dup.p"></p>
       </aside>
     </section>
   </main>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
-<div class="cheer" id="cheer" hidden role="status"><strong>10 QSO</strong><span>アクティベーション成立</span></div>
+<div class="cheer" id="cheer" hidden role="status"><strong>10 QSO</strong><span data-i18n="cheer.sub">アクティベーション成立</span></div>
+<div class="modal" id="terms" hidden role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <h2 data-i18n="terms.title">利用規約と免責事項</h2>
+    <div class="modal-body" id="termsBody"></div>
+    <div class="modal-actions"><button class="btn btn-primary" id="termsAccept" data-i18n="terms.accept">同意して使う</button></div>
+  </div>
+</div>
 <script src="app.js"></script>
 </body>
 </html>
