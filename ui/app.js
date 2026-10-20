@@ -25,6 +25,7 @@
   const plates = (refs) => (refs || []).map(plate).join('<span class="plate-join" aria-hidden="true">+</span>');
   const fmtDate = (d) => `${d.slice(0, 4)}年${+d.slice(4, 6)}月${+d.slice(6, 8)}日`;
   const hhmm = (t) => `${esc(String(t).slice(0, 2))}:${esc(String(t).slice(2, 4))}`;
+  const mins = (t) => +String(t).slice(0, 2) * 60 + +String(t).slice(2, 4);
   function fmtFreq(khz) {
     const k = parseFloat(khz);
     return k ? `${(k / 1000).toFixed(3)}<small>MHz</small>` : esc(khz || "");
@@ -105,6 +106,13 @@
         continue;
       }
       if (q.date && st.start && Date.parse(`${q.date.slice(0, 4)}-${q.date.slice(4, 6)}-${q.date.slice(6, 8)}T${q.time.slice(0, 2)}:${q.time.slice(2, 4)}:00Z`) < st.start - 300000) continue;
+      // WSJT-X logs the start time, the logger the end time: show the same contact once
+      for (const [k, v] of st.qsos) {
+        if (k !== q.uid && v.date === q.date && v.band === q.band && baseCall(v.call) === baseCall(q.call) && Math.abs(mins(v.time) - mins(q.time)) <= 3) {
+          if (!q.decision && v.decision) Object.assign(q, { decision: v.decision, parks: v.parks });
+          st.qsos.delete(k);
+        }
+      }
       st.qsos.set(q.uid, q); freshQ.add(q.uid);
     }
     if (freshS.size || freshQ.size) { renderSpots(freshS); renderQsos(freshQ); }
