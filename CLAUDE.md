@@ -63,6 +63,11 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
 - **A QSO's own parks win.** `builder.find_activation_qsos`: override (手で上書き) → the record's
   MY_POTA_REF/MY_SIG_INFO (set while recording) → the sessions.json window it fell in. Windows carry a
   ±5 min margin and overlap when sessions follow each other quickly, so they are a fallback only.
+- **The live list is the day's QSOs at the current parks** (`Api.session_qsos(start, parks)` + the poll
+  filter in app.js): a park shared by several sessions keeps its count; the header shows the smallest
+  park count with a per-park breakdown when they differ. Rows sort by `ts`, ties by arrival (`seq`).
+- **Results list every QSO** (`summary[].rows`, P2P rows with plates and source; a "P2P only" switch) and
+  the pota.app line count (`records`) next to the QSO count when their 2fer doubled lines.
 - **Window close ≠ finish.** `finish_live` stops, builds **the whole UTC day** (every park of the day gets
   its file with all of its QSOs, so a park shared by several sessions is never cut down to the last
   session) and resets; `shutdown` only stops threads.
