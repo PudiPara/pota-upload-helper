@@ -75,9 +75,13 @@ python3 pota_build.py export.adif --date 20261020
 ## 開発
 
 ```sh
+scripts/dev.sh                                  # venv を作って起動（データは ./data に保存、本番ログは触らない）
+scripts/dev.sh --debug                          # WebKit のインスペクタ付き
+scripts/send_test_qso.py 22237 JS6UHQ/6         # 開発用の受信口にテスト QSO を流す（2237 には送らない）
 python3 -m unittest discover -s tests
-git tag v1.0.0 && git push origin v1.0.0   # GitHub Actions が macOS / Windows 版を Release に添付
 ```
+
+`VERSION`（`potacommon.py`）を上げて `main` に push すると、GitHub Actions が macOS / Windows 版を作って Release `v<VERSION>` に添付します。
 
 ## License
 

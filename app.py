@@ -18,6 +18,11 @@ from potacommon import (APP_NAME, DATA_DIR, DEFAULT_OUT, VERSION, base_call, fet
 from receiver import DEFAULT_LISTENERS, Receiver
 from spotlogger import SpotLogger
 
+# pywebview >= 5 has FileDialog; the bare constants are deprecated in 6 and will be removed.
+_FD = getattr(webview, "FileDialog", None)
+OPEN_DIALOG = _FD.OPEN if _FD else webview.OPEN_DIALOG
+FOLDER_DIALOG = _FD.FOLDER if _FD else webview.FOLDER_DIALOG
+
 
 def resource(*parts):
     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
@@ -177,7 +182,7 @@ class Api:
 
     # ---------- build ----------
     def pick_adif(self):
-        r = self.window.create_file_dialog(webview.OPEN_DIALOG, allow_multiple=False,
+        r = self.window.create_file_dialog(OPEN_DIALOG, allow_multiple=False,
                                            file_types=("ADIF (*.adi;*.adif;*.ADI;*.ADIF)", "All files (*.*)"))
         if not r:
             return None
@@ -199,7 +204,7 @@ class Api:
             return {"path": path or "", "items": [], "error": "ログを読めませんでした: %s" % e}
 
     def pick_out(self):
-        r = self.window.create_file_dialog(webview.FOLDER_DIALOG)
+        r = self.window.create_file_dialog(FOLDER_DIALOG)
         if not r:
             return None
         path = r[0] if isinstance(r, (list, tuple)) else r
