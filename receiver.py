@@ -124,7 +124,7 @@ def bind_address(group, windows=None):
     windows = os.name == "nt" if windows is None else windows
     if not group or windows:
         return LOOPBACK
-    return group
+    return socket.inet_ntoa(socket.inet_aton(group))     # a validated dotted address, never ""
 
 
 def membership_interface(windows=None):
@@ -184,7 +184,8 @@ class Receiver:
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
             except OSError:
                 pass
-        group = (cfg.get("multicast") or "").strip()
+        mc = cfg.get("multicast")
+        group = mc.strip() if mc else None
         s.bind((bind_address(group), int(cfg["port"])))
         if group:
             mreq = struct.pack("4s4s", socket.inet_aton(group), socket.inet_aton(membership_interface()))
