@@ -128,6 +128,6 @@ class SummaryListsEveryQso(unittest.TestCase):
                 {"CALL": "JA1TST", "QSO_DATE": "20260107", "TIME_ON": "010500", "BAND": "20m", "MODE": "FT8", "MY_SIG": "POTA", "MY_SIG_INFO": "JP-1266"}]
         recs.append(dict(recs[1], TIME_ON="010900"))                              # JA1TST again, same band and mode: a dupe for pota.app
         f = builder.build(None, None, None, "JL1FVA", out, offline=True, recs=recs, confirmed_only=True, log=lambda *a: None)["summary"][0]
-        self.assertEqual((f["qsos"], f["records"], f["unique"]), (3, 4, 2))        # their 2fer = one QSO, two lines; pota.app keeps 2
+        self.assertEqual((f["qsos"], f["records"], f["unique"]), (3, 4, 3))        # 4 lines; pota.app keeps 3 (EI4HQ x2 by SIG_INFO, JA1TST once)
         self.assertEqual([(r["call"], r["parks"]) for r in f["rows"]], [("EI4HQ", ["IE-0023", "IE-0141"]), ("JA1TST", []), ("JA1TST", [])])
 
