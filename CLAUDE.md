@@ -71,6 +71,9 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
   park count with a per-park breakdown when they differ. Rows sort by `ts`, ties by arrival (`seq`).
 - **Results list every QSO** (`summary[].rows`, P2P rows with plates and source; a "P2P only" switch) and
   the pota.app line count (`records`) next to the QSO count when their 2fer doubled lines.
+- **A running session survives a restart**: `start_live` stores `settings.live` (id, parks, call, start),
+  `Api._resume_live` restarts the SpotLogger on it (`SpotLogger.start(resume=...)` keeps the id and
+  start), `finish_live` / `stop_live` clear it.
 - **Window close ≠ finish.** `finish_live` stops, builds **the whole UTC day** (every park of the day gets
   its file with all of its QSOs, so a park shared by several sessions is never cut down to the last
   session) and resets; `shutdown` only stops threads.

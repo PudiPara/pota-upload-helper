@@ -294,11 +294,13 @@ class SpotLogger:
         _save_json(self._sessions_path(), sessions)
 
     # ----- control -----
-    def start(self):
+    def start(self, resume=None):
+        """resume: {"id", "start"} of the session this app was recording before it was closed or
+        crashed - the same session goes on (same id in sessions.json, the clock keeps its start)."""
         os.makedirs(DATA_DIR, exist_ok=True)
         stamp = now_utc().strftime("%Y-%m-%dT%H:%M:%S")      # seconds: the elapsed clock starts at 0
-        self.session = {"id": now_utc().strftime("%Y%m%d%H%M%S"), "call": self.call,
-                        "parks": self.parks, "start": stamp, "end": stamp}
+        self.session = {"id": (resume or {}).get("id") or now_utc().strftime("%Y%m%d%H%M%S"), "call": self.call,
+                        "parks": self.parks, "start": (resume or {}).get("start") or stamp, "end": stamp}
         self._update_session()
         self._stop.clear()
         self._thread = threading.Thread(target=self._run, daemon=True)

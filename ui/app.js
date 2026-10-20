@@ -407,7 +407,7 @@
       <label class="act">
         <input type="checkbox" value="${esc(a.date)}">
         <span class="act-date">${fmtDate(a.date)}<small>UTC</small></span>
-        <span class="plates">${plates(a.parks)}</span>
+        <span class="act-parks">${a.parks.map((p) => `<span class="act-park">${plate(p)}${a.per && a.per[p] != null ? `<small>${a.per[p]}</small>` : ""}</span>`).join("")}</span>
         <span class="act-n${a.qsos < 10 ? " is-short" : ""}">${a.qsos} QSO</span>
         <button type="button" class="link act-view" data-date="${esc(a.date)}">${esc(t("build.view"))}</button>
         ${st.source === "app" ? `<button type="button" class="link act-del" data-date="${esc(a.date)}">${esc(t("build.delete"))}</button>` : ""}

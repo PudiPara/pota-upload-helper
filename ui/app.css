@@ -495,3 +495,8 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .qrow .qrow-call { font-weight: 700; letter-spacing: .02em; min-width: 7em; }
 .qrow .qrow-bm { color: var(--ink-2); font-size: 12px; min-width: 6em; }
 .is-p2p-only .qrow:not(.is-p2p) { display: none; }
+
+/* ---------- activation rows: the day's parks listed with their counts (a "+" would mean one 2fer) ---------- */
+.act-parks { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.act-park { display: inline-flex; align-items: center; gap: 4px; }
+.act-park small { font-size: 12px; font-weight: 600; color: var(--ink-2); }

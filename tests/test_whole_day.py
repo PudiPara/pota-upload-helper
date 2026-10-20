@@ -36,3 +36,21 @@ class FinishBuildsTheWholeDay(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ResumeAfterRestart(unittest.TestCase):
+    def test_the_recorded_session_comes_back(self):
+        potacommon.save_settings({"live": None})
+        api = app.Api.__new__(app.Api)
+        api._lock = __import__("threading").Lock(); api._events = []; api._status = ""; api._logger = None
+        api._spots_cache = (0, []); api._parks = {}; api._qso_events = []; api._receiver = None; api._recv_status = {}
+        r = api.start_live("JP-1206,JP-1266", "JL1FVA"); self.assertTrue(r["ok"])
+        api._logger.stop()                                   # the app closes while recording (shutdown, not finish)
+        fresh = app.Api.__new__(app.Api)
+        fresh._lock = api._lock; fresh._events = []; fresh._status = ""; fresh._logger = None
+        fresh._resume_live()
+        self.assertEqual((fresh._logger.parks, fresh._logger.session["start"], fresh._logger.session["id"]),
+                         (["JP-1206", "JP-1266"], r["start"], api._logger.session["id"]))
+        fresh.stop_live()
+        self.assertIsNone(potacommon.load_settings().get("live"))
+
