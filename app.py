@@ -239,10 +239,15 @@ class Api:
         self._logger = None
         s = load_settings()
         try:
-            recs = qsolog.between(iso_minutes(sess["start"]) - 5, iso_minutes(sess["end"]) + 5)
-            res = build(None, None, ",".join(sess["parks"]), s.get("call", sess.get("call", "JL1FVA")),
-                        s.get("out", DEFAULT_OUT), offline=not online, recs=recs, confirmed_only=True)
-            return {"ok": True, "session": sess, "qsos": len(recs), **res}
+            mine = qsolog.between(iso_minutes(sess["start"]) - 5, iso_minutes(sess["end"]) + 5)
+            # Build the whole UTC day, not just this session: a park shared by several sessions of
+            # the day (JP-1206+JP-1266 in the morning, JP-1206+JP-1946 later) must end up with one
+            # file holding all of its QSOs, not the latest session's only. Parks come from each
+            # record (set while recording) and from the session windows in sessions.json.
+            dates = sorted({sess["start"][:10].replace("-", ""), sess["end"][:10].replace("-", "")})
+            res = build(None, dates, None, s.get("call", sess.get("call", "JL1FVA")),
+                        s.get("out", DEFAULT_OUT), offline=not online, recs=qsolog.records(dates), confirmed_only=True)
+            return {"ok": True, "session": sess, "qsos": len(mine), **res}
         except Exception as e:
             return {"ok": False, "session": sess, "error": str(e)}
 
