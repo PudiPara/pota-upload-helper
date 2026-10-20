@@ -127,6 +127,14 @@ def _install_mac(zip_path, work, app):
     return {"relaunch": app}
 
 
+def child_env():
+    """The environment for a process that will outlive this one and start the new app. A PyInstaller
+    onefile parent tells its child where the unpacked files are through _PYI_* variables (older
+    bootloaders: _MEIPASS2); inherited by the new app, it would skip unpacking and look for
+    python3xx.dll in our temp folder, which is gone by then ("Failed to load Python DLL")."""
+    return {k: v for k, v in os.environ.items() if not k.startswith("_PYI_") and k != "_MEIPASS2"}
+
+
 def _install_win(zip_path, work, exe):
     with zipfile.ZipFile(zip_path) as z:
         z.extractall(work)
@@ -144,14 +152,14 @@ def _install_win(zip_path, work, exe):
                  'start "" "%s"\r\n' % exe)
     # CREATE_NO_WINDOW only: with DETACHED_PROCESS the script has no console at all and its
     # tasklist | find wait loop never ends (verified on Windows 11), so the exe was never swapped.
-    subprocess.Popen(["cmd.exe", "/c", script], creationflags=0x08000000, close_fds=True)
+    subprocess.Popen(["cmd.exe", "/c", script], creationflags=0x08000000, close_fds=True, env=child_env())
     return {"relaunch": exe}
 
 
 def relaunch(path):
     """macOS: start the new bundle once this process is gone (the helper script does it on Windows)."""
     if sys.platform == "darwin":
-        subprocess.Popen(["/bin/sh", "-c", 'sleep 2; open -n "%s"' % path.replace('"', '\\"')])
+        subprocess.Popen(["/bin/sh", "-c", 'sleep 2; open -n "%s"' % path.replace('"', '\\"')], env=child_env())
 
 
 def cleanup():

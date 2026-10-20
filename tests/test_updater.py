@@ -48,3 +48,15 @@ class UpdaterTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ChildEnv(unittest.TestCase):
+    def test_pyinstaller_variables_are_not_inherited(self):
+        os.environ["_PYI_APPLICATION_HOME_DIR"] = r"C:	mp\_MEI1"; os.environ["_MEIPASS2"] = "x"; os.environ["KEEP_ME"] = "1"
+        try:
+            env = updater.child_env()
+        finally:
+            for k in ("_PYI_APPLICATION_HOME_DIR", "_MEIPASS2", "KEEP_ME"):
+                os.environ.pop(k, None)
+        self.assertNotIn("_PYI_APPLICATION_HOME_DIR", env); self.assertNotIn("_MEIPASS2", env); self.assertEqual(env["KEEP_ME"], "1")
+

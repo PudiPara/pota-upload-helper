@@ -64,6 +64,10 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
 - **Updates** compare `VERSION` with the latest release tag and download the OS zip; installers (DMG,
   Inno Setup per-user in `{localappdata}\Programs`) exist for first installs. Bump `VERSION` for every
   release (the tag and the updater key on it).
+- **Updater on Windows**: `update.cmd` waits for this PID, swaps the exe, starts the new one. It runs
+  with `CREATE_NO_WINDOW` only (detached, its wait loop never ends) and with `updater.child_env()`:
+  the PyInstaller bootloader's `_PYI_*` variables must not reach the new exe, or it skips unpacking
+  and fails with "Failed to load Python DLL" once our temp folder is gone.
 - **Terms**: `terms.body` in each dictionary, modal on first launch until `settings.terms_accepted ==
   TERMS_VERSION` (app.js), also `TERMS.md` and README. The app is not affiliated with POTA.
 - **Languages**: ja, en, zh-CN, zh-TW, fr, de, es, it, pt-BR, ko, pl; same keys in every file (check with a
