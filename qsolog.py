@@ -23,13 +23,19 @@ def _db():
     return con
 
 
+def mode_of(rec):
+    """The mode pota.app will store: SUBMODE when present (FT4), else MODE. Part of what makes
+    a QSO distinct there (CALL, MODE, QSO_DATE, BAND, parks), so part of our duplicate key too."""
+    return (rec.get("SUBMODE") or rec.get("MODE") or "").upper()
+
+
 def make_uid(rec):
-    return "%s|%s|%s|%s" % (rec.get("CALL", "").upper(), rec.get("QSO_DATE", ""),
-                            rec.get("TIME_ON", "")[:4], (rec.get("BAND") or "").lower())
+    return "%s|%s|%s|%s|%s" % (rec.get("CALL", "").upper(), rec.get("QSO_DATE", ""),
+                               rec.get("TIME_ON", "")[:4], (rec.get("BAND") or "").lower(), mode_of(rec))
 
 
 def upsert(rec, ext_id=None, source=""):
-    """Same QSO (call, date, minute, band) from two programs is stored once."""
+    """Same QSO (call, date, minute, band, mode) from two programs is stored once."""
     uid = make_uid(rec)
     with _lock:
         con = _db()
@@ -46,7 +52,7 @@ def upsert(rec, ext_id=None, source=""):
                        source=excluded.source, received=excluded.received, deleted=0,
                        ext_id=COALESCE(excluded.ext_id, qso.ext_id)""",
                     (uid, rec.get("CALL", "").upper(), rec.get("QSO_DATE", ""), rec.get("TIME_ON", ""),
-                     (rec.get("BAND") or "").lower(), rec.get("MODE", ""), json.dumps(rec, ensure_ascii=False),
+                     (rec.get("BAND") or "").lower(), mode_of(rec), json.dumps(rec, ensure_ascii=False),
                      source, time.time(), ext_id))
         con.commit()
         con.close()
@@ -88,23 +94,23 @@ def set_p2p(uid, decision, parks, window=3):
     updated = []
     with _lock:
         con = _db()
-        row = con.execute("SELECT call, qso_date, time_on, band FROM qso WHERE uid=? AND deleted=0", (uid,)).fetchone()
+        row = con.execute("SELECT call, qso_date, time_on, band, mode FROM qso WHERE uid=? AND deleted=0", (uid,)).fetchone()
         if not row:
             con.close()
             return []
-        c, d, t, band = row
+        c, d, t, band, mode = row
         try:
             tm = minutes(d, t or "0000")
         except ValueError:
             tm = None
-        for u2, c2, t2, b2, data in con.execute("SELECT uid, call, time_on, band, data FROM qso WHERE qso_date=? AND deleted=0",
+        for u2, c2, t2, b2, m2, data in con.execute("SELECT uid, call, time_on, band, mode, data FROM qso WHERE qso_date=? AND deleted=0",
                                                   (d,)).fetchall():
             if u2 != uid:
                 try:
                     near = tm is not None and abs(minutes(d, t2 or "0000") - tm) <= window
                 except ValueError:
                     near = False
-                if not (near and base_call(c2) == base_call(c) and b2 == band):
+                if not (near and base_call(c2) == base_call(c) and b2 == band and m2 == mode):
                     continue
             rec = apply_decision(json.loads(data), decision, parks)
             con.execute("UPDATE qso SET data=? WHERE uid=?", (json.dumps(rec, ensure_ascii=False), u2))
@@ -122,23 +128,23 @@ def delete(ext_id=None, call=None, qso_date=None, time_on=None, window=3):
         con = _db()
         targets = []
         if ext_id:
-            targets = con.execute("SELECT call, qso_date, time_on, band FROM qso WHERE ext_id=? AND deleted=0",
+            targets = con.execute("SELECT call, qso_date, time_on, band, mode FROM qso WHERE ext_id=? AND deleted=0",
                                   (ext_id,)).fetchall()
         if not targets and call:
-            targets = [((call or "").upper(), qso_date, time_on or "", None)]
+            targets = [((call or "").upper(), qso_date, time_on or "", None, None)]
         n = 0
-        for c, d, t, band in targets:
+        for c, d, t, band, mode in targets:
             try:
                 tm = minutes(d, (t or "0000"))
             except ValueError:
                 continue
-            for uid, c2, t2, b2 in con.execute("SELECT uid, call, time_on, band FROM qso WHERE qso_date=? AND deleted=0",
+            for uid, c2, t2, b2, m2 in con.execute("SELECT uid, call, time_on, band, mode FROM qso WHERE qso_date=? AND deleted=0",
                                                (d,)).fetchall():
                 try:
                     near = abs(minutes(d, t2 or "0000") - tm) <= window
                 except ValueError:
                     near = False
-                if near and base_call(c2) == base_call(c) and (band is None or b2 == band):
+                if near and base_call(c2) == base_call(c) and (band is None or b2 == band) and (mode is None or m2 == mode):
                     con.execute("UPDATE qso SET deleted=1 WHERE uid=?", (uid,))
                     n += 1
         con.commit()
@@ -182,7 +188,7 @@ def dedupe(recs, window=3):
         except ValueError:
             kept.append(r)
             continue
-        k = (base_call(r.get("CALL")), (r.get("BAND") or "").lower())
+        k = (base_call(r.get("CALL")), (r.get("BAND") or "").lower(), mode_of(r))
         if k in last and t - last[k][0] <= window:
             prev = last[k][1]
             if (bool(r.get("P2P_DECISION")), len(r)) > (bool(prev.get("P2P_DECISION")), len(prev)):   # keep the richer record

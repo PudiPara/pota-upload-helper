@@ -142,7 +142,9 @@ def _install_win(zip_path, work, exe):
                  'move /y "%s" "%s.old" >nul\r\n' % (exe, exe) +
                  'move /y "%s" "%s" >nul\r\n' % (new, exe) +
                  'start "" "%s"\r\n' % exe)
-    subprocess.Popen(["cmd.exe", "/c", script], creationflags=0x00000008 | 0x00000200 | 0x08000000, close_fds=True)
+    # CREATE_NO_WINDOW only: with DETACHED_PROCESS the script has no console at all and its
+    # tasklist | find wait loop never ends (verified on Windows 11), so the exe was never swapped.
+    subprocess.Popen(["cmd.exe", "/c", script], creationflags=0x08000000, close_fds=True)
     return {"relaunch": exe}
 
 

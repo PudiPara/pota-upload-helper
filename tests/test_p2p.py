@@ -91,3 +91,26 @@ class P2PDecisionTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ModeIsPartOfTheKey(unittest.TestCase):
+    """pota.app counts CALL + BAND + MODE (+ date, parks) as one QSO: the same station on the
+    same band in another mode minutes later is a second contact, not a duplicate copy."""
+
+    def test_same_band_other_mode_is_a_second_qso(self):
+        qsolog.upsert(rec("JA1MOD", "051000", MODE="CW"), "m-1", "RUMlog")
+        qsolog.upsert(rec("JA1MOD", "051200", MODE="SSB"), "m-2", "RUMlog")
+        calls = [r["CALL"] for r in qsolog.records() if r["CALL"] == "JA1MOD"]
+        self.assertEqual(len(calls), 2)
+
+    def test_ft4_copies_still_merge(self):
+        qsolog.upsert(rec("JA1FT4", "052000", MODE="MFSK", SUBMODE="FT4"), None, "WSJT-X")
+        qsolog.upsert(rec("JA1FT4", "052100", MODE="MFSK", SUBMODE="FT4"), "m-3", "RUMlog")
+        self.assertEqual(len([r for r in qsolog.records() if r["CALL"] == "JA1FT4"]), 1)
+
+    def test_lock_instance_is_exclusive(self):
+        import potacommon
+        self.assertTrue(potacommon.lock_instance())
+        first = potacommon._instance_lock
+        self.assertFalse(potacommon.lock_instance())     # a second copy would be refused
+        first.close()

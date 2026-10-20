@@ -42,25 +42,12 @@
         <span data-i18n="nav.settings">ロガーとの接続</span>
         <small id="recvSummary" data-i18n="nav.settings.sub">UDP 受信</small>
       </button>
+      <button class="nav-item" data-view="config">
+        <span data-i18n="nav.config">設定</span>
+        <small data-i18n="nav.config.sub">コールサイン・言語・更新</small>
+      </button>
     </nav>
 
-    <div class="rail-foot">
-      <div class="update" id="update" hidden>
-        <div class="update-text" id="updateText"></div>
-        <button class="btn btn-sm" id="updateGo" hidden data-i18n="upd.go">今すぐ更新</button>
-      </div>
-      <label class="field-compact">
-        <span data-i18n="rail.call">自分のコール</span>
-        <input id="call" spellcheck="false" autocomplete="off">
-      </label>
-      <label class="field-compact">
-        <span data-i18n="rail.lang">言語</span>
-        <select id="lang" class="lang-select"></select>
-      </label>
-      <button class="link" id="openData" data-i18n="rail.openData">データの保存場所を開く</button>
-      <button class="link" id="checkUpdate" data-i18n="rail.checkUpdate">アップデートを確認</button>
-      <button class="link" id="termsLink" data-i18n="terms.link">利用規約と免責事項</button>
-    </div>
   </aside>
 
   <main class="main">
@@ -70,6 +57,7 @@
         <h1 data-i18n="live.title">今日の公園は？</h1>
         <p class="lede" data-i18n="live.lede">運用を始めたら記録を開始してください。</p>
         <div class="park-input">
+          <select id="liveCall" class="call-select" data-i18n-title="live.call"></select>
           <input id="parks" placeholder="JP-1266" data-i18n-ph="live.parks.ph" spellcheck="false" autocomplete="off">
           <button class="btn btn-primary" id="startLive" data-i18n="live.start">記録を始める</button>
         </div>
@@ -258,6 +246,39 @@
         <h2 data-i18n="set.howto.dup.h">同じ QSO が 2 つの受信口から届いたら</h2>
         <p data-i18n-html="set.howto.dup.p"></p>
       </aside>
+    </section>
+
+    <!-- ======================= config (設定) ======================= -->
+    <section class="view" id="view-config" hidden>
+      <h1 class="view-title" data-i18n="cfg.title">設定</h1>
+      <div class="cfg">
+        <section class="cfg-block">
+          <h2 data-i18n="cfg.calls.h">コールサイン</h2>
+          <p class="cfg-help" data-i18n="cfg.calls.p">複数保存できます。記録を始めるときに使うコールを選びます。</p>
+          <ul class="calls" id="calls"></ul>
+          <form class="calls-add" id="callsAdd">
+            <input id="callNew" placeholder="JL1FVA/1" spellcheck="false" autocomplete="off">
+            <button class="btn" type="submit" data-i18n="cfg.calls.add">追加</button>
+          </form>
+          <p class="error" id="callsError" hidden></p>
+        </section>
+        <section class="cfg-block">
+          <h2 data-i18n="cfg.lang.h">言語</h2>
+          <select id="lang" class="cfg-select"></select>
+        </section>
+        <section class="cfg-block">
+          <h2 data-i18n="cfg.app.h">アプリ</h2>
+          <div class="update" id="update" hidden>
+            <div class="update-text" id="updateText"></div>
+            <button class="btn btn-sm" id="updateGo" hidden data-i18n="upd.go">今すぐ更新</button>
+          </div>
+          <div class="cfg-links">
+            <button class="link" id="checkUpdate" data-i18n="rail.checkUpdate">アップデートを確認</button>
+            <button class="link" id="openData" data-i18n="rail.openData">データの保存場所を開く</button>
+            <button class="link" id="termsLink" data-i18n="terms.link">利用規約と免責事項</button>
+          </div>
+        </section>
+      </div>
     </section>
   </main>
 </div>

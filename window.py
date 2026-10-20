@@ -35,6 +35,19 @@ def _run_steps(w, steps):
         run()
 
 
+def focus_running(title):
+    """A second copy was started: bring the first one's window to the front instead (Windows;
+    macOS already does this itself when an .app is opened twice)."""
+    if os.name != "nt":
+        return
+    import ctypes
+    u = ctypes.windll.user32
+    h = u.FindWindowW(None, title)
+    if h:
+        u.ShowWindow(h, 9)          # SW_RESTORE
+        u.SetForegroundWindow(h)
+
+
 class BarMode:
     def __init__(self, window):
         self.window = window

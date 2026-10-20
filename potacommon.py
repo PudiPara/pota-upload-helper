@@ -29,6 +29,29 @@ DATA_DIR = _data_dir()
 DEFAULT_OUT = os.path.join(os.path.expanduser("~"), "Documents", APP_NAME)
 
 
+_instance_lock = None
+
+
+def lock_instance():
+    """True when no other copy of the app is running: holds instance.lock in DATA_DIR until
+    this process exits (the OS drops the lock on a crash, so nothing stale is left behind)."""
+    global _instance_lock
+    os.makedirs(DATA_DIR, exist_ok=True)
+    fh = open(os.path.join(DATA_DIR, "instance.lock"), "w")
+    try:
+        if os.name == "nt":
+            import msvcrt
+            msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        fh.close()
+        return False
+    _instance_lock = fh
+    return True
+
+
 def load_settings():
     path = os.path.join(DATA_DIR, "settings.json")
     try:

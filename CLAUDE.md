@@ -39,8 +39,12 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
   spots within `TWOFER_GAP` (15 min). At build time, parks from *separate* spots near the QSO are a
   2fer but `sure=False` (could be a rover) → a note. pota.app does not accept multi-value references, so
   their 2fer = the QSO repeated per park; my 2fer = one file per park.
-- **Duplicates**: WSJT-X reports a QSO at its start, the logger at its end; same base call + band within
-  3 min = one contact in the log, the live list and the count. Decisions and deletes hit all copies.
+- **Duplicates**: WSJT-X reports a QSO at its start, the logger at its end; same base call + band + mode
+  (SUBMODE first, as pota.app stores it) within 3 min = one contact in the log, the live list and the count.
+  Decisions and deletes hit all copies. pota.app's own key is CALL+MODE+QSO_DATE+BAND+parks, so another
+  mode on the same band is a second QSO.
+- **One instance**: `potacommon.lock_instance` (lock file in DATA_DIR); a second start calls
+  `window.focus_running` and exits.
 - **No write-back to the logger.** RUMlogNG ignores a UDP record whose time/band/mode already exist and
   its AppleScript only logs new QSOs; its ADIF import with "No Dupes + Update QSO record" works but is
   manual every time, so the owner dropped the feature. Decisions live only in the app log and files.
