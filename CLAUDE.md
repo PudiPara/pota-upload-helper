@@ -66,7 +66,8 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
   compare `VERSION` with the latest release tag and download the OS zip; installers (DMG,
   Inno Setup per-user in `{localappdata}\Programs`) exist for first installs. Bump `VERSION` for every
   release (the tag and the updater key on it).
-- **Updater on Windows**: `update.cmd` waits for this PID, swaps the exe, starts the new one. It runs
+- **Updater on Windows**: `update.cmd` waits for this PID, swaps the exe, waits 2 s and starts the new
+  one through `explorer.exe` (a fresh process tree, like a double-click). It runs
   with `CREATE_NO_WINDOW` only (detached, its wait loop never ends) and with `updater.child_env()`:
   the PyInstaller bootloader's `_PYI_*` variables must not reach the new exe, or it skips unpacking
   and fails with "Failed to load Python DLL" once our temp folder is gone.

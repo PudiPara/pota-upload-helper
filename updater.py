@@ -149,7 +149,8 @@ def _install_win(zip_path, work, exe):
                  "if not errorlevel 1 (timeout /t 1 /nobreak >nul & goto wait)\r\n"
                  'move /y "%s" "%s.old" >nul\r\n' % (exe, exe) +
                  'move /y "%s" "%s" >nul\r\n' % (new, exe) +
-                 'start "" "%s"\r\n' % exe)
+                 "timeout /t 2 /nobreak >nul\r\n" +           # let the old bootloader finish its cleanup
+                 'explorer.exe "%s"\r\n' % exe)                # started by the shell, outside our process tree
     # CREATE_NO_WINDOW only: with DETACHED_PROCESS the script has no console at all and its
     # tasklist | find wait loop never ends (verified on Windows 11), so the exe was never swapped.
     subprocess.Popen(["cmd.exe", "/c", script], creationflags=0x08000000, close_fds=True, env=child_env())
