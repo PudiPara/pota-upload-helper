@@ -38,11 +38,16 @@
     </nav>
 
     <div class="rail-foot">
+      <div class="update" id="update" hidden>
+        <div class="update-text" id="updateText"></div>
+        <button class="btn btn-sm" id="updateGo" hidden>今すぐ更新</button>
+      </div>
       <label class="field-compact">
         <span>自分のコール</span>
         <input id="call" spellcheck="false" autocomplete="off">
       </label>
       <button class="link" id="openData">データの保存場所を開く</button>
+      <button class="link" id="checkUpdate">アップデートを確認</button>
     </div>
   </aside>
 
@@ -206,6 +211,8 @@
       </div>
       <p class="error" id="listenError" hidden></p>
       <aside class="howto">
+        <h2>同じ QSO が 2 つの受信口から届いたら</h2>
+        <p>WSJT-X の QSO は、WSJT-X から直接と、RUMlogNG が受けて送り直した分の 2 回届きます。同じコール・同じバンドで時刻の差が 3 分以内なら同じ交信として 1 件にまとめるので、両方オンにしても二重にはなりません。P2P の判断も削除も両方の控えに一緒に反映されます。逆に、同じ局と同じバンドで 3 分以内に 2 回交信した場合も 1 件になります。</p>
         <h2>RUMlogNG の設定</h2>
         <p>Preferences → UDP の「Contact info」を <strong>Contact info N1MM</strong> にして、Host を <strong>127.0.0.1</strong>、Port をここの受信口と同じ番号にします。ほかのアプリ（OpsLog など）にも渡したいときは、この受信口の「転送先」にそのアプリの受信ポートを入れてください。</p>
         <h2>WSJT-X / JTDX</h2>

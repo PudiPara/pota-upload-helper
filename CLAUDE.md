@@ -12,6 +12,7 @@ for the next park. Logging itself stays in the logger; this app never writes the
 - **運用中**: records POTA spots every 60 s (api.pota.app/spot/activator) so the other station's park(s) are known even after they QRT. `Api.set_bar` shrinks/moves the window (`BAR_W×BAR_H`, `on_top`); `Api.finish_live` = stop + `builder.build(confirmed_only=True)` on the session's QSOs.
 - **ロガーとの接続**: receives QSOs over UDP like OpsLog (N1MM XML, WSJT-X binary msg 12 incl. multicast, ADIF / ADIF-in-XML), optional raw forwarding to another app. QSOs go to the app's SQLite log with `P2P_CANDIDATE` (from spots) and, once answered, `P2P_DECISION` = yes | no | manual | log (log = SIG_INFO came from the logger). `qsolog.set_p2p` applies a decision to the WSJT-X and logger copies of the same contact; `upsert` carries a decision over when the logger re-sends.
 - **アップロード作成**: writes one ADIF per (my park, UTC date), named `CALL@PARK-YYYYMMDD.adi`, ready for pota.app. P2P park(s) from: 1) pota.app public hunter log (verified), 2) the operator's decision (app log, `confirmed_only`), 3) recorded spots (ADIF-file builds only), 4) SIG_INFO/POTA_REF in the log. Their 2fer → QSO duplicated per park; my 2fer → one file per park (Cartesian product). POTA uploads do not accept multi-value refs (as of 2024).
+- **Writing parks back to the logger**: not possible over UDP. RUMlogNG's "QSOs received from Flex / ADIF" (Save QSO) ignores a record whose time/band/mode already exist (no update, no dupe) and its AppleScript only fills the entry form for a *new* QSO. What works is its ADIF import with "No Dupes" + "Update QSO record" (fields chosen by the user: My Park = MY_SIG_INFO, P2P = SIG_INFO, POTA = MY_SIG), so `build()` writes `logger_update.adi`: one line per QSO, parks comma-joined (the 2-row split is only for pota.app), TIME_ON = TIME_OFF for WSJT-X copies because RUMlogNG logs those at the end time.
 - Not done yet: nearby parks from the current location (map / list to pick from) — the owner wants it after the flow above is solid.
 
 ## Layout
@@ -24,6 +25,7 @@ for the next park. Logging itself stays in the logger; this app never writes the
 | `receiver.py` | `Receiver` UDP listeners + `parse_packet()` |
 | `qsolog.py` | SQLite log; dedupes the same QSO from WSJT-X and the logger (±3 min, base call, band); honours logger edits/deletes |
 | `potacommon.py` | API fetch (urllib, falls back to `curl`), ADIF read/write, `base_call`, `split_parks`, data dir, settings, `VERSION` |
+| `updater.py` | in-app update from GitHub Releases: `check()` (latest release via api.github.com, asset per OS), `install()` (download, macOS: swap the `.app` and relaunch via `open -n`; Windows: a cmd helper swaps the `.exe` after exit), `cleanup()` removes `*.old` at start. Only from a frozen build; translocated macOS copies get the new app in ~/Downloads instead |
 | `pota_build.py`, `pota_spotlog.py` | CLI wrappers |
 | `tests/` | `python3 -m unittest discover -s tests` (offline) |
 | `.github/workflows/build.yml` | every push to `main` builds macOS `.app` + Windows `.exe` (PyInstaller) and creates/updates the GitHub Release `v<VERSION>` |
@@ -56,4 +58,4 @@ Data dir: macOS `~/Library/Application Support/POTA Upload Helper/`, Windows `%A
 ## Ideas not done yet
 - Optional pota.app logged-in hunter log import (full history beyond the public last 25).
 - App icon (`--icon`), code signing / notarization, Intel mac build.
-- Bump `VERSION` in `potacommon.py` for every release (CI uses it as the tag).
+- Bump `VERSION` in `potacommon.py` for every release (CI uses it as the tag, the in-app updater compares it with the latest release tag). 1.1.0 = bar mode + P2P confirmation + updater.

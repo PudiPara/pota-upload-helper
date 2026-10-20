@@ -101,6 +101,12 @@ button, input { font: inherit; color: inherit; }
   font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
 }
 .rail .link { color: var(--rail-dim); text-align: left; }
+.update { background: rgba(255, 255, 255, .09); border: 1px solid rgba(255, 255, 255, .14); border-radius: var(--r-sm); padding: 10px 12px; font-size: 12px; line-height: 1.5; display: flex; flex-direction: column; gap: 8px; }
+.update-text { color: var(--rail-ink); word-break: break-all; }
+.update-text strong { color: #F2C46B; }
+.update .link { color: #CFE3D4; }
+.btn-sm { padding: 6px 12px; font-size: 12.5px; background: #F2C46B; border-color: #F2C46B; color: #1D2621; align-self: flex-start; }
+.btn-sm:disabled { opacity: .7; cursor: progress; }
 
 .main { overflow: auto; }
 .view { max-width: 980px; padding: 34px 40px 60px; }
@@ -379,6 +385,10 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .notes ul { margin: 0; padding-left: 1.2em; font-size: 13px; }
 .notes li + li { margin-top: 4px; }
 .fixnote { font-size: 13px; color: var(--ink-2); margin-top: 12px; }
+.loggerbox { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 18px; margin-top: 14px; font-size: 13px; }
+.loggerbox h3 { margin: 0 0 4px; font-size: 13.5px; }
+.loggerbox p { margin: 4px 0; color: var(--ink-2); text-wrap: pretty; }
+.loggerbox b { color: var(--ink); }
 
 .toast {
   position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
