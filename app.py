@@ -32,7 +32,7 @@ from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import SpotLogger, candidate_for, history_parks, summarize
 from window import BarMode
 
-SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted", "p2p_auto")
+SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted", "p2p_auto")   # "live" is set by start_live/finish_live only
 CALL_RE = re.compile(r"[A-Z0-9/]{3,}")
 
 
@@ -88,6 +88,17 @@ class Api:
         self._parks = {}              # park reference -> info from pota.app, cached
         self._spots_cache = (0, [])   # (fetched at, raw spots) for the アクティベート中 page
         self.start_receiver()
+        self._resume_live()
+
+    def _resume_live(self):
+        """The app was closed (or crashed) while recording: pick the session up again, so the
+        運用中 page and its QSO list come back as they were."""
+        live = load_settings().get("live") or {}
+        if not live.get("parks") or not live.get("start"):
+            return
+        self._logger = SpotLogger(live["parks"], live.get("call") or "JL1FVA", 60,
+                                  on_activator=self._on_spot, on_status=self._on_status)
+        self._logger.start(resume={"id": live.get("id"), "start": live["start"]})
 
     # ================================================================ settings
     def get_state(self):
@@ -197,7 +208,9 @@ class Api:
         save_settings({"parks": ",".join(parks), "call": call.upper()})
         self._logger = SpotLogger(parks, call, 60, on_activator=self._on_spot, on_status=self._on_status)
         self._logger.start()
-        return {"ok": True, "parks": parks, "start": self._logger.session["start"]}
+        sess = self._logger.session
+        save_settings({"live": {"id": sess["id"], "parks": parks, "call": call.upper(), "start": sess["start"]}})
+        return {"ok": True, "parks": parks, "start": sess["start"]}
 
     def _on_spot(self, tm, act, parks, freq, mode, twofer):
         with self._lock:
@@ -247,6 +260,7 @@ class Api:
         self._logger.stop()
         sess = dict(self._logger.session)
         self._logger = None
+        save_settings({"live": None})
         s = load_settings()
         try:
             mine = qsolog.between(iso_minutes(sess["start"]) - 5, iso_minutes(sess["end"]) + 5)
@@ -268,6 +282,7 @@ class Api:
         self._logger.stop()
         sess = self._logger.session
         self._logger = None
+        save_settings({"live": None})
         return {"ok": True, "start": sess["start"], "end": sess["end"]}
 
     def set_bar(self, on):
@@ -326,7 +341,7 @@ class Api:
                 rows = list_activations(path)
             else:
                 rows = list_activations(recs=qsolog.records())
-            return {"path": path or "", "items": [{"date": d, "parks": p.split(","), "qsos": n} for d, p, n in rows]}
+            return {"path": path or "", "items": [{"date": d, "parks": p.split(","), "qsos": n, "per": per} for d, p, n, per in rows]}
         except Exception as e:
             return {"path": path or "", "items": [], "error": t("api.logRead", err=e)}
 

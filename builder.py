@@ -87,14 +87,16 @@ def find_activation_qsos(recs, dates=None, my_parks=None, sessions=None):
 
 
 def list_activations(adif_path=None, recs=None):
-    """[(date, 'JP-1281,JP-1285', qso_count)] newest first, for the GUI."""
+    """[(date, 'JP-1281,JP-1285', qso_count, {park: its qso_count})] newest first, for the GUI.
+    The parks of a day are listed, not joined as one 2fer: a day may hold several sessions."""
     recs = recs if recs is not None else read_adif(adif_path)
-    agg = defaultdict(lambda: [set(), 0])
+    agg = defaultdict(lambda: [defaultdict(int), 0])
     for r, t, mp in find_activation_qsos(recs):
         a = agg[r["QSO_DATE"]]
-        a[0].update(mp)
+        for p in mp:
+            a[0][p] += 1
         a[1] += 1
-    return sorted(((d, ",".join(sorted(v[0])), v[1]) for d, v in agg.items()), reverse=True)
+    return sorted(((d, ",".join(sorted(v[0])), v[1], dict(v[0])) for d, v in agg.items()), reverse=True)
 
 
 # ---------- main entry ----------
