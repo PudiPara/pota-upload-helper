@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- POTA Upload Helper app icon: a park trail sign in pine green, a cream conifer, amber radio arcs. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2E7A5C"/>
+      <stop offset="1" stop-color="#173F30"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".10"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- rounded square with the usual macOS margin -->
+  <rect x="52" y="52" width="920" height="920" rx="206" fill="url(#bg)"/>
+  <rect x="52" y="52" width="920" height="920" rx="206" fill="url(#shine)"/>
+  <!-- the plate's double rule -->
+  <rect x="112" y="112" width="800" height="800" rx="160" fill="none" stroke="#F4F1E4" stroke-opacity=".38" stroke-width="14"/>
+  <!-- conifer: apex at (512,300) -->
+  <g fill="#F4F1E4">
+    <path d="M512 300 L640 476 L590 476 L676 596 L612 596 L716 736 L308 736 L412 596 L348 596 L434 476 L384 476 Z"/>
+    <rect x="476" y="722" width="72" height="104" rx="14"/>
+  </g>
+  <!-- ground -->
+  <rect x="276" y="824" width="472" height="22" rx="11" fill="#F4F1E4" fill-opacity=".55"/>
+  <!-- radio arcs: quarter circles around the treetop, up to the right -->
+  <g fill="none" stroke="#F2C46B" stroke-width="38" stroke-linecap="round">
+    <path d="M512 224 A76 76 0 0 1 588 300"/>
+    <path d="M512 158 A142 142 0 0 1 654 300"/>
+  </g>
+  <circle cx="512" cy="300" r="26" fill="#F2C46B"/>
+</svg>

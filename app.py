@@ -11,8 +11,10 @@ import webbrowser
 
 import webview
 
+import i18n
 import qsolog
 from builder import build, list_activations, live_p2p
+from i18n import t
 from potacommon import (APP_NAME, DATA_DIR, DEFAULT_OUT, VERSION, base_call, fetch_json, iso_minutes,
                         load_settings, minutes, save_settings, split_parks)
 from receiver import DEFAULT_LISTENERS, Receiver
@@ -68,12 +70,30 @@ class Api:
         return {"version": VERSION, "call": s.get("call", "JL1FVA"), "parks": s.get("parks", ""),
                 "prefix": s.get("prefix", "JP"), "adif": s.get("adif", ""), "out": s.get("out", DEFAULT_OUT),
                 "source": s.get("source", "app"), "live": live, "bar": self._full is not None,
-                "listeners": self.listeners(),
-                "log_count": qsolog.count(), "receiver": self.recv_status}
+                "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
+                "terms_accepted": s.get("terms_accepted") or "",
+                "log_count": qsolog.count(), "receiver": self._recv_texts()}
 
     def save(self, data):
-        save_settings({k: v for k, v in data.items() if k in ("call", "parks", "prefix", "adif", "out", "source")})
+        keep = {k: v for k, v in data.items() if k in ("call", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted")}
+        if "lang" in keep:
+            keep["lang"] = i18n.set_lang(keep["lang"])
+        save_settings(keep)
         return True
+
+    def _recv_texts(self):
+        """Receiver states, translated for the current language: {name: {code, text}}."""
+        out = {}
+        for name, st in list(self.recv_status.items()):
+            if not isinstance(st, dict):
+                st = {"code": "off"}
+            code = st.get("code", "off")
+            where = "%s:%s" % (st["multicast"], st["port"]) if st.get("multicast") else t("recv.port", port=st.get("port", ""))
+            text = {"off": t("recv.off"), "error": t("recv.cantOpen", port=st.get("port", ""), err=st.get("err", "")),
+                    "badforward": t("recv.badForward"), "listening": t("recv.listening", where=where),
+                    "receiving": t("recv.receiving", where=where)}.get(code, code)
+            out[name] = {"code": code, "text": text}
+        return out
 
     # ---------- UDP receiving ----------
     def listeners(self):
@@ -85,21 +105,21 @@ class Api:
             try:
                 port = int(it.get("port"))
             except (TypeError, ValueError):
-                return {"ok": False, "error": "ポート番号は数字で入力してください。"}
+                return {"ok": False, "error": t("api.portNum")}
             if not 1 <= port <= 65535:
-                return {"ok": False, "error": "ポート番号は 1〜65535 です。"}
+                return {"ok": False, "error": t("api.portRange")}
             mc = (it.get("multicast") or "").strip()
             if mc and not re.fullmatch(r"2(2[4-9]|3\d)\.\d{1,3}\.\d{1,3}\.\d{1,3}", mc):
-                return {"ok": False, "error": "マルチキャストのアドレスは 224.0.0.1 のような形です。"}
+                return {"ok": False, "error": t("api.mcFormat")}
             fwd = (it.get("forward") or "").strip()
             if fwd and not re.fullmatch(r"[\w.\-]+:\d{1,5}", fwd):
-                return {"ok": False, "error": "転送先は 127.0.0.1:2335 のように「アドレス:ポート」で入力してください。"}
-            clean.append({"name": (it.get("name") or "受信口").strip()[:40], "kind": it.get("kind", "auto"),
+                return {"ok": False, "error": t("api.fwdFormat")}
+            clean.append({"name": (it.get("name") or t("api.listenerName")).strip()[:40], "kind": it.get("kind", "auto"),
                           "port": port, "multicast": mc, "enabled": bool(it.get("enabled")), "forward": fwd})
         save_settings({"listeners": clean})
         self.start_receiver()
         time.sleep(0.4)
-        return {"ok": True, "listeners": clean, "receiver": self.recv_status}
+        return {"ok": True, "listeners": clean, "receiver": self._recv_texts()}
 
     def start_receiver(self):
         if self.receiver:
@@ -139,11 +159,11 @@ class Api:
     def start_live(self, parks, call):
         parks = split_parks(parks)
         if not parks:
-            return {"ok": False, "error": "公園番号の形式が違います。JP-1281 のように入力してください。"}
+            return {"ok": False, "error": t("api.badPark")}
         if self.logger and self.logger.running():
             self.logger.stop()
         with self.lock:
-            self.events, self.status = [], "最初のスポットを取得しています"
+            self.events, self.status = [], t("api.firstSpot")
         save_settings({"parks": ",".join(parks), "call": call.upper()})
         self.logger = SpotLogger(parks, call, 60, on_activator=self._on_spot, on_status=self._on_status)
         self.logger.start()
@@ -185,17 +205,17 @@ class Api:
         """The operator's answer for one QSO: 'yes' (candidate accepted), 'manual' (typed parks), 'no', ''."""
         parks = split_parks(parks)
         if decision in ("yes", "manual") and not parks:
-            return {"ok": False, "error": "公園番号を JP-1281 の形で入力してください。"}
+            return {"ok": False, "error": t("api.badPark")}
         updated = qsolog.set_p2p(uid, decision, parks)
         if not updated:
-            return {"ok": False, "error": "その QSO が見つかりません。"}
+            return {"ok": False, "error": t("api.qsoNotFound")}
         return {"ok": True, "events": [self._event(r) for r in updated]}
 
     def finish_live(self, online=True):
         """End the activation at this park: stop recording, write the upload file(s) for
         the QSOs of this session, and report what was written."""
         if not self.logger:
-            return {"ok": False, "error": "記録していません。"}
+            return {"ok": False, "error": t("api.notRecording")}
         self.logger.stop()
         sess = dict(self.logger.session)
         self.logger = None
@@ -246,7 +266,7 @@ class Api:
         with self.lock:
             return {"events": [e for e in self.events if e["at"] > since],
                     "qsos": [e for e in self.qso_events if e["at"] > qsince],
-                    "status": self.status, "receiver": dict(self.recv_status),
+                    "status": self.status, "receiver": self._recv_texts(),
                     "running": bool(self.logger and self.logger.running())}
 
     # ---------- who is activating now (own page, works without recording) ----------
@@ -258,7 +278,7 @@ class Api:
                 self._spots_cache = (time.time(), spots)
             except Exception as e:
                 if not spots:
-                    return {"ok": False, "error": "スポットを取得できませんでした: %s" % e}
+                    return {"ok": False, "error": t("api.spotsFail", err=e)}
         worked = []
         if self.logger and self.logger.running():
             t0 = iso_minutes(self.logger.session["start"]) - 5
@@ -281,13 +301,13 @@ class Api:
         try:
             if path:
                 if not os.path.exists(path):
-                    return {"path": path, "items": [], "error": "ファイルが見つかりません。もう一度選んでください。"}
+                    return {"path": path, "items": [], "error": t("api.fileNotFound")}
                 rows = list_activations(path)
             else:
                 rows = list_activations(recs=qsolog.records())
             return {"path": path or "", "items": [{"date": d, "parks": p.split(","), "qsos": n} for d, p, n in rows]}
         except Exception as e:
-            return {"path": path or "", "items": [], "error": "ログを読めませんでした: %s" % e}
+            return {"path": path or "", "items": [], "error": t("api.logRead", err=e)}
 
     def pick_out(self):
         r = self.window.create_file_dialog(FOLDER_DIALOG)
@@ -330,13 +350,13 @@ class Api:
         try:
             return {"ok": True, **updater.check()}
         except Exception as e:
-            return {"ok": False, "error": "更新の確認に失敗しました: %s" % e}
+            return {"ok": False, "error": t("api.updCheckFail", err=e)}
 
     def install_update(self, url):
         try:
             res = updater.install(url)
         except Exception as e:
-            return {"ok": False, "error": "更新に失敗しました: %s" % e}
+            return {"ok": False, "error": t("api.updFail", err=e)}
         if res.get("relaunch"):
             threading.Thread(target=self._relaunch, args=(res["relaunch"],), daemon=True).start()
         return {"ok": True, **res}
@@ -371,6 +391,7 @@ class Api:
 
 def main():
     updater.cleanup()
+    i18n.set_lang(load_settings().get("lang") or "ja")
     api = Api()
     win = webview.create_window(APP_NAME, resource("ui", "index.html"), js_api=api,
                                 width=1180, height=800, min_size=(BAR_W, 160))

@@ -133,7 +133,7 @@ class Receiver:
         self._stop.clear()
         for cfg in self.listeners:
             if not cfg.get("enabled"):
-                self.state[cfg["name"]] = "オフ"
+                self.state[cfg["name"]] = {"code": "off"}
                 continue
             t = threading.Thread(target=self._run, args=(cfg,), daemon=True)
             t.start()
@@ -163,14 +163,14 @@ class Receiver:
 
     def _run(self, cfg):
         name = cfg["name"]
+        base = {"port": cfg["port"], "multicast": (cfg.get("multicast") or "").strip()}
         try:
             sock = self._open(cfg)
         except OSError as e:
-            self.state[name] = "ポート %s を開けません（%s）" % (cfg["port"], e.strerror or e)
+            self.state[name] = dict(base, code="error", err=str(e.strerror or e))
             self.on_status(name, self.state[name])
             return
-        where = "%s:%s" % (cfg["multicast"], cfg["port"]) if cfg.get("multicast") else "ポート %s" % cfg["port"]
-        self.state[name] = "受信待ち（%s）" % where
+        self.state[name] = dict(base, code="listening")
         self.on_status(name, self.state[name])
         fwd = None
         if cfg.get("forward"):
@@ -178,7 +178,8 @@ class Receiver:
                 h, p = cfg["forward"].rsplit(":", 1)
                 fwd = (h.strip() or "127.0.0.1", int(p))
             except ValueError:
-                self.on_status(name, "転送先の形式が違います（例 127.0.0.1:2335）")
+                self.state[name] = dict(base, code="badforward")
+                self.on_status(name, self.state[name])
         out = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) if fwd else None
         while not self._stop.is_set():
             try:
@@ -193,6 +194,6 @@ class Receiver:
                 except OSError:
                     pass
             for action, rec, uid in parse_packet(data):
-                self.state[name] = "受信中（%s）" % where
+                self.state[name] = dict(base, code="receiving")
                 self.on_qso(action, rec, uid, name)
         sock.close()

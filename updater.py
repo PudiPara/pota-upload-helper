@@ -16,6 +16,7 @@ import urllib.error
 import urllib.request
 import zipfile
 
+from i18n import t
 from potacommon import APP_NAME, VERSION, fetch_json
 
 REPO = "PudiPara/pota-upload-helper"
@@ -73,7 +74,7 @@ def check():
 # ---------------------------------------------------------------- download / install
 def download(url, dest, timeout=600):
     if not url.startswith(DOWNLOAD_PREFIX):
-        raise ValueError("更新ファイルの場所が想定と違います: %s" % url)
+        raise ValueError(t("updater.badUrl", url=url))
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "pota-upload-helper/" + VERSION})
         with urllib.request.urlopen(req, timeout=60) as r, open(dest, "wb") as fh:
@@ -83,7 +84,7 @@ def download(url, dest, timeout=600):
         subprocess.run(["curl", "-sSL", "-m", str(timeout), "-A", "pota-upload-helper/" + VERSION, "-o", dest, url],
                        check=True, **kw)
     if os.path.getsize(dest) < 1_000_000:
-        raise RuntimeError("ダウンロードしたファイルが小さすぎます（%d バイト）" % os.path.getsize(dest))
+        raise RuntimeError(t("updater.tooSmall", n=os.path.getsize(dest)))
 
 
 def install(url, installed=None):
@@ -91,7 +92,7 @@ def install(url, installed=None):
           {'manual': path, 'manual_dir': dir} when the new copy was only put somewhere for the user."""
     installed = installed or app_path()
     if not installed:
-        raise RuntimeError("ソースから起動しているので自動更新はできません。")
+        raise RuntimeError(t("updater.fromSource"))
     work = tempfile.mkdtemp(prefix="pota-update-")
     zip_path = os.path.join(work, "update.zip")
     download(url, zip_path)
@@ -99,14 +100,14 @@ def install(url, installed=None):
         return _install_mac(zip_path, work, installed)
     if os.name == "nt":
         return _install_win(zip_path, work, installed)
-    raise RuntimeError("この OS では自動更新に対応していません。")
+    raise RuntimeError(t("updater.unsupportedOs"))
 
 
 def _install_mac(zip_path, work, app):
     subprocess.run(["ditto", "-x", "-k", zip_path, work], check=True)      # keeps the bundle intact
     apps = [d for d in os.listdir(work) if d.endswith(".app")]
     if not apps:
-        raise RuntimeError("更新ファイルにアプリが入っていません。")
+        raise RuntimeError(t("updater.noApp"))
     new = os.path.join(work, apps[0])
     if translocated(app):
         dest = os.path.join(os.path.expanduser("~/Downloads"), os.path.basename(new))
@@ -131,7 +132,7 @@ def _install_win(zip_path, work, exe):
         z.extractall(work)
     exes = [f for f in os.listdir(work) if f.lower().endswith(".exe")]
     if not exes:
-        raise RuntimeError("更新ファイルに実行ファイルが入っていません。")
+        raise RuntimeError(t("updater.noExe"))
     new = os.path.join(work, exes[0])
     script = os.path.join(work, "update.cmd")
     with open(script, "w", encoding="cp932", errors="replace") as fh:

@@ -12,6 +12,7 @@ import os
 import glob
 from collections import defaultdict
 
+from i18n import t as tr
 from potacommon import (DATA_DIR, DEFAULT_OUT, base_call, fetch_json, iso_minutes, minutes,
                         read_adif, split_parks, write_adif)
 
@@ -45,7 +46,7 @@ def load_hunter(call, offline=False, log=print):
             prof = fetch_json("profile/%s" % base_call(call))
             have += prof.get("recent_activity", {}).get("hunter_qsos", [])
         except Exception as e:
-            log("! pota.app のハンターログ取得に失敗しました（%s）。保存済みのデータだけ使います。" % e)
+            log(tr("b.hunterFail", err=e))
     uniq = {}
     for h in have:
         k = (h.get("date"), base_call(h.get("callsign")), h.get("band"), h.get("reference"))
@@ -183,7 +184,7 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
     spots = load_spots()
     activ = find_activation_qsos(recs, dates, my_parks)
     if not activ:
-        msg = "アクティベーションのQSOが見つかりませんでした（MY_SIG_INFO、スポット記録のセッション、または「自分の公園」の指定が必要です）。"
+        msg = tr("b.noActivation")
         return {"text": msg, "files": [], "out_dir": out_dir, "summary": [], "notes": [msg]}
 
     os.makedirs(out_dir, exist_ok=True)
@@ -206,27 +207,25 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
             s_parks, s_sure, log_parks = [], True, []
             cand = split_parks(r.get("P2P_CANDIDATE"))
             if cand:
-                notes.append("%s %s %s: スポットでは %s から出ていましたが、運用中に確認していないので P2P にしていません"
-                             % (r["QSO_DATE"], r["TIME_ON"][:4], r["CALL"], ",".join(cand)))
+                notes.append(tr("b.note.unconfirmed", date=r["QSO_DATE"], time=r["TIME_ON"][:4], call=r["CALL"], parks=",".join(cand)))
         else:
             s_parks, s_sure = their_parks_from_spots(spots.get(b, []), t)
             log_parks = split_parks(r.get("POTA_REF") or r.get("SIG_INFO")) if r.get("SIG", "POTA").upper() in ("POTA", "") else []
         if h_parks:
-            theirs, src = h_parks, "ハンターログ（確定）"
+            theirs, src = h_parks, "hunter"        # src codes: hunter | confirmed | manual | log | spot | logspot
             extra = [p for p in log_parks + s_parks if p not in h_parks]
             if extra:
-                notes.append("%s %s %s: ハンターログでは %s。ログ/スポットにあった %s は使っていません"
-                             % (r["QSO_DATE"], r["TIME_ON"][:4], r["CALL"], ",".join(h_parks), ",".join(extra)))
+                notes.append(tr("b.note.hunterWins", date=r["QSO_DATE"], time=r["TIME_ON"][:4], call=r["CALL"],
+                               hunter=",".join(h_parks), extra=",".join(extra)))
             elif decided and not d_parks:
-                notes.append("%s %s %s: 運用中は「P2P ではない」にしましたが、相手のハンターログに %s があったので P2P にしています"
-                             % (r["QSO_DATE"], r["TIME_ON"][:4], r["CALL"], ",".join(h_parks)))
+                notes.append(tr("b.note.hunterOverridesNo", date=r["QSO_DATE"], time=r["TIME_ON"][:4], call=r["CALL"],
+                               hunter=",".join(h_parks)))
         else:
             theirs = sorted(set(log_parks) | set(s_parks))
-            src = ("確認済み" if r.get("P2P_DECISION") == "yes" else "手入力" if r.get("P2P_DECISION") == "manual"
-                   else "+".join(x for x, ok in (("ログ", log_parks), ("スポット", s_parks)) if ok))
+            src = ("confirmed" if r.get("P2P_DECISION") == "yes" else "manual" if r.get("P2P_DECISION") == "manual"
+                   else "logspot" if log_parks and s_parks else "spot" if s_parks else "log")
             if not s_sure and not set(s_parks) <= set(log_parks):
-                notes.append("%s %s %s: %s が別々のスポットで近い時刻に出ていたので 2fer として扱いました（移動運用の可能性もあり）"
-                             % (r["QSO_DATE"], r["TIME_ON"][:4], r["CALL"], ",".join(s_parks)))
+                notes.append(tr("b.note.twofer", date=r["QSO_DATE"], time=r["TIME_ON"][:4], call=r["CALL"], parks=",".join(s_parks)))
         for mp in mp_list:
             key = (mp, r["QSO_DATE"])
             rep = report[key]
@@ -247,8 +246,8 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
         for m, hb, p, x in lst:
             d = x["date"][:10].replace("-", "")
             if d in days and id(x) not in used_hunter:
-                notes.append("%s %s %s %s %s: pota.app のハンターログにあるが、ログに見つからない（コールや時刻の違い？）"
-                             % (d, x["date"][11:16].replace(":", ""), x.get("callsign"), x.get("band"), p))
+                notes.append(tr("b.note.missing", date=d, time=x["date"][11:16].replace(":", ""), call=x.get("callsign"),
+                               band=x.get("band"), park=p))
 
     lines, written, summary = [], [], []
     for (mp, d) in sorted(files, key=lambda k: (k[1], k[0])):
@@ -261,12 +260,11 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
                         "records": len(files[(mp, d)]),
                         "p2p": [{"time": tm, "call": c, "parks": ps.split(","), "source": src}
                                 for tm, c, ps, src in rep["p2p"]]})
-        lines.append("%s  %s  %d QSO（%d局）%s  → %s" % (d, mp, n, len(rep["calls"]),
-                     "" if n >= 10 else "  ※10QSO未満", fn))
+        lines.append(tr("b.line.file", date=d, park=mp, n=n, stations=len(rep["calls"]), short="" if n >= 10 else tr("b.short"), file=fn))
         for tm, c, ps, src in rep["p2p"]:
             lines.append("      P2P %s %-10s %-20s [%s]" % (tm, c, ps, src))
     if notes:
-        lines.append("\n要確認:")
+        lines.append("\n" + tr("b.notes"))
         lines += ["  - " + n for n in notes]
     text = "\n".join(lines)
     with open(os.path.join(out_dir, "report.txt"), "w", encoding="utf-8") as fh:

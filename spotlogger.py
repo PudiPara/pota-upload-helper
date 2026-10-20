@@ -5,6 +5,7 @@ import json
 import os
 import threading
 
+from i18n import t
 from potacommon import DATA_DIR, base_call, fetch_json, parks_in, split_parks
 
 
@@ -67,7 +68,7 @@ class SpotLogger:
     def __init__(self, parks, call="JL1FVA", interval=60, on_activator=None, on_status=None):
         self.parks = split_parks(parks)
         if not self.parks:
-            raise ValueError("公園の番号が正しくありません（例: JP-1281）")
+            raise ValueError(t("spot.badPark"))
         self.call = call.upper().strip()
         self.interval = max(15, int(interval))
         self.on_activator = on_activator or (lambda *a: None)
@@ -125,14 +126,14 @@ class SpotLogger:
         mine = base_call(self.call)
         seen, known, polls = {}, {}, 0
         while not self._stop.is_set():
-            t = now_utc()
+            now = now_utc()
             try:
                 spots = fetch_json("spot/activator")
-                self.on_status("%sZ 更新（スポット %d 件）" % (t.strftime("%H:%M"), len(spots)))
+                self.on_status(t("spot.updated", time=now.strftime("%H:%M"), n=len(spots)))
             except Exception as e:
                 spots = []
-                self.on_status("%sZ スポット取得に失敗: %s" % (t.strftime("%H:%M"), e))
-            path = os.path.join(DATA_DIR, "spots-%s.jsonl" % t.strftime("%Y%m%d"))
+                self.on_status(t("spot.fetchFail", time=now.strftime("%H:%M"), err=e))
+            path = os.path.join(DATA_DIR, "spots-%s.jsonl" % now.strftime("%Y%m%d"))
             with open(path, "a", encoding="utf-8") as fh:
                 for s in spots:
                     key = s.get("spotId")
@@ -144,7 +145,7 @@ class SpotLogger:
                         continue
                     refs = [(s.get("reference") or "").upper()] + parks_in(s.get("comments"))
                     refs = [r for i, r in enumerate(refs) if r and r not in refs[:i]]
-                    rec = {"seen": t.strftime("%Y-%m-%dT%H:%M:%S"), "spotTime": s.get("spotTime"),
+                    rec = {"seen": now.strftime("%Y-%m-%dT%H:%M:%S"), "spotTime": s.get("spotTime"),
                            "activator": s.get("activator"), "base": act, "parks": refs,
                            "frequency": s.get("frequency"), "mode": s.get("mode"),
                            "comments": s.get("comments"), "spotId": key}
@@ -153,14 +154,14 @@ class SpotLogger:
                     added = [r for r in refs if r not in before]
                     if added:
                         before.update(added)
-                        self.on_activator(t.strftime("%H:%M"), s.get("activator"), sorted(before),
+                        self.on_activator(now.strftime("%H:%M"), s.get("activator"), sorted(before),
                                           s.get("frequency"), s.get("mode"), len(before) > 1)
-            self.session["end"] = t.strftime("%Y-%m-%dT%H:%M")
+            self.session["end"] = now.strftime("%Y-%m-%dT%H:%M")
             self._update_session()
             if polls % 10 == 0:
                 try:
                     load_hunter(self.call, False, log=self.on_status)
                 except Exception as e:
-                    self.on_status("ハンターログ更新に失敗: %s" % e)
+                    self.on_status(t("spot.hunterFail", err=e))
             polls += 1
             self._stop.wait(self.interval)
