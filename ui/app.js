@@ -494,6 +494,7 @@
           ${plate(f.park)}
           <div><div class="file-date">${fmtDate(f.date)}</div><div class="file-name">${esc(f.file)}</div></div>
           <div class="file-q${f.qsos < 10 ? " is-short" : ""}"><strong>${f.qsos}</strong><span>${esc(t(f.qsos < 10 ? "res.qsoShort" : "res.qso"))}</span>
+            ${f.unique && f.unique < f.qsos ? `<small>${esc(t("res.unique", { n: f.unique }))}</small>` : ""}
             ${f.records && f.records !== f.qsos ? `<small>${esc(t("res.lines", { n: f.records }))}</small>` : ""}</div>
         </div>
         ${(f.rows || []).length ? `<div class="p2p">${f.rows.map(row).join("")}</div>`
