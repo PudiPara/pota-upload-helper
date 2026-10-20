@@ -1,0 +1,7 @@
+data/
+out/
+__pycache__/
+*.adi
+*.adif
+*.pyc
+.DS_Store
