@@ -57,7 +57,7 @@ class BuilderTest(unittest.TestCase):
         self.assertEqual((rows["JA1OLD"]["parks"], rows["JA1OLD"]["twofer"]), (["JP-0001"], False))            # an hour apart: moved on
         self.assertEqual([r["base"] for r in summarize_spots(spots, now)], ["JS6UHQ", "JR5JAQ", "JA1OLD"])  # newest first
         self.assertEqual(rows["JS6UHQ"]["ago"], 9)
-        self.assertEqual((rows["JS6UHQ"]["country"], rows["JS6UHQ"]["location"]), ("JP", ""))   # prefix; no locationDesc given
+        self.assertEqual((rows["JS6UHQ"]["country"], rows["JS6UHQ"]["region"]), ("JP", "as"))   # prefix and its continent
         spots[0]["locationDesc"] = "JP-13"
         self.assertEqual(summarize_spots(spots, now)[0]["location"], "JP-13")
 

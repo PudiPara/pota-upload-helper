@@ -33,8 +33,11 @@ need `base_call`/`split_parks`; that duplication is accepted and the two must ma
 re-derives data (band, mode group, candidate parks) that Python already sent.
 
 ## Decisions (and why)
-- **P2P is confirmed by the operator, never automatic.** Spots are a hint; the hunter log (the other
-  side's upload) is the only verified source and still overrides at build time, with a note.
+- **P2P is confirmed by the operator by default.** Spots are a hint; the hunter log (the other side's
+  upload) is the only verified source and still overrides at build time, with a note. `settings.p2p_auto`
+  (設定 → P2P) records the spot candidate as "yes" without asking (`app.py _on_qso`, all copies).
+- **One 設定 page** holds callsigns, the P2P switch, the UDP listeners (ロガーとの接続), language and app
+  items; the rail has four views. QSO rows sort by `ts` (date + TIME_ON to the second) sent by Python.
 - **2fer rules**: a station's parks = the spot's reference + references in its comment, merged over its
   spots within `TWOFER_GAP` (15 min). At build time, parks from *separate* spots near the QSO are a
   2fer but `sure=False` (could be a rover) → a note. pota.app does not accept multi-value references, so
@@ -66,7 +69,7 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
 - **Languages**: ja, en, zh-CN, zh-TW, fr, de, es, it, pt-BR, ko, pl; same keys in every file (check with a
   key diff before committing); language from `navigator.language` on first run, switchable in the rail.
 - **Flags and countries** (アクティベート中): a station's country is its first park's prefix (ISO 3166 alpha-2),
-  sent by `spots.summarize` with `location` (pota.app's locationDesc, e.g. JP-13) for the region filter. The
+  sent by `spots.summarize` with `region` (continent from `spots.continent_of`) for the region filter. The
   UI draws the flag from regional indicators with `ui/fonts/TwemojiCountryFlags.woff2` (78 KB, flags only:
   Windows has no flag glyphs) and names the country with `Intl.DisplayNames` in the UI language.
 - **Example park references** in copy: JP-1266, and JP-1266,JP-1206 for a 2fer.

@@ -80,10 +80,10 @@
   // ---------- navigation ----------
   function show(view) {
     $$(".nav-item").forEach((b) => b.classList.toggle("is-active", b.dataset.view === view));
-    ["live", "spots", "build", "settings", "config"].forEach((v) => ($("#view-" + v).hidden = v !== view));
+    ["live", "spots", "build", "config"].forEach((v) => ($("#view-" + v).hidden = v !== view));
     $(".main").scrollTo(0, 0);
     if (view === "build" && st.source === "app") loadActs();
-    if (view === "settings") api.poll_live(1e12, 1e12).then((r) => updateReceiver(r.receiver));
+    if (view === "config") api.poll_live(1e12, 1e12).then((r) => updateReceiver(r.receiver));
     if (view === "spots") loadSpotsPage();
   }
   $$(".nav-item").forEach((b) => b.addEventListener("click", () => show(b.dataset.view)));
@@ -218,7 +218,8 @@
       </li>`;
   }
   function renderQsos(fresh) {
-    const list = [...st.qsos.values()].sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+    const key = (q) => q.ts || q.date + q.time;           // to the second when the logger sent seconds
+    const list = [...st.qsos.values()].sort((a, b) => key(b).localeCompare(key(a)));
     $("#qsos").innerHTML = list.map((q) => qsoRow(q, fresh)).join("");
     $("#barQsos").innerHTML = list.slice(0, 8).map((q) => qsoRow(q, fresh)).join("");
     $("#qsosEmpty").hidden = list.length > 0; $("#qsos").hidden = list.length === 0;
@@ -319,7 +320,8 @@
 
   // ================================================================ spots page (like pota.app's list)
   // band and mode group come computed from Python (spots.summarize); the page only filters.
-  const sp = { items: [], worked: new Set(), country: "JP", area: "", group: "", band: "", q: "", twofer: false, timer: null };
+  const sp = { items: [], worked: new Set(), region: "", country: "JP", group: "", band: "", q: "", twofer: false, timer: null };
+  const REGIONS = ["as", "eu", "na", "sa", "af", "oc"];      // continent codes from spots.continent_of
   async function loadSpotsPage() {
     const r = await api.spots_now();
     const err = $("#spotsError");
@@ -335,26 +337,24 @@
     renderSpotsPage();
     clearInterval(sp.timer); sp.timer = setInterval(() => { if (!$("#view-spots").hidden) loadSpotsPage(); else clearInterval(sp.timer); }, 60000);
   }
-  // Country and region (pota.app's locationDesc, e.g. JP-13) selects: only what is on the air now.
+  // Region (continent) and country selects: only what is on the air now, with counts.
   function spotsOptions() {
-    const n = {};
-    sp.items.forEach((e) => { if (e.country) n[e.country] = (n[e.country] || 0) + 1; });
+    const nr = {}, n = {};
+    sp.items.forEach((e) => { if (e.region) nr[e.region] = (nr[e.region] || 0) + 1; });
+    if (sp.region && !nr[sp.region]) sp.region = "";
+    $("#spotsRegion").innerHTML = `<option value="">${esc(t("spots.region.all"))}</option>` + REGIONS.filter((r) => nr[r]).map((r) =>
+      `<option value="${r}"${r === sp.region ? " selected" : ""}>${esc(t("region." + r))} (${nr[r]})</option>`).join("");
+    sp.items.forEach((e) => { if (e.country && (!sp.region || e.region === sp.region)) n[e.country] = (n[e.country] || 0) + 1; });
     const countries = Object.keys(n).sort((a, b) => n[b] - n[a] || countryName(a).localeCompare(countryName(b), st.lang));
     if (sp.country && !countries.includes(sp.country)) sp.country = "";
     $("#spotsCountry").innerHTML = `<option value="">${esc(t("spots.country.all"))}</option>` + countries.map((c) =>
       `<option value="${esc(c)}"${c === sp.country ? " selected" : ""}>${flagOf(c)} ${esc(countryName(c))} (${n[c]})</option>`).join("");
-    const areas = [...new Set(sp.items.filter((e) => !sp.country || e.country === sp.country)
-      .flatMap((e) => (e.location || "").split(",")).map((a) => a.trim()).filter(Boolean))].sort();
-    if (sp.area && !areas.includes(sp.area)) sp.area = "";
-    $("#spotsArea").innerHTML = `<option value="">${esc(t("spots.area.all"))}</option>` + areas.map((a) =>
-      `<option value="${esc(a)}"${a === sp.area ? " selected" : ""}>${esc(a)}</option>`).join("");
-    $("#spotsArea").disabled = !areas.length;
   }
   function renderSpotsPage() {
     const q = sp.q.toUpperCase();
     const list = sp.items.filter((e) =>
+      (!sp.region || e.region === sp.region) &&
       (!sp.country || e.country === sp.country) &&
-      (!sp.area || (e.location || "").split(",").map((a) => a.trim()).includes(sp.area)) &&
       (!sp.group || e.group === sp.group) &&
       (!sp.band || e.band === sp.band) &&
       (!sp.twofer || e.twofer) &&
@@ -363,8 +363,8 @@
     $("#spotsPageEmpty").hidden = list.length > 0; $("#spotsPage").hidden = list.length === 0;
     $("#spotsSummary").textContent = sp.items.length ? t("spots.summary", { shown: list.length, total: sp.items.length }) : t("nav.spots.sub");
   }
-  $("#spotsCountry").addEventListener("change", (e) => { sp.country = e.target.value; sp.area = ""; spotsOptions(); renderSpotsPage(); });
-  $("#spotsArea").addEventListener("change", (e) => { sp.area = e.target.value; renderSpotsPage(); });
+  $("#spotsRegion").addEventListener("change", (e) => { sp.region = e.target.value; spotsOptions(); renderSpotsPage(); });
+  $("#spotsCountry").addEventListener("change", (e) => { sp.country = e.target.value; renderSpotsPage(); });
   $$(".seg-mode button").forEach((b) => b.addEventListener("click", () => { sp.group = b.dataset.modegroup; segSet(".seg-mode", "modegroup", sp.group); renderSpotsPage(); }));
   $("#spotsBand").addEventListener("change", (e) => { sp.band = e.target.value; renderSpotsPage(); });
   $("#spotsSearch").addEventListener("input", (e) => { sp.q = e.target.value.trim(); renderSpotsPage(); });
@@ -560,6 +560,7 @@
     saveCalls(calls, calls.includes(st.call) ? st.call : calls[0]);
   });
   $("#liveCall").addEventListener("change", (e) => saveCalls(st.calls, e.target.value));
+  $("#p2pAuto").addEventListener("change", (e) => api.save({ p2p_auto: e.target.checked }));
   $("#openData").addEventListener("click", () => api.open_data());
   $("#lang").addEventListener("change", async (e) => {
     await api.save({ lang: e.target.value }); await loadLang(e.target.value); rerender();
@@ -576,7 +577,7 @@
     if (!s.lang) api.save({ lang });
     await loadLang(lang);
     $("#version").textContent = `v${s.version}`;
-    renderCalls();
+    renderCalls(); $("#p2pAuto").checked = !!s.p2p_auto;
     $("#parks").value = s.parks; renderPreview();
     $("#outPath").textContent = s.out;
     $("#logCount").textContent = s.log_count ? " " + t("build.count", { n: s.log_count }) : "";

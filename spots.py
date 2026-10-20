@@ -103,6 +103,22 @@ def load_sessions():
 
 
 # ---------------------------------------------------------------- who is on the air now
+CONTINENTS = {   # ISO 3166 alpha-2 (the park prefix) -> continent, for the アクティベート中 region filter
+    "as": "AF AM AZ BH BD BT BN KH CN CY GE HK IN ID IR IQ IL JP JO KZ KW KG LA LB MO MY MV MN MM NP KP OM PK PS PH QA SA SG KR LK SY TW TJ TH TL TR TM AE UZ VN YE",
+    "eu": "AL AD AT AX BY BE BA BG HR CZ DK EE FO FI FR DE GI GR GG HU IS IE IM IT JE XK LV LI LT LU MT MD MC ME NL MK NO PL PT RO RU SM RS SK SI ES SJ SE CH UA GB VA",
+    "na": "AG AI AW BB BL BM BQ BS BZ CA CR CU CW DM DO GD GL GP GT HN HT JM KN KY LC MF MQ MS MX NI PA PM PR SV SX TC TT US VC VG VI",
+    "sa": "AR BO BR CL CO EC FK GF GY PE PY SR UY VE",
+    "af": "DZ AO BJ BW BF BI CV CM CF TD KM CD CG CI DJ EG GQ ER SZ ET GA GM GH GN GW KE LS LR LY MG MW ML MR MU YT MA MZ NA NE NG RE RW SH ST SN SC SL SO ZA SS SD TZ TG TN UG EH ZM ZW",
+    "oc": "AS AU CK FJ PF GU KI MH FM NR NC NZ NU NF MP PW PG PN WS SB TK TO TV VU WF",
+}
+_CONTINENT_OF = {cc: k for k, v in CONTINENTS.items() for cc in v.split()}
+
+
+def continent_of(country):
+    """'as' | 'eu' | 'na' | 'sa' | 'af' | 'oc' | '' for a park prefix."""
+    return _CONTINENT_OF.get((country or "").upper(), "")
+
+
 def summarize(spots, now=None):
     """One row per station from api.pota.app/spot/activator, newest first: the parks of its spots
     of the last TWOFER_GAP minutes merged (more than one = 2fer), band and mode group computed here
@@ -124,6 +140,7 @@ def summarize(spots, now=None):
                 parks += [r for r in refs if r not in parks]
         out.append({"call": newest.get("activator") or base, "base": base, "parks": parks, "twofer": len(parks) > 1,
                     "country": parks[0].split("-")[0] if parks else "",      # park prefix = ISO 3166 alpha-2
+                    "region": continent_of(parks[0].split("-")[0]) if parks else "",
                     "location": newest.get("locationDesc") or "",            # "JP-13", "US-NY,US-NJ"
                     "freq": newest.get("frequency"), "band": band_from_khz(newest.get("frequency")),
                     "mode": newest.get("mode") or "", "group": mode_group(newest.get("mode")),
