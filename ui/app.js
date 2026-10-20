@@ -317,7 +317,9 @@
           <span class="p2p-call">${esc(p.call)}</span><span class="plates">${plates(p.parks)}</span>
           <span class="src ${c}">${l}</span></div>`; }).join("")}</div>` : '<div class="p2p-none">P2P はありませんでした</div>'}
       </article>`).join("") +
-      (r.p2p_fixes ? `<p class="fixnote">ロガーに入っていなかった相手の公園が ${r.p2p_fixes} 件ありました。logger_p2p_fix.adi に書き出しています。</p>` : "") +
+      (r.logger_file ? `<div class="loggerbox"><h3>ロガーにも公園を入れるには</h3>
+          <p><b>${esc(r.logger_file)}</b>（${r.logger_records} 件、2fer はカンマ区切りで 1 行）を保存先に書きました${r.p2p_fixes ? `。相手の公園がロガーに無かった QSO が ${r.p2p_fixes} 件あります` : ""}。</p>
+          <p>RUMlogNG なら Logbook → Import ADIF でこのファイルを選び、<b>No Dupes</b> と <b>Update QSO record</b> をオンにして My Park・P2P・POTA を上書き対象にしてください。既存の QSO に自分の公園と相手の公園が入ります。</p></div>` : "") +
       (files.length && r.notes && r.notes.length ? `<div class="notes"><h3>確認してください</h3><ul>${r.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul></div>` : "") +
       (!files.length && r.notes && r.notes.length ? `<p class="muted">${esc(r.notes[0])}</p>` : "");
   }
@@ -386,6 +388,37 @@
   });
   setInterval(async () => { if (api) updateReceiver((await api.poll_live(1e12, 1e12)).receiver); }, 4000);
 
+  // ---------- updates ----------
+  let upd = null;
+  async function checkUpdate(quiet) {
+    const box = $("#update"), txt = $("#updateText"), go = $("#updateGo");
+    if (!quiet) { box.hidden = false; txt.textContent = "確認しています…"; go.hidden = true; }
+    const r = await api.check_update();
+    if (!r.ok) { if (!quiet) txt.textContent = r.error; return; }
+    upd = r;
+    if (!r.newer) { if (!quiet) { txt.textContent = `最新版です（v${r.current}）`; go.hidden = true; } return; }
+    box.hidden = false; go.hidden = !r.can_install; go.disabled = false; go.textContent = "今すぐ更新";
+    txt.innerHTML = `<strong>v${esc(r.latest)}</strong> が公開されています（いまは v${esc(r.current)}）。` +
+      (r.can_install ? (r.translocated ? "ダウンロードして「ダウンロード」フォルダに置きます。" : "ダウンロードして入れ替え、再起動します。")
+        : `<button class="link" id="updatePage">Releases ページを開く</button>`);
+    const pg = $("#updatePage"); if (pg) pg.addEventListener("click", () => api.open_url(r.page));
+  }
+  $("#checkUpdate").addEventListener("click", () => checkUpdate(false));
+  $("#updateGo").addEventListener("click", async () => {
+    if (!upd || !upd.asset) return;
+    const go = $("#updateGo"), txt = $("#updateText");
+    go.disabled = true; go.textContent = "ダウンロードしています…";
+    const r = await api.install_update(upd.asset);
+    if (!r.ok) { go.disabled = false; go.textContent = "今すぐ更新"; txt.textContent = r.error; return; }
+    go.hidden = true;
+    if (r.manual) {
+      txt.innerHTML = `新しいアプリを <b>${esc(r.manual)}</b> に置きました。このアプリを終了してから、それを「アプリケーション」フォルダへ移して開いてください。`;
+      api.open_out(r.manual_dir);
+    } else {
+      txt.textContent = `v${upd.latest} に更新しました。再起動します…`;
+    }
+  });
+
   // ---------- rail ----------
   $("#openData").addEventListener("click", () => api.open_data());
   $("#call").addEventListener("change", (e) => {
@@ -406,6 +439,7 @@
     renderListeners(); updateReceiver(s.receiver);
     setSource(st.source);
     if (s.live) enterRunning(s.live.parks, s.live.start);
+    setTimeout(() => checkUpdate(true), 5000);       // quiet: only speaks up when a newer release exists
   }
   if (window.pywebview && window.pywebview.api) boot();
   else window.addEventListener("pywebviewready", boot);

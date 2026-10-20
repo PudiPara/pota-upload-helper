@@ -17,6 +17,7 @@ from potacommon import (APP_NAME, DATA_DIR, DEFAULT_OUT, VERSION, base_call, fet
                         load_settings, minutes, save_settings, split_parks)
 from receiver import DEFAULT_LISTENERS, Receiver
 from spotlogger import SpotLogger
+import updater
 
 # pywebview >= 5 has FileDialog; the bare constants are deprecated in 6 and will be removed.
 _FD = getattr(webview, "FileDialog", None)
@@ -306,6 +307,29 @@ class Api:
             out[ref] = self._parks[ref]
         return out
 
+    # ---------- updates (GitHub Releases) ----------
+    def check_update(self):
+        try:
+            return {"ok": True, **updater.check()}
+        except Exception as e:
+            return {"ok": False, "error": "更新の確認に失敗しました: %s" % e}
+
+    def install_update(self, url):
+        try:
+            res = updater.install(url)
+        except Exception as e:
+            return {"ok": False, "error": "更新に失敗しました: %s" % e}
+        if res.get("relaunch"):
+            threading.Thread(target=self._relaunch, args=(res["relaunch"],), daemon=True).start()
+        return {"ok": True, **res}
+
+    def _relaunch(self, path):
+        time.sleep(1.0)              # let the UI show "再起動します"
+        updater.relaunch(path)
+        self.shutdown()
+        if self.window:
+            self.window.destroy()
+
     # ---------- misc ----------
     def open_out(self, path):
         path = path or DEFAULT_OUT
@@ -328,6 +352,7 @@ class Api:
 
 
 def main():
+    updater.cleanup()
     api = Api()
     win = webview.create_window(APP_NAME, resource("ui", "index.html"), js_api=api,
                                 width=1180, height=800, min_size=(BAR_W, 160))
