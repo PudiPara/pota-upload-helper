@@ -314,6 +314,13 @@ class Api:
         except Exception as e:
             return {"path": path or "", "items": [], "error": t("api.logRead", err=e)}
 
+    def delete_activation(self, date):
+        """Remove one UTC day's activation QSOs from the app's own log (the list on アップロード作成)."""
+        if not re.fullmatch(r"\d{8}", str(date or "")):
+            return {"ok": False, "error": t("api.badDate")}
+        n = qsolog.delete_activation(str(date))
+        return {"ok": True, "n": n, "log_count": qsolog.count()}
+
     def pick_out(self):
         r = self._window.create_file_dialog(FOLDER_DIALOG)
         if not r:

@@ -333,9 +333,11 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 
 .acts { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); max-height: 300px; overflow: auto; }
 .act {
-  display: grid; grid-template-columns: 22px 170px 1fr 110px; gap: 12px; align-items: center;
+  display: grid; grid-template-columns: 22px 170px 1fr 110px auto; gap: 12px; align-items: center;
   padding: 10px 16px; border-top: 1px solid var(--line); cursor: pointer;
 }
+.act-del { font-size: 12px; color: var(--ink-3); }
+.act-del.is-armed { color: var(--warn); font-weight: 700; }
 .act:first-child { border-top: 0; }
 .act:hover { background: var(--surface-2); }
 .act input { width: 16px; height: 16px; accent-color: var(--pine-2); }

@@ -114,3 +114,14 @@ class ModeIsPartOfTheKey(unittest.TestCase):
         first = potacommon._instance_lock
         self.assertFalse(potacommon.lock_instance())     # a second copy would be refused
         first.close()
+
+
+class DeleteActivation(unittest.TestCase):
+    def test_only_that_days_activation_qsos_go(self):
+        qsolog.upsert(rec("JA1DEL", "060000", MY_SIG_INFO="JP-9999", QSO_DATE="20250101"), "d-1", "x")
+        qsolog.upsert(rec("JA1DEL", "060100", QSO_DATE="20250101"), "d-2", "x")                 # hunter QSO, no park
+        qsolog.upsert(rec("JA1DEL", "060000", MY_SIG_INFO="JP-9999", QSO_DATE="20250102"), "d-3", "x")
+        self.assertEqual(qsolog.delete_activation("20250101"), 1)
+        left = [(r["QSO_DATE"], r.get("MY_SIG_INFO", "")) for r in qsolog.records() if r["CALL"] == "JA1DEL"]
+        self.assertEqual(sorted(left), [("20250101", ""), ("20250102", "JP-9999")])
+

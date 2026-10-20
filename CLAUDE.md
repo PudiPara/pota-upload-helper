@@ -55,6 +55,8 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
 - **`Api` state is private** (`self._window`, `self._logger`, …): pywebview exposes every public attribute
   of the js_api object and (6.x) walks them recursively; on Windows that walk entered the WinForms window
   and froze the app on 「記録を始める」. `tests/test_api_private.py` enforces it.
+- **Deleting an activation** (アップロード作成, app log only): `qsolog.delete_activation(date)` soft-deletes
+  that UTC day's QSOs that carry my park; two presses in the UI since `window.confirm` is unavailable.
 - **Window close ≠ finish.** `finish_live` stops, builds and resets; `shutdown` only stops threads.
 - **Bar mode** is a resize/move/on-top of the one window (pywebview can't do a second window cheaply);
   `window.confirm` is unavailable in the web view, so "finish with unconfirmed" needs a second press.
