@@ -11,7 +11,7 @@ W FT8 nie wiesz, czy druga stacja jest w parku, a tym bardziej czy to 2fer. Ta a
 ## Co potrafi
 
 - **Tryb paska podczas aktywacji**: wpisz park, włącz zapis, a okno zmienia się w wąski pasek nad programem logującym (twój park, czas, liczba QSO, ostatnie QSO). „Rozwiń” przywraca je. Stacje spotowane z parków są notowane co minutę, więc można je ocenić nawet po ich QRT.
-- **Aktywni teraz**: nawet bez zapisu lista stacji nadających z parków, ze spotów pota.app (co minutę). Filtry: region (Japonia / świat), pasmo, emisja (CW / Phone / Data), znak lub park, tylko 2fer.
+- **Aktywni teraz**: nawet bez zapisu lista stacji nadających z parków, ze spotów pota.app (co minutę). Filtry: kraj (z flagą) i region, pasmo, emisja (CW / Phone / Data), znak lub park, tylko 2fer.
 - **QSO z programu logującego**: przez UDP jak OpsLog czy JTAlert. Format N1MM (RUMlogNG, N1MM Logger+, DXLog…), WSJT-X / JTDX (multicast), ADIF (JTAlert, GridTracker, Log4OM…). Poprawki i usunięcia w logu są uwzględniane.
 - **P2P potwierdzane od razu**: jeśli druga stacja była spotowana z parku, wiersz pokazuje „Możliwe P2P” z oznaczeniem; odpowiedz tak lub nie. Gdy stacji nie ma w spotach (fonia lub CW, gdy podają park), wpisz oznaczenie w wierszu. Nic nie staje się P2P samo.
 - **10 QSO**: baner na cały ekran w chwili zaliczenia aktywacji.
@@ -80,7 +80,7 @@ Publiczny profil pota.app pokazuje tylko 25 ostatnich QSO huntera; aplikacja dop
 
 ## Języki
 
-日本語, English, 简体中文, 繁體中文, Français, Deutsch, Español, Italiano, Português (Brasil), 한국어, Polski. Wybierany według języka systemu, do zmiany w „Język” na pasku bocznym.
+日本語, English, 简体中文, 繁體中文, Français, Deutsch, Español, Italiano, Português (Brasil), 한국어, Polski. Wybierany według języka systemu, do zmiany w „Język” w ustawieniach.
 
 ## Warunki użytkowania i wyłączenie odpowiedzialności
 
@@ -116,3 +116,5 @@ Podnieś `VERSION` w `potacommon.py` i wypchnij na `main`: GitHub Actions zbuduj
 ## License
 
 MIT
+
+Country flags are drawn with the flags-only font from [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), built from Twemoji (CC-BY 4.0).

@@ -11,7 +11,7 @@ En FT8 no puedes saber si la otra estación está en un parque, y menos si es un
 ## Qué hace
 
 - **Modo barra mientras activas**: escribe tu parque, empieza a grabar y la ventana se convierte en una franja pequeña que queda sobre el log (tu parque, tiempo, QSO, últimos QSO). «Ampliar» la devuelve. Las estaciones spoteadas desde parques se anotan cada minuto, así se pueden juzgar aunque hagan QRT.
-- **Activando ahora**: aun sin grabar, una lista de las estaciones que están en el aire desde parques, según los spots de pota.app (cada minuto). Filtros: región (Japón / mundo), banda, modo (CW / Phone / Data), indicativo o parque, solo 2fer.
+- **Activando ahora**: aun sin grabar, una lista de las estaciones que están en el aire desde parques, según los spots de pota.app (cada minuto). Filtros: país (con bandera) y región, banda, modo (CW / Phone / Data), indicativo o parque, solo 2fer.
 - **QSO desde tu log**: por UDP como OpsLog o JTAlert. Formato N1MM (RUMlogNG, N1MM Logger+, DXLog…), WSJT-X / JTDX (multicast), ADIF (JTAlert, GridTracker, Log4OM…). Las correcciones y borrados en el log se reflejan.
 - **P2P confirmado al momento**: si la otra estación fue spoteada desde un parque, la fila muestra «Posible P2P» con la referencia; responde sí o no. Si no está en los spots (fonía o CW, cuando te dicen el parque), escribe la referencia en la fila. Nada pasa a P2P solo.
 - **10 QSO**: un cartel a pantalla completa cuando la activación se completa.
@@ -80,7 +80,7 @@ El perfil público de pota.app solo muestra los últimos 25 QSO de cazador; la a
 
 ## Idiomas
 
-日本語, English, 简体中文, 繁體中文, Français, Deutsch, Español, Italiano, Português (Brasil), 한국어, Polski. Se elige según el idioma del sistema y se cambia en «Idioma» en la barra lateral.
+日本語, English, 简体中文, 繁體中文, Français, Deutsch, Español, Italiano, Português (Brasil), 한국어, Polski. Se elige según el idioma del sistema y se cambia en «Idioma» en Ajustes.
 
 ## Condiciones de uso y exención de responsabilidad
 
@@ -116,3 +116,5 @@ Sube `VERSION` en `potacommon.py` y haz push a `main`: GitHub Actions compila ma
 ## License
 
 MIT
+
+Country flags are drawn with the flags-only font from [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), built from Twemoji (CC-BY 4.0).

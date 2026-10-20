@@ -11,7 +11,7 @@
 ## 功能
 
 - **运用中以工具条显示**：输入公园编号开始记录后，窗口缩成一条横栏，留在日志软件上方（自己的公园、经过时间、QSO 数、最近的通联）。“展开”可恢复原大小。每分钟记录从公园发射的电台，对方 QRT 后仍能判断。
-- **正在激活的电台**：即使不在记录，也能看到此刻在公园发射的电台列表（来自 pota.app spot，每分钟更新）。可按地区（日本／全球）、波段、模式（CW／Phone／Data）、呼号或公园编号、只看 2fer 筛选。
+- **正在激活的电台**：即使不在记录，也能看到此刻在公园发射的电台列表（来自 pota.app spot，每分钟更新）。可按国家（带国旗）和地区、波段、模式（CW／Phone／Data）、呼号或公园编号、只看 2fer 筛选。
 - **从日志软件接收 QSO**：和 OpsLog、JTAlert 一样通过 UDP 接收。N1MM 格式（RUMlogNG、N1MM Logger+、DXLog 等）、WSJT-X / JTDX（支持组播）、ADIF（JTAlert、GridTracker、Log4OM 等）。日志软件中的修改和删除也会同步。
 - **当场确认 P2P**：若对方正从公园发射，该行会显示“可能是 P2P”和公园编号，按“是”“否”决定。对方不在 spot 上时（Phone 或 CW 口头告知公园），直接在该行输入公园编号。不会自动记为 P2P。
 - **10 QSO 提醒**：激活成功的瞬间全屏显示。
@@ -80,7 +80,7 @@ pota.app 公开资料只显示最近 25 条猎人日志，因此应用在记录�
 
 ## 语言
 
-日本語、English、简体中文、繁體中文、Français、Deutsch、Español、Italiano、Português (Brasil)、한국어、Polski。按系统语言自动选择，可在侧栏“语言”中切换。
+日本語、English、简体中文、繁體中文、Français、Deutsch、Español、Italiano、Português (Brasil)、한국어、Polski。按系统语言自动选择，可在“设置”的“语言”中切换。
 
 ## 使用条款与免责声明
 
@@ -116,3 +116,5 @@ python3 -m unittest discover -s tests
 ## License
 
 MIT
+
+Country flags are drawn with the flags-only font from [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), built from Twemoji (CC-BY 4.0).

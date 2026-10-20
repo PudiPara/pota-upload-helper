@@ -11,7 +11,7 @@ Em FT8 você não sabe se a outra estação está num parque, muito menos se é 
 ## O que faz
 
 - **Modo barra durante a ativação**: digite o parque, comece a gravar e a janela vira uma faixa pequena que fica sobre o log (seu parque, tempo, QSOs, últimos QSOs). «Expandir» traz de volta. Estações spotadas de parques são anotadas a cada minuto, então dá para julgar mesmo depois do QRT.
-- **Ativando agora**: mesmo sem gravar, uma lista das estações no ar de parques, dos spots do pota.app (a cada minuto). Filtros: região (Japão / mundo), banda, modo (CW / Phone / Data), indicativo ou parque, só 2fer.
+- **Ativando agora**: mesmo sem gravar, uma lista das estações no ar de parques, dos spots do pota.app (a cada minuto). Filtros: país (com bandeira) e região, banda, modo (CW / Phone / Data), indicativo ou parque, só 2fer.
 - **QSOs do seu log**: por UDP como OpsLog ou JTAlert. Formato N1MM (RUMlogNG, N1MM Logger+, DXLog…), WSJT-X / JTDX (multicast), ADIF (JTAlert, GridTracker, Log4OM…). Correções e exclusões no log são refletidas.
 - **P2P confirmado na hora**: se a outra estação foi spotada de um parque, a linha mostra «Possível P2P» com a referência; responda sim ou não. Se não está nos spots (fonia ou CW, quando te falam o parque), digite a referência na linha. Nada vira P2P sozinho.
 - **10 QSOs**: um banner em tela cheia quando a ativação é concluída.
@@ -80,7 +80,7 @@ O perfil público do pota.app mostra só os últimos 25 QSOs de caçador; o app 
 
 ## Idiomas
 
-日本語, English, 简体中文, 繁體中文, Français, Deutsch, Español, Italiano, Português (Brasil), 한국어, Polski. Escolhido pelo idioma do sistema, trocável em «Idioma» na barra lateral.
+日本語, English, 简体中文, 繁體中文, Français, Deutsch, Español, Italiano, Português (Brasil), 한국어, Polski. Escolhido pelo idioma do sistema, trocável em «Idioma» em Configurações.
 
 ## Termos de uso e isenção de responsabilidade
 
@@ -116,3 +116,5 @@ Suba `VERSION` em `potacommon.py` e faça push em `main`: o GitHub Actions compi
 ## License
 
 MIT
+
+Country flags are drawn with the flags-only font from [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), built from Twemoji (CC-BY 4.0).

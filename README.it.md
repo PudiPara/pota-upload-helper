@@ -11,7 +11,7 @@ In FT8 non puoi sapere se l’altra stazione è in un parco, figuriamoci se è u
 ## Cosa fa
 
 - **Modalità barra durante l’attivazione**: digita il parco, avvia la registrazione e la finestra diventa una striscia che resta sopra il log (il tuo parco, il tempo, i QSO, gli ultimi QSO). «Espandi» la riporta grande. Le stazioni spottate dai parchi vengono annotate ogni minuto, così si giudicano anche dopo il loro QRT.
-- **Attivi adesso**: anche senza registrare, l’elenco delle stazioni in aria dai parchi, dagli spot di pota.app (ogni minuto). Filtri: regione (Giappone / mondo), banda, modo (CW / Phone / Data), nominativo o parco, solo 2fer.
+- **Attivi adesso**: anche senza registrare, l’elenco delle stazioni in aria dai parchi, dagli spot di pota.app (ogni minuto). Filtri: paese (con bandiera) e regione, banda, modo (CW / Phone / Data), nominativo o parco, solo 2fer.
 - **QSO dal tuo log**: via UDP come OpsLog o JTAlert. Formato N1MM (RUMlogNG, N1MM Logger+, DXLog…), WSJT-X / JTDX (multicast), ADIF (JTAlert, GridTracker, Log4OM…). Correzioni e cancellazioni nel log vengono riportate.
 - **P2P confermato subito**: se l’altra stazione è stata spottata da un parco, la riga mostra «Possibile P2P» con il riferimento; rispondi sì o no. Se non è negli spot (fonia o CW, quando ti dicono il parco), digita il riferimento nella riga. Niente diventa P2P da solo.
 - **10 QSO**: un banner a tutto schermo quando l’attivazione è completata.
@@ -80,7 +80,7 @@ Il profilo pubblico di pota.app mostra solo gli ultimi 25 QSO hunter; l’app ag
 
 ## Lingue
 
-日本語, English, 简体中文, 繁體中文, Français, Deutsch, Español, Italiano, Português (Brasil), 한국어, Polski. Scelta dalla lingua di sistema, modificabile in «Lingua» nella barra laterale.
+日本語, English, 简体中文, 繁體中文, Français, Deutsch, Español, Italiano, Português (Brasil), 한국어, Polski. Scelta dalla lingua di sistema, modificabile in «Lingua» nelle impostazioni.
 
 ## Condizioni d’uso ed esclusione di responsabilità
 
@@ -116,3 +116,5 @@ Alza `VERSION` in `potacommon.py` e fai push su `main`: GitHub Actions compila m
 ## License
 
 MIT
+
+Country flags are drawn with the flags-only font from [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), built from Twemoji (CC-BY 4.0).

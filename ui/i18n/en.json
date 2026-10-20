@@ -77,6 +77,8 @@
  "spots.at": "as of {at}Z · {n} stations",
  "spots.mode.all": "All",
  "spots.band.all": "All bands",
+ "spots.country.all": "All countries",
+ "spots.area.all": "All regions",
  "spots.search.ph": "Filter by call or park",
  "spots.twofer": "2fer only",
  "spots.empty": "No station matches.",

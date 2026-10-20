@@ -11,7 +11,7 @@ FT8 등에서는 상대가 공원에서 운용 중인지, 더구나 2fer인지 �
 ## 할 수 있는 일
 
 - **운용 중에는 바 표시**: 공원 번호를 넣고 기록을 시작하면 창이 작은 띠가 되어 로거 위에 남습니다(내 공원, 경과 시간, QSO 수, 최근 교신). ‘펼치기’로 원래 크기로 돌아갑니다. 공원에서 나오는 국을 1분마다 기록하므로 상대가 QRT해도 나중에 판정할 수 있습니다.
-- **활성화 중인 국**: 기록하지 않을 때도 지금 공원에서 나오는 국을 pota.app 스팟으로 목록화합니다(1분마다 갱신). 지역(일본/전 세계), 밴드, 모드(CW/Phone/Data), 호출부호나 공원 번호 검색, 2fer만으로 필터링합니다.
+- **활성화 중인 국**: 기록하지 않을 때도 지금 공원에서 나오는 국을 pota.app 스팟으로 목록화합니다(1분마다 갱신). 국가(국기 표시)와 지역, 밴드, 모드(CW/Phone/Data), 호출부호나 공원 번호 검색, 2fer만으로 필터링합니다.
 - **로거에서 QSO 수신**: OpsLog나 JTAlert처럼 UDP로 받습니다. N1MM 형식(RUMlogNG, N1MM Logger+, DXLog 등), WSJT-X/JTDX(멀티캐스트 지원), ADIF(JTAlert, GridTracker, Log4OM 등). 로거에서의 수정·삭제도 반영됩니다.
 - **P2P는 그 자리에서 확인**: 도착한 QSO의 상대가 공원에서 나오고 있으면 ‘P2P 가능성’과 공원 번호를 보여 주고 ‘예’ ‘아니오’로 정합니다. 스팟에 없는 상대(Phone이나 CW로 공원 번호를 들은 경우)는 그 행에 번호를 직접 입력합니다. 자동으로 P2P로 만들지 않습니다.
 - **10 QSO 알림**: 활성화 성공 순간 화면 가득 표시합니다.
@@ -80,7 +80,7 @@ pota.app 공개 프로필에는 최근 25건의 헌터 로그만 나오므로, �
 
 ## 언어
 
-日本語, English, 简体中文, 繁體中文, Français, Deutsch, Español, Italiano, Português (Brasil), 한국어, Polski. OS 언어에 맞춰 자동으로 선택되며 사이드바의 ‘언어’에서 바꿀 수 있습니다.
+日本語, English, 简体中文, 繁體中文, Français, Deutsch, Español, Italiano, Português (Brasil), 한국어, Polski. OS 언어에 맞춰 자동으로 선택되며 ‘설정’의 ‘언어’에서 바꿀 수 있습니다.
 
 ## 이용 약관·면책 사항
 
@@ -116,3 +116,5 @@ python3 -m unittest discover -s tests
 ## License
 
 MIT
+
+Country flags are drawn with the flags-only font from [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), built from Twemoji (CC-BY 4.0).

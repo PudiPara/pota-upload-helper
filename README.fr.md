@@ -11,7 +11,7 @@ En FT8, impossible de savoir sur le moment si la station en face est dans un par
 ## Ce qu’elle fait
 
 - **Mode barre pendant l’activation** : saisissez votre parc, démarrez l’enregistrement, et la fenêtre devient une petite barre qui reste au-dessus du logger (votre parc, le temps écoulé, le nombre de QSO, les derniers QSO). « Agrandir » la ramène. Les stations spottées depuis des parcs sont notées chaque minute, donc jugeables même après leur QRT.
-- **Activations en cours** : même sans enregistrer, la liste des stations actuellement en l’air depuis un parc, d’après les spots pota.app (actualisée chaque minute). Filtres : région (Japon / monde), bande, mode (CW / Phone / Data), indicatif ou parc, 2fer seulement.
+- **Activations en cours** : même sans enregistrer, la liste des stations actuellement en l’air depuis un parc, d’après les spots pota.app (actualisée chaque minute). Filtres : pays (avec drapeau) et région, bande, mode (CW / Phone / Data), indicatif ou parc, 2fer seulement.
 - **QSO depuis votre logger** : reçus en UDP comme OpsLog ou JTAlert. Format N1MM (RUMlogNG, N1MM Logger+, DXLog…), WSJT-X / JTDX (multicast pris en charge), ADIF (JTAlert, GridTracker, Log4OM…). Les corrections et suppressions dans le logger sont reprises.
 - **P2P confirmé sur le moment** : si la station en face a été spottée depuis un parc, la ligne affiche « P2P possible » avec la référence ; répondez oui ou non. Pour une station absente des spots (en phonie ou CW, quand elle vous donne son parc), tapez la référence dans la ligne. Rien ne devient P2P tout seul.
 - **10 QSO** : une bannière plein écran au moment où l’activation est validée.
@@ -80,7 +80,7 @@ Le profil public pota.app ne montre que les 25 derniers QSO chasseur ; l’appli
 
 ## Langues
 
-日本語, English, 简体中文, 繁體中文, Français, Deutsch, Español, Italiano, Português (Brasil), 한국어, Polski. Choisie d’après la langue du système, modifiable sous « Langue » dans la barre latérale.
+日本語, English, 简体中文, 繁體中文, Français, Deutsch, Español, Italiano, Português (Brasil), 한국어, Polski. Choisie d’après la langue du système, modifiable sous « Langue » dans les réglages.
 
 ## Conditions d’utilisation et non-responsabilité
 
@@ -116,3 +116,5 @@ Augmentez `VERSION` dans `potacommon.py` et poussez sur `main` : GitHub Actions 
 ## License
 
 MIT
+
+Country flags are drawn with the flags-only font from [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), built from Twemoji (CC-BY 4.0).

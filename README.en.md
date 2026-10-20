@@ -11,7 +11,7 @@ On FT8 you cannot tell whether the other station is in a park, let alone a 2fer.
 ## What it does
 
 - **Bar mode while activating**: type your park and start recording; the window becomes a small strip that stays above your logger (your park, elapsed time, QSO count, recent QSOs). "Expand" brings it back. Stations spotted from parks are noted every minute, so they can still be judged after they go QRT.
-- **Activating now**: even when not recording, a list of stations currently on the air from parks, from pota.app spots (refreshed every minute). Filter by region (Japan / world), band, mode (CW / Phone / Data), callsign or park search, and 2fer only.
+- **Activating now**: even when not recording, a list of stations currently on the air from parks, from pota.app spots (refreshed every minute). Filter by country (with flags) and region, band, mode (CW / Phone / Data), callsign or park search, and 2fer only.
 - **QSOs from your logger**: received over UDP like OpsLog or JTAlert. N1MM format (RUMlogNG, N1MM Logger+, DXLog…), WSJT-X / JTDX (multicast supported), ADIF (JTAlert, GridTracker, Log4OM…). Edits and deletions in the logger are reflected.
 - **P2P confirmed on the spot**: if the other station was spotted from a park, the row shows "Possible P2P" with the park reference; answer yes or no. For stations not on the spots (Phone or CW, where they tell you the park), type the reference into the row. Nothing becomes P2P automatically.
 - **10 QSOs**: a full-screen banner the moment the activation is complete.
@@ -80,7 +80,7 @@ pota.app's public profile only shows the last 25 hunter QSOs, so the app appends
 
 ## Languages
 
-日本語, English, 简体中文, 繁體中文, Français, Deutsch, Español, Italiano, Português (Brasil), 한국어, Polski. Chosen from the OS language, switchable under "Language" in the sidebar.
+日本語, English, 简体中文, 繁體中文, Français, Deutsch, Español, Italiano, Português (Brasil), 한국어, Polski. Chosen from the OS language, switchable under "Language" in Settings.
 
 ## Terms of use and disclaimer
 
@@ -116,3 +116,5 @@ Bump `VERSION` in `potacommon.py` and push to `main`: GitHub Actions builds macO
 ## License
 
 MIT
+
+Country flags are drawn with the flags-only font from [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), built from Twemoji (CC-BY 4.0).
