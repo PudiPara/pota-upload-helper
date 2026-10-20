@@ -43,7 +43,7 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
   2fer but `sure=False` (could be a rover) → a note. pota.app does not accept multi-value references, so
   their 2fer = the QSO repeated per park; my 2fer = one file per park.
 - **Duplicates**: WSJT-X reports a QSO at its start, the logger at its end; same base call + band + mode
-  (SUBMODE first, as pota.app stores it) within 3 min = one contact in the log, the live list and the count.
+  (SUBMODE first, as pota.app stores it) + my parks within 3 min = one contact in the log, the live list and the count.
   Decisions and deletes hit all copies. pota.app's own key is CALL+MODE+QSO_DATE+BAND+parks, so another
   mode on the same band is a second QSO.
 - **One instance**: `potacommon.lock_instance` (lock file in DATA_DIR); a second start calls
