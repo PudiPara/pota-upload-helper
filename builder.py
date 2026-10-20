@@ -197,6 +197,9 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
         n = len(rep["qsos"])
         summary.append({"park": mp, "date": d, "file": fn, "qsos": n, "stations": len(rep["calls"]),
                         "records": len(files[(mp, d)]), "rows": rep["rows"],
+                        # what pota.app will keep: its duplicate key is CALL+MODE+date+BAND+MY_SIG_INFO+SIG_INFO
+                        "unique": len({(o["CALL"].upper(), (o.get("BAND") or "").lower(), (o.get("SUBMODE") or o.get("MODE") or "").upper(),
+                                        o.get("SIG_INFO") or "") for o in files[(mp, d)]}),
                         "p2p": [{"time": tm, "call": c, "parks": ps.split(","), "source": src}
                                 for tm, c, ps, src in rep["p2p"]]})
         lines.append(tr("b.line.file", date=d, park=mp, n=n, stations=len(rep["calls"]), short="" if n >= 10 else tr("b.short"), file=fn))
