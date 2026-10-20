@@ -398,7 +398,22 @@
         <span class="act-date">${fmtDate(a.date)}<small>UTC</small></span>
         <span class="plates">${plates(a.parks)}</span>
         <span class="act-n${a.qsos < 10 ? " is-short" : ""}">${a.qsos} QSO</span>
+        ${st.source === "app" ? `<button type="button" class="link act-del" data-date="${esc(a.date)}">${esc(t("build.delete"))}</button>` : ""}
       </label>`).join("");
+    // Delete needs a second press (no window.confirm in the web view); the first press arms it for 4 s.
+    $$("#acts .act-del").forEach((b) => b.addEventListener("click", async (e) => {
+      e.preventDefault();
+      if (!b.classList.contains("is-armed")) {
+        b.classList.add("is-armed"); b.textContent = t("build.deleteArmed");
+        setTimeout(() => { b.classList.remove("is-armed"); b.textContent = t("build.delete"); }, 4000);
+        return;
+      }
+      const r = await api.delete_activation(b.dataset.date);
+      if (!r.ok) { toast(r.error); return; }
+      toast(t("build.deleted", { n: r.n }));
+      $("#logCount").textContent = r.log_count ? " " + t("build.count", { n: r.log_count }) : "";
+      loadActs();
+    }));
     $$("#acts input").forEach((i) => i.addEventListener("change", () => {
       i.checked ? st.selected.add(i.value) : st.selected.delete(i.value);
       i.closest(".act").classList.toggle("is-checked", i.checked);

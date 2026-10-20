@@ -152,6 +152,21 @@ def delete(ext_id=None, call=None, qso_date=None, time_on=None, window=3):
     return n
 
 
+def delete_activation(qso_date):
+    """Drop (soft-delete) the activation QSOs of one UTC day - those with my park in them, which is
+    what the アップロード作成 list shows. -> how many."""
+    n = 0
+    with _lock:
+        con = _db()
+        for uid, data in con.execute("SELECT uid, data FROM qso WHERE qso_date=? AND deleted=0", (qso_date,)).fetchall():
+            if json.loads(data).get("MY_SIG_INFO"):
+                con.execute("UPDATE qso SET deleted=1 WHERE uid=?", (uid,))
+                n += 1
+        con.commit()
+        con.close()
+    return n
+
+
 def records(dates=None):
     con = _db()
     if dates:
