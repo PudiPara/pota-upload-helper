@@ -1,9 +1,38 @@
 """Shrink the pywebview window to a strip above the logger while activating, and grow it back."""
+import os
 import sys
 
 import webview
 
 BAR_W, BAR_H = 640, 236
+
+
+def _top_right(w):
+    scr = webview.screens           # a list-like proxy in pywebview 5/6, a function in 4
+    try:
+        scr = scr[0]
+    except TypeError:
+        scr = scr()[0]
+    w.move(max(0, scr.width - BAR_W - 24), 40)
+
+
+def _run_steps(w, steps):
+    """Run window calls, each best effort (report, don't abort the rest).
+    On Windows they are posted to the UI thread and not waited for: the pywebview API thread holds
+    the GIL while WinForms sends a message to the UI thread, and the UI thread is waiting for the
+    GIL to answer another JavaScript call -> deadlock (froze 「記録を始める」). macOS calls them directly."""
+    def run():
+        for what, fn in steps:
+            try:
+                fn()
+            except Exception as e:
+                print("bar mode %s failed: %s" % (what, e), file=sys.stderr)
+    native = getattr(w, "native", None)
+    if os.name == "nt" and hasattr(native, "BeginInvoke"):
+        from System import Func, Type    # pythonnet, always there when pywebview runs on Windows
+        native.BeginInvoke(Func[Type](run))
+    else:
+        run()
 
 
 class BarMode:
@@ -19,30 +48,15 @@ class BarMode:
         w = self.window
         if not w:
             return False
-
-        def step(what, fn):          # each window call is best effort; report instead of aborting the rest
-            try:
-                fn()
-            except Exception as e:
-                print("bar mode %s failed: %s" % (what, e), file=sys.stderr)
-
         if on and self._full is None:
             self._full = (w.x, w.y, w.width, w.height)
-            step("on_top", lambda: setattr(w, "on_top", True))
-            step("resize", lambda: w.resize(BAR_W, BAR_H))
-
-            def move_top_right():
-                scr = webview.screens           # a list-like proxy in pywebview 5/6, a function in 4
-                try:
-                    scr = scr[0]
-                except TypeError:
-                    scr = scr()[0]
-                w.move(max(0, scr.width - BAR_W - 24), 40)
-            step("move", move_top_right)
+            _run_steps(w, [("on_top", lambda: setattr(w, "on_top", True)),
+                           ("resize", lambda: w.resize(BAR_W, BAR_H)),
+                           ("move", lambda: _top_right(w))])
         elif not on and self._full is not None:
             x, y, width, height = self._full
             self._full = None
-            step("on_top", lambda: setattr(w, "on_top", False))
-            step("resize", lambda: w.resize(width, height))
-            step("move", lambda: w.move(x, y))
+            _run_steps(w, [("on_top", lambda: setattr(w, "on_top", False)),
+                           ("resize", lambda: w.resize(width, height)),
+                           ("move", lambda: w.move(x, y))])
         return self._full is not None

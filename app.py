@@ -60,16 +60,19 @@ def qso_event(rec, uid=None):
 
 
 class Api:
+    # All state is private (underscore). pywebview exposes every public attribute of this object to
+    # JavaScript and (6.x) walks them recursively; on Windows that walk entered the WinForms window
+    # behind Api.bar and froze the app. tests/test_api_private.py keeps it that way.
     def __init__(self):
-        self.window = None
-        self.bar = None               # BarMode, once the window exists
-        self.logger = None            # SpotLogger while an activation is being recorded
-        self.receiver = None
-        self.events = []              # spots seen while recording, for the live view
-        self.qso_events = []          # QSOs received from loggers, for the live view
-        self.status = ""
-        self.recv_status = {}         # listener name -> state dict (codes; see receiver.describe_state)
-        self.lock = threading.Lock()
+        self._window = None
+        self._bar = None               # BarMode, once the window exists
+        self._logger = None            # SpotLogger while an activation is being recorded
+        self._receiver = None
+        self._events = []              # spots seen while recording, for the live view
+        self._qso_events = []          # QSOs received from loggers, for the live view
+        self._status = ""
+        self._recv_status = {}         # listener name -> state dict (codes; see receiver.describe_state)
+        self._lock = threading.Lock()
         self._parks = {}              # park reference -> info from pota.app, cached
         self._spots_cache = (0, [])   # (fetched at, raw spots) for the アクティベート中 page
         self.start_receiver()
@@ -78,11 +81,11 @@ class Api:
     def get_state(self):
         s = load_settings()
         live = None
-        if self.logger and self.logger.running():
-            live = {"parks": self.logger.parks, "start": self.logger.session["start"]}
+        if self._logger and self._logger.running():
+            live = {"parks": self._logger.parks, "start": self._logger.session["start"]}
         return {"version": VERSION, "call": s.get("call", "JL1FVA"), "parks": s.get("parks", ""),
                 "prefix": s.get("prefix", "JP"), "adif": s.get("adif", ""), "out": s.get("out", DEFAULT_OUT),
-                "source": s.get("source", "app"), "live": live, "bar": bool(self.bar and self.bar.active),
+                "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
                 "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
                 "terms_accepted": s.get("terms_accepted") or "",
                 "log_count": qsolog.count(), "receiver": self._receiver_texts()}
@@ -121,19 +124,19 @@ class Api:
         return {"ok": True, "listeners": clean, "receiver": self._receiver_texts()}
 
     def start_receiver(self):
-        if self.receiver:
-            self.receiver.stop()
-        self.recv_status = {}
-        self.receiver = Receiver(self.listeners(), self._on_qso, self._on_recv_status)
-        self.receiver.start()
-        self.recv_status.update(self.receiver.state)
+        if self._receiver:
+            self._receiver.stop()
+        self._recv_status = {}
+        self._receiver = Receiver(self.listeners(), self._on_qso, self._on_recv_status)
+        self._receiver.start()
+        self._recv_status.update(self._receiver.state)
 
     def _receiver_texts(self):
-        return {name: describe_state(st) for name, st in list(self.recv_status.items())}
+        return {name: describe_state(st) for name, st in list(self._recv_status.items())}
 
     def _on_recv_status(self, name, state):
-        with self.lock:
-            self.recv_status[name] = state
+        with self._lock:
+            self._recv_status[name] = state
 
     def _on_qso(self, action, rec, ext_id, listener):
         """A logger reported a QSO (or deleted one). Store it, tag it with my park and the spot
@@ -143,8 +146,8 @@ class Api:
             ev = {"action": "delete", "call": rec.get("CALL"), "date": rec.get("QSO_DATE"),
                   "time": (rec.get("TIME_ON") or "")[:4], "n": n}
         else:
-            if self.logger and self.logger.running() and not rec.get("MY_SIG_INFO"):
-                rec["MY_SIG"], rec["MY_SIG_INFO"] = "POTA", ",".join(self.logger.parks)
+            if self._logger and self._logger.running() and not rec.get("MY_SIG_INFO"):
+                rec["MY_SIG"], rec["MY_SIG_INFO"] = "POTA", ",".join(self._logger.parks)
             cand = candidate_for(rec)
             if cand:
                 rec["P2P_CANDIDATE"] = ",".join(cand)
@@ -154,41 +157,41 @@ class Api:
             uid = qsolog.upsert(rec, ext_id, listener)
             ev = qso_event(rec, uid)
         ev.update({"source": listener, "at": time.time()})
-        with self.lock:
-            self.qso_events.append(ev)
-            self.qso_events = self.qso_events[-500:]
-            if self.receiver and listener in self.receiver.state:
-                self.recv_status[listener] = self.receiver.state[listener]
+        with self._lock:
+            self._qso_events.append(ev)
+            self._qso_events = self._qso_events[-500:]
+            if self._receiver and listener in self._receiver.state:
+                self._recv_status[listener] = self._receiver.state[listener]
 
     # ================================================================ the activation (運用中)
     def start_live(self, parks, call):
         parks = split_parks(parks)
         if not parks:
             return {"ok": False, "error": t("api.badPark")}
-        if self.logger and self.logger.running():
-            self.logger.stop()
-        with self.lock:
-            self.events, self.status = [], t("api.firstSpot")
+        if self._logger and self._logger.running():
+            self._logger.stop()
+        with self._lock:
+            self._events, self._status = [], t("api.firstSpot")
         save_settings({"parks": ",".join(parks), "call": call.upper()})
-        self.logger = SpotLogger(parks, call, 60, on_activator=self._on_spot, on_status=self._on_status)
-        self.logger.start()
-        return {"ok": True, "parks": parks, "start": self.logger.session["start"]}
+        self._logger = SpotLogger(parks, call, 60, on_activator=self._on_spot, on_status=self._on_status)
+        self._logger.start()
+        return {"ok": True, "parks": parks, "start": self._logger.session["start"]}
 
     def _on_spot(self, tm, act, parks, freq, mode, twofer):
-        with self.lock:
-            self.events.append({"time": tm, "call": act, "parks": parks, "freq": freq, "mode": mode,
+        with self._lock:
+            self._events.append({"time": tm, "call": act, "parks": parks, "freq": freq, "mode": mode,
                                 "twofer": twofer, "at": time.time()})
 
     def _on_status(self, msg):
-        with self.lock:
-            self.status = msg
+        with self._lock:
+            self._status = msg
 
     def poll_live(self, since, qsince):
-        with self.lock:
-            return {"events": [e for e in self.events if e["at"] > since],
-                    "qsos": [e for e in self.qso_events if e["at"] > qsince],
-                    "status": self.status, "receiver": self._receiver_texts(),
-                    "running": bool(self.logger and self.logger.running())}
+        with self._lock:
+            return {"events": [e for e in self._events if e["at"] > since],
+                    "qsos": [e for e in self._qso_events if e["at"] > qsince],
+                    "status": self._status, "receiver": self._receiver_texts(),
+                    "running": bool(self._logger and self._logger.running())}
 
     def session_qsos(self, start_iso):
         """QSOs already in the app log since the session started (for re-opening the window)."""
@@ -207,11 +210,11 @@ class Api:
     def finish_live(self, online=True):
         """End the activation at this park: stop recording, write the upload file(s) for the
         QSOs of this session, and report what was written."""
-        if not self.logger:
+        if not self._logger:
             return {"ok": False, "error": t("api.notRecording")}
-        self.logger.stop()
-        sess = dict(self.logger.session)
-        self.logger = None
+        self._logger.stop()
+        sess = dict(self._logger.session)
+        self._logger = None
         s = load_settings()
         try:
             recs = qsolog.between(iso_minutes(sess["start"]) - 5, iso_minutes(sess["end"]) + 5)
@@ -223,15 +226,15 @@ class Api:
 
     def stop_live(self):
         """Stop recording without writing files (kept for the CLI-like flow; the UI uses finish_live)."""
-        if not self.logger:
+        if not self._logger:
             return {"ok": True}
-        self.logger.stop()
-        sess = self.logger.session
-        self.logger = None
+        self._logger.stop()
+        sess = self._logger.session
+        self._logger = None
         return {"ok": True, "start": sess["start"], "end": sess["end"]}
 
     def set_bar(self, on):
-        return self.bar.set(on) if self.bar else False
+        return self._bar.set(on) if self._bar else False
 
     # ================================================================ who is activating now
     def spots_now(self, max_age=45):
@@ -244,8 +247,8 @@ class Api:
                 if not spots:
                     return {"ok": False, "error": t("api.spotsFail", err=e)}
         worked = []
-        if self.logger and self.logger.running():
-            t0 = iso_minutes(self.logger.session["start"]) - 5
+        if self._logger and self._logger.running():
+            t0 = iso_minutes(self._logger.session["start"]) - 5
             worked = sorted({base_call(r.get("CALL")) for r in qsolog.between(t0, 1 << 40)})
         return {"ok": True, "at": time.strftime("%H:%M", time.gmtime(self._spots_cache[0])),
                 "items": summarize(spots), "worked": worked}
@@ -268,7 +271,7 @@ class Api:
 
     # ================================================================ upload files (アップロード作成)
     def pick_adif(self):
-        r = self.window.create_file_dialog(OPEN_DIALOG, allow_multiple=False,
+        r = self._window.create_file_dialog(OPEN_DIALOG, allow_multiple=False,
                                            file_types=("ADIF (*.adi;*.adif;*.ADI;*.ADIF)", "All files (*.*)"))
         if not r:
             return None
@@ -290,7 +293,7 @@ class Api:
             return {"path": path or "", "items": [], "error": t("api.logRead", err=e)}
 
     def pick_out(self):
-        r = self.window.create_file_dialog(FOLDER_DIALOG)
+        r = self._window.create_file_dialog(FOLDER_DIALOG)
         if not r:
             return None
         path = r[0] if isinstance(r, (list, tuple)) else r
@@ -329,8 +332,8 @@ class Api:
         time.sleep(1.0)              # let the UI show "restarting"
         updater.relaunch(path)
         self.shutdown()
-        if self.window:
-            self.window.destroy()
+        if self._window:
+            self._window.destroy()
 
     # ================================================================ misc
     def open_out(self, path):
@@ -347,10 +350,10 @@ class Api:
             webbrowser.open(url)
 
     def shutdown(self):
-        if self.logger and self.logger.running():
-            self.logger.stop()
-        if self.receiver:
-            self.receiver.stop()
+        if self._logger and self._logger.running():
+            self._logger.stop()
+        if self._receiver:
+            self._receiver.stop()
 
 
 # pywebview >= 5 has FileDialog; the bare constants are deprecated in 6 and will be removed.
@@ -366,8 +369,8 @@ def main():
     from window import BAR_W
     win = webview.create_window(APP_NAME, resource("ui", "index.html"), js_api=api,
                                 width=1180, height=800, min_size=(BAR_W, 160))
-    api.window = win
-    api.bar = BarMode(win)
+    api._window = win
+    api._bar = BarMode(win)
     win.events.closing += api.shutdown
     webview.start(debug=bool(os.environ.get("POTA_HELPER_DEBUG")))
 

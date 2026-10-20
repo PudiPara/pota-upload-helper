@@ -62,7 +62,7 @@ Créez des entrées dans « Lien avec le logger » (autant que vous voulez). **T
 
 **Seuls les loggers du même ordinateur peuvent envoyer.** Les entrées écoutent sur `127.0.0.1` ; un logger sur un autre PC ne peut pas les atteindre.
 
-**Multicast WSJT-X / JTDX sous Windows** : sous Windows, l’entrée multicast écoute aussi sur la boucle locale (`127.0.0.1`). Dans WSJT-X, Settings → Reporting → **Outgoing interfaces**, incluez **loopback**. Cette configuration Windows n’a pas encore été testée sur une vraie machine Windows ; si rien n’arrive, ouvrez une [issue](../../issues). Mettre l’UDP Server de WSJT-X sur `127.0.0.1` (sans multicast) fonctionne toujours, mais les autres programmes ne peuvent alors pas recevoir en même temps.
+**Multicast WSJT-X / JTDX sous Windows** : sous Windows, l’entrée multicast écoute aussi sur la boucle locale (`127.0.0.1`). Dans WSJT-X, Settings → Reporting → **Outgoing interfaces**, incluez **loopback**. Cette configuration a été vérifiée sous Windows 11 ; si rien n’arrive, ouvrez une [issue](../../issues). Mettre l’UDP Server de WSJT-X sur `127.0.0.1` (sans multicast) fonctionne toujours, mais les autres programmes ne peuvent alors pas recevoir en même temps.
 
 Pour transmettre les mêmes données à un autre programme (OpsLog…), indiquez son adresse et son port dans « Relayer vers ».
 

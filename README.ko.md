@@ -62,7 +62,7 @@ zip판(`POTA-Upload-Helper-macOS.zip` / `POTA-Upload-Helper-Windows.zip`)도 첨
 
 **같은 컴퓨터의 로거에서만 받을 수 있습니다.** 수신은 `127.0.0.1`에서 대기하므로 다른 컴퓨터의 로거에서는 도착하지 않습니다.
 
-**Windows에서 WSJT-X / JTDX 멀티캐스트를 쓰는 경우**: Windows에서는 멀티캐스트 수신도 루프백(`127.0.0.1`)에서 대기합니다. WSJT-X의 Settings → Reporting → **Outgoing interfaces**에 **loopback**을 포함하세요. 이 Windows 조합은 아직 실제 Windows에서 시험하지 못했습니다. 도착하지 않으면 [Issue](../../issues)로 알려 주세요. 멀티캐스트 대신 WSJT-X의 UDP Server를 `127.0.0.1`로 하면 확실히 받을 수 있습니다(다만 그 경우 다른 앱과 동시에는 받을 수 없습니다).
+**Windows에서 WSJT-X / JTDX 멀티캐스트를 쓰는 경우**: Windows에서는 멀티캐스트 수신도 루프백(`127.0.0.1`)에서 대기합니다. WSJT-X의 Settings → Reporting → **Outgoing interfaces**에 **loopback**을 포함하세요. 이 조합은 Windows 11에서 동작을 확인했습니다. 도착하지 않으면 [Issue](../../issues)로 알려 주세요. 멀티캐스트 대신 WSJT-X의 UDP Server를 `127.0.0.1`로 하면 확실히 받을 수 있습니다(다만 그 경우 다른 앱과 동시에는 받을 수 없습니다).
 
 같은 데이터를 다른 앱(OpsLog 등)에도 넘기려면 수신의 ‘전달 대상’에 그 앱의 주소와 포트를 넣습니다.
 

@@ -44,10 +44,16 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
 - **No write-back to the logger.** RUMlogNG ignores a UDP record whose time/band/mode already exist and
   its AppleScript only logs new QSOs; its ADIF import with "No Dupes + Update QSO record" works but is
   manual every time, so the owner dropped the feature. Decisions live only in the app log and files.
-- **Listeners bind to 127.0.0.1** (`receiver.bind_address`): only loggers on the same computer can feed QSOs in (CodeQL alert "binding a socket to all network interfaces"). Multicast listeners bind the group with membership on the default interface (macOS/Linux, verified with WSJT-X); on Windows they bind 127.0.0.1 and join on loopback, so WSJT-X must list loopback under Outgoing interfaces - **not yet tested on a real Windows machine** (README says so). Nothing binds every interface. A logger on another PC is not supported; if that is ever wanted, make it an explicit per-listener option, not the default.
+- **Listeners bind to 127.0.0.1** (`receiver.bind_address`): only loggers on the same computer can feed QSOs in (CodeQL alert "binding a socket to all network interfaces"). Multicast listeners bind the group with membership on the default interface (macOS/Linux, verified with WSJT-X); on Windows they bind 127.0.0.1 and join on loopback, so WSJT-X must list loopback under Outgoing interfaces (verified on Windows 11 with a multicast sender on loopback; sending on the default NIC does not arrive). Nothing binds every interface. A logger on another PC is not supported; if that is ever wanted, make it an explicit per-listener option, not the default.
+- **`Api` state is private** (`self._window`, `self._logger`, …): pywebview exposes every public attribute
+  of the js_api object and (6.x) walks them recursively; on Windows that walk entered the WinForms window
+  and froze the app on 「記録を始める」. `tests/test_api_private.py` enforces it.
 - **Window close ≠ finish.** `finish_live` stops, builds and resets; `shutdown` only stops threads.
 - **Bar mode** is a resize/move/on-top of the one window (pywebview can't do a second window cheaply);
   `window.confirm` is unavailable in the web view, so "finish with unconfirmed" needs a second press.
+  On Windows the window calls are posted to the UI thread with `BeginInvoke` and not awaited
+  (`window._run_steps`): the API thread holds the GIL during a WinForms call that messages the UI
+  thread, which is waiting for the GIL to answer JavaScript -> deadlock.
 - **Updates** compare `VERSION` with the latest release tag and download the OS zip; installers (DMG,
   Inno Setup per-user in `{localappdata}\Programs`) exist for first installs. Bump `VERSION` for every
   release (the tag and the updater key on it).

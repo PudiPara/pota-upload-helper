@@ -62,7 +62,7 @@ Create listeners under "Logger link" (as many as you like). **Any logger that ca
 
 **Only loggers on the same computer can send to it.** Listeners bind to `127.0.0.1`, so a logger on another PC cannot reach them.
 
-**WSJT-X / JTDX multicast on Windows**: on Windows the multicast listener also binds loopback (`127.0.0.1`). In WSJT-X, Settings → Reporting → **Outgoing interfaces**, include **loopback**. This Windows setup has not been tested on a real Windows machine yet; if nothing arrives, please open an [issue](../../issues). Setting WSJT-X's UDP Server to `127.0.0.1` (no multicast) always works, but then other programs cannot receive at the same time.
+**WSJT-X / JTDX multicast on Windows**: on Windows the multicast listener also binds loopback (`127.0.0.1`). In WSJT-X, Settings → Reporting → **Outgoing interfaces**, include **loopback**. This setup was verified on Windows 11; if nothing arrives, please open an [issue](../../issues). Setting WSJT-X's UDP Server to `127.0.0.1` (no multicast) always works, but then other programs cannot receive at the same time.
 
 To pass the same data on to another program (OpsLog, …), put its address and port in the listener's "Forward to".
 

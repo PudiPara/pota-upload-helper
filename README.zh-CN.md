@@ -62,7 +62,7 @@
 
 **只接收同一台电脑上的日志软件。** 接收口在 `127.0.0.1` 上监听，其他电脑上的日志软件无法发送过来。
 
-**在 Windows 上使用 WSJT-X / JTDX 组播时**：Windows 上组播接收口也在回环地址（`127.0.0.1`）上监听。请在 WSJT-X 的 Settings → Reporting → **Outgoing interfaces** 中勾选 **loopback**。这种 Windows 组合尚未在真实的 Windows 上测试；收不到时请通过 [Issue](../../issues) 告诉我们。把 WSJT-X 的 UDP Server 设为 `127.0.0.1`（不用组播）一定能收到，但这样其他程序就无法同时接收。
+**在 Windows 上使用 WSJT-X / JTDX 组播时**：Windows 上组播接收口也在回环地址（`127.0.0.1`）上监听。请在 WSJT-X 的 Settings → Reporting → **Outgoing interfaces** 中勾选 **loopback**。这种组合已在 Windows 11 上验证；收不到时请通过 [Issue](../../issues) 告诉我们。把 WSJT-X 的 UDP Server 设为 `127.0.0.1`（不用组播）一定能收到，但这样其他程序就无法同时接收。
 
 若要把同样的数据传给其他程序（如 OpsLog），在接收口的“转发到”填入其地址和端口。
 
