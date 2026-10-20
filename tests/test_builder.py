@@ -131,3 +131,17 @@ class SummaryListsEveryQso(unittest.TestCase):
         self.assertEqual((f["qsos"], f["records"], f["unique"]), (3, 4, 3))        # 4 lines; pota.app keeps 3 (EI4HQ x2 by SIG_INFO, JA1TST once)
         self.assertEqual([(r["call"], r["parks"]) for r in f["rows"]], [("EI4HQ", ["IE-0023", "IE-0141"]), ("JA1TST", []), ("JA1TST", [])])
 
+
+class ParksFromSpotHistory(unittest.TestCase):
+    def test_activator_comment_and_fer_comments_only(self):
+        import datetime as dt
+        from spots import parks_from_history
+        now = dt.datetime(2026, 10, 20, 13, 50, tzinfo=dt.timezone.utc)
+        hist = [{"spotTime": "2026-10-20T13:45:47", "spotter": "K9DEG", "comments": "2-fer: US-8423 US-4708"},
+                {"spotTime": "2026-10-20T13:41:34", "spotter": "KC4JAB", "comments": "pota on"},
+                {"spotTime": "2026-10-20T13:30:00", "spotter": "N0HUNT", "comments": "P2P from US-1234"},     # the hunter's park: ignored
+                {"spotTime": "2026-10-20T13:20:53", "spotter": "WB1ANA", "comments": "2-fer: US-8423 US-4708"},
+                {"spotTime": "2026-10-20T09:00:00", "spotter": "WB1ANA", "comments": "also US-9999"}]        # hours ago: another activation
+        self.assertEqual(parks_from_history(hist, "WB1ANA", "US-8423", now), ["US-8423", "US-4708"])
+        self.assertEqual(parks_from_history(hist[1:3], "WB1ANA", "US-8423", now), ["US-8423"])
+

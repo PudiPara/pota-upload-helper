@@ -29,7 +29,7 @@ from i18n import t
 from potacommon import (APP_NAME, DATA_DIR, DEFAULT_OUT, VERSION, base_call, fetch_json, iso_minutes,
                         load_settings, lock_instance, read_adif, save_settings, split_parks)
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
-from spots import SpotLogger, candidate_for, summarize
+from spots import SpotLogger, candidate_for, history_parks, summarize
 from window import BarMode
 
 SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted", "p2p_auto")
@@ -288,7 +288,8 @@ class Api:
             t0 = iso_minutes(self._logger.session["start"]) - 5
             worked = sorted({base_call(r.get("CALL")) for r in qsolog.between(t0, 1 << 40)})
         return {"ok": True, "at": time.strftime("%H:%M", time.gmtime(self._spots_cache[0])),
-                "items": summarize(spots), "worked": worked}
+                "items": (items := summarize(spots, history=history_parks)), "worked": worked,
+                "pending": sum(1 for r in items if r.get("pending"))}
 
     def park_info(self, refs):
         """{ref: {name, local, grid}} - local is the Japanese name when pota.app has one."""

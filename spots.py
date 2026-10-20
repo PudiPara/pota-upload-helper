@@ -16,8 +16,11 @@ import datetime as dt
 import glob
 import json
 import os
+import re
 import threading
+import time
 from collections import defaultdict
+from urllib.parse import quote
 
 from i18n import t
 from potacommon import DATA_DIR, band_from_khz, base_call, fetch_json, iso_minutes, minutes, mode_group, parks_in, split_parks
@@ -67,13 +70,103 @@ def their_parks_at(spots, t_min):
 
 
 def candidate_for(rec):
-    """The P2P candidate for a QSO that just arrived: where the other station was spotted around that time."""
+    """The P2P candidate for a QSO that just arrived: where the other station was spotted around that
+    time (recorded spots), plus what its spot history on pota.app says (the activator's own comments)."""
     try:
         t_min = minutes(rec.get("QSO_DATE", ""), rec.get("TIME_ON") or "0000")
     except ValueError:
         return []
-    parks, _ = their_parks_at(load_spots().get(base_call(rec.get("CALL")), []), t_min)
+    recorded = load_spots().get(base_call(rec.get("CALL")), [])
+    parks, _ = their_parks_at(recorded, t_min)
+    near = [raw for m, _, raw in recorded if t_min - SPOT_BEFORE <= m <= t_min + SPOT_AFTER and raw.get("reference")]
+    if near:
+        raw = max(near, key=lambda r: r.get("spotTime") or "")
+        for p in history_parks(raw.get("activator") or rec.get("CALL"), raw["reference"], wait=True) or []:
+            if p not in parks:
+                parks.append(p)
     return parks
+
+
+# ---------------------------------------------------------------- a station's spot history on pota.app
+# pota.app keeps every spot of an activator at a park (spot/comments/{activator}/{reference}) and shows the
+# activator's own latest comment apart from the newest spot - that is where "2-fer: X Y" survives after
+# RBN or PSKReporter respot the station with their own comment.
+HISTORY_TTL = 600         # seconds a station's history result is kept
+HISTORY_WINDOW = 180      # minutes: older comments belong to another activation
+FER = re.compile(r"\d\s*-?\s*fer|twofer|threefer", re.I)
+_hist_lock = threading.Lock()
+_hist = {}                # (ACTIVATOR, REFERENCE) -> (fetched_at, parks)
+_hist_queue = []
+_hist_worker = None
+
+
+def fetch_history(activator, reference):
+    try:
+        return fetch_json("spot/comments/%s/%s" % (quote(activator, safe=""), reference), timeout=8) or []
+    except Exception:
+        return []
+
+
+def parks_from_history(hist, activator, reference, now=None):
+    """[reference, ...more parks]: references named in the activator's own comments of the recent
+    history (any), and in other spotters' comments only when they say 2fer/3fer - a hunter's
+    "P2P from US-1234" names the hunter's park, not the activator's."""
+    now = now or now_utc()
+    out = [reference.upper()]
+    for mine in (True, False):
+        for x in hist:
+            tm = spot_time(x)
+            if not tm or (now - tm).total_seconds() > HISTORY_WINDOW * 60:
+                continue
+            own = (x.get("spotter") or "").upper() == activator.upper()
+            if own != mine or (not own and not FER.search(x.get("comments") or "")):
+                continue
+            for p in parks_in(x.get("comments")):
+                if p not in out:
+                    out.append(p)
+    return out
+
+
+def history_parks(activator, reference, wait=False):
+    """Parks for a station from its pota.app history, cached HISTORY_TTL seconds. wait=False
+    (the アクティベート中 page) schedules the fetch on a worker and returns None until it is in;
+    wait=True (a QSO just arrived) fetches now."""
+    key = ((activator or "").upper(), (reference or "").upper())
+    if not key[0] or not key[1]:
+        return None
+    with _hist_lock:
+        e = _hist.get(key)
+        if e and time.time() - e[0] < HISTORY_TTL:
+            return e[1]
+    if wait:
+        parks = parks_from_history(fetch_history(*key), *key)
+        with _hist_lock:
+            _hist[key] = (time.time(), parks)
+        return parks
+    with _hist_lock:
+        if key not in _hist_queue:
+            _hist_queue.append(key)
+        _start_history_worker()
+    return None
+
+
+def _start_history_worker():
+    global _hist_worker
+    if _hist_worker and _hist_worker.is_alive():
+        return
+    _hist_worker = threading.Thread(target=_drain_history, daemon=True)
+    _hist_worker.start()
+
+
+def _drain_history():
+    while True:
+        with _hist_lock:
+            if not _hist_queue:
+                return
+            key = _hist_queue.pop(0)
+        parks = parks_from_history(fetch_history(*key), *key)
+        with _hist_lock:
+            _hist[key] = (time.time(), parks)
 
 
 # ---------------------------------------------------------------- the files the logger writes
@@ -119,10 +212,11 @@ def continent_of(country):
     return _CONTINENT_OF.get((country or "").upper(), "")
 
 
-def summarize(spots, now=None):
+def summarize(spots, now=None, history=None):
     """One row per station from api.pota.app/spot/activator, newest first: the parks of its spots
     of the last TWOFER_GAP minutes merged (more than one = 2fer), band and mode group computed here
-    so the UI only displays."""
+    so the UI only displays. history(activator, reference) -> parks or None adds what the station's
+    spot history says; None marks the row pending (the page asks again shortly)."""
     now = now or now_utc()
     by = {}
     for s in spots:
@@ -138,6 +232,11 @@ def summarize(spots, now=None):
         for tm, _, refs in items[1:]:
             if (t0 - tm).total_seconds() <= TWOFER_GAP * 60:
                 parks += [r for r in refs if r not in parks]
+        pending = False
+        if history:
+            hp = history(newest.get("activator"), newest.get("reference"))
+            pending = hp is None
+            parks += [p for p in (hp or []) if p not in parks]
         out.append({"call": newest.get("activator") or base, "base": base, "parks": parks, "twofer": len(parks) > 1,
                     "country": parks[0].split("-")[0] if parks else "",      # park prefix = ISO 3166 alpha-2
                     "region": continent_of(parks[0].split("-")[0]) if parks else "",
@@ -145,7 +244,7 @@ def summarize(spots, now=None):
                     "freq": newest.get("frequency"), "band": band_from_khz(newest.get("frequency")),
                     "mode": newest.get("mode") or "", "group": mode_group(newest.get("mode")),
                     "time": t0.strftime("%H:%M"), "ago": max(0, int((now - t0).total_seconds() // 60)),
-                    "comments": newest.get("comments") or "", "spots": len(items)})
+                    "comments": newest.get("comments") or "", "spots": len(items), "pending": pending})
     out.sort(key=lambda e: (e["ago"], e["base"]))
     return out
 
