@@ -145,3 +145,16 @@ class ParksFromSpotHistory(unittest.TestCase):
         self.assertEqual(parks_from_history(hist, "WB1ANA", "US-8423", now), ["US-8423", "US-4708"])
         self.assertEqual(parks_from_history(hist[1:3], "WB1ANA", "US-8423", now), ["US-8423"])
 
+
+class ActivationRowsCountPerPark(unittest.TestCase):
+    def test_per_park_and_what_pota_keeps(self):
+        from builder import list_activations
+        q = lambda call, t, parks, **kw: dict({"CALL": call, "QSO_DATE": "20260108", "TIME_ON": t, "BAND": "20m", "MODE": "FT8",
+                                              "MY_SIG": "POTA", "MY_SIG_INFO": parks}, **kw)
+        recs = [q("JA1AAA", "010000", "JP-1206,JP-1266"), q("JA1BBB", "010100", "JP-1206,JP-1266"),
+                q("JA1AAA", "020000", "JP-1206,JP-1946")]                       # same station again from another overlap
+        d, parks, n, per, pota = list_activations(recs=recs, )[0]
+        self.assertEqual((d, parks, n), ("20260108", "JP-1206,JP-1266,JP-1946", 3))
+        self.assertEqual(per, {"JP-1206": 3, "JP-1266": 2, "JP-1946": 1})
+        self.assertEqual(pota, {"JP-1206": 2, "JP-1266": 2, "JP-1946": 1})       # JA1AAA counts once for JP-1206
+
