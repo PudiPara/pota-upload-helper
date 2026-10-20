@@ -24,6 +24,9 @@ OPEN_DIALOG = _FD.OPEN if _FD else webview.OPEN_DIALOG
 FOLDER_DIALOG = _FD.FOLDER if _FD else webview.FOLDER_DIALOG
 
 
+BAR_W, BAR_H = 640, 236          # compact "bar" window while an activation is running
+
+
 def resource(*parts):
     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base, *parts)
@@ -51,6 +54,7 @@ class Api:
         self.recv_status = {}
         self.lock = threading.Lock()
         self._parks = {}
+        self._full = None          # (x, y, w, h) of the window before it became a bar
         self.start_receiver()
 
     # ---------- settings ----------
@@ -61,7 +65,8 @@ class Api:
             live = {"parks": self.logger.parks, "start": self.logger.session["start"]}
         return {"version": VERSION, "call": s.get("call", "JL1FVA"), "parks": s.get("parks", ""),
                 "prefix": s.get("prefix", "JP"), "adif": s.get("adif", ""), "out": s.get("out", DEFAULT_OUT),
-                "source": s.get("source", "app"), "live": live, "listeners": self.listeners(),
+                "source": s.get("source", "app"), "live": live, "bar": self._full is not None,
+                "listeners": self.listeners(),
                 "log_count": qsolog.count(), "receiver": self.recv_status}
 
     def save(self, data):
@@ -114,10 +119,14 @@ class Api:
         else:
             if self.logger and self.logger.running() and not rec.get("MY_SIG_INFO"):
                 rec["MY_SIG"], rec["MY_SIG_INFO"] = "POTA", ",".join(self.logger.parks)
+            cand = live_p2p(rec, spots_only=True)
+            if cand:
+                rec["P2P_CANDIDATE"] = ",".join(cand)
+            logged = split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO"))
+            if logged and not rec.get("P2P_DECISION"):      # the operator typed it in the logger
+                qsolog.apply_decision(rec, "log", logged)
             uid = qsolog.upsert(rec, ext_id, listener)
-            ev = {"action": "upsert", "uid": uid, "call": rec.get("CALL"), "date": rec.get("QSO_DATE"),
-                  "time": (rec.get("TIME_ON") or "")[:4], "band": rec.get("BAND", ""),
-                  "mode": rec.get("SUBMODE") or rec.get("MODE", ""), "parks": live_p2p(rec)}
+            ev = self._event(rec, uid)
         ev.update({"source": listener, "at": time.time()})
         with self.lock:
             self.qso_events.append(ev)
@@ -155,23 +164,71 @@ class Api:
         with self.lock:
             self.status = msg
 
+    @staticmethod
+    def _event(rec, uid=None):
+        """What the UI needs to draw one QSO row."""
+        decision = rec.get("P2P_DECISION") or ""
+        parks = split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO")) if decision and decision != "no" else []
+        return {"action": "upsert", "uid": uid or qsolog.make_uid(rec), "call": rec.get("CALL"),
+                "date": rec.get("QSO_DATE"), "time": (rec.get("TIME_ON") or "")[:4], "band": rec.get("BAND", ""),
+                "mode": rec.get("SUBMODE") or rec.get("MODE", ""), "decision": decision, "parks": parks,
+                "candidate": split_parks(rec.get("P2P_CANDIDATE"))}
+
     def session_qsos(self, start_iso):
         """QSOs already in the app log since the session started (for re-opening the window)."""
         t0 = iso_minutes(start_iso) - 5
-        d0 = start_iso[:10].replace("-", "")
-        out = []
-        for r in qsolog.records():
-            if r.get("QSO_DATE", "") < d0:
-                continue
-            try:
-                if minutes(r["QSO_DATE"], r.get("TIME_ON") or "0000") < t0:
-                    continue
-            except ValueError:
-                continue
-            out.append({"action": "upsert", "call": r.get("CALL"), "date": r.get("QSO_DATE"),
-                        "time": (r.get("TIME_ON") or "")[:4], "band": r.get("BAND", ""),
-                        "mode": r.get("SUBMODE") or r.get("MODE", ""), "parks": live_p2p(r), "at": 0})
-        return out
+        return [dict(self._event(r), at=0) for r in qsolog.between(t0, 1 << 40)]
+
+    def set_p2p(self, uid, decision, parks=""):
+        """The operator's answer for one QSO: 'yes' (candidate accepted), 'manual' (typed parks), 'no', ''."""
+        parks = split_parks(parks)
+        if decision in ("yes", "manual") and not parks:
+            return {"ok": False, "error": "公園番号を JP-1281 の形で入力してください。"}
+        updated = qsolog.set_p2p(uid, decision, parks)
+        if not updated:
+            return {"ok": False, "error": "その QSO が見つかりません。"}
+        return {"ok": True, "events": [self._event(r) for r in updated]}
+
+    def finish_live(self, online=True):
+        """End the activation at this park: stop recording, write the upload file(s) for
+        the QSOs of this session, and report what was written."""
+        if not self.logger:
+            return {"ok": False, "error": "記録していません。"}
+        self.logger.stop()
+        sess = dict(self.logger.session)
+        self.logger = None
+        s = load_settings()
+        try:
+            recs = qsolog.between(iso_minutes(sess["start"]) - 5, iso_minutes(sess["end"]) + 5)
+            res = build(None, None, ",".join(sess["parks"]), s.get("call", sess.get("call", "JL1FVA")),
+                        s.get("out", DEFAULT_OUT), offline=not online, recs=recs, confirmed_only=True)
+            return {"ok": True, "session": sess, "qsos": len(recs), **res}
+        except Exception as e:
+            return {"ok": False, "session": sess, "error": str(e)}
+
+    # ---------- bar mode ----------
+    def set_bar(self, on):
+        """Shrink the window to a strip kept above the logger, or grow it back."""
+        w = self.window
+        if not w:
+            return False
+        try:
+            if on and self._full is None:
+                self._full = (w.x, w.y, w.width, w.height)
+                scr = webview.screens[0] if getattr(webview, "screens", None) else None
+                w.resize(BAR_W, BAR_H)
+                if scr:
+                    w.move(max(0, scr.width - BAR_W - 24), 40)
+                w.on_top = True
+            elif not on and self._full is not None:
+                x, y, width, height = self._full
+                self._full = None
+                w.on_top = False
+                w.resize(width, height)
+                w.move(x, y)
+        except Exception:
+            self._full = None if not on else self._full
+        return self._full is not None
 
     def poll_live(self, since, qsince):
         with self.lock:
@@ -263,7 +320,7 @@ class Api:
 def main():
     api = Api()
     win = webview.create_window(APP_NAME, resource("ui", "index.html"), js_api=api,
-                                width=1180, height=800, min_size=(900, 620))
+                                width=1180, height=800, min_size=(BAR_W, 160))
     api.window = win
     win.events.closing += api.shutdown
     webview.start(debug=bool(os.environ.get("POTA_HELPER_DEBUG")))

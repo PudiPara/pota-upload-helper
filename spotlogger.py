@@ -61,7 +61,7 @@ class SpotLogger:
     # ----- control -----
     def start(self):
         os.makedirs(DATA_DIR, exist_ok=True)
-        t = now_utc().strftime("%Y-%m-%dT%H:%M")
+        t = now_utc().strftime("%Y-%m-%dT%H:%M:%S")      # seconds: the elapsed clock starts at 0
         self.session = {"id": now_utc().strftime("%Y%m%d%H%M%S"), "call": self.call,
                         "parks": self.parks, "start": t, "end": t}
         self._update_session()
@@ -74,7 +74,7 @@ class SpotLogger:
         if self._thread:
             self._thread.join(timeout=5)
         if self.session:
-            self.session["end"] = now_utc().strftime("%Y-%m-%dT%H:%M")
+            self.session["end"] = now_utc().strftime("%Y-%m-%dT%H:%M:%S")
             self._update_session()
 
     def running(self):

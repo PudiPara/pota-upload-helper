@@ -35,6 +35,10 @@ def upsert(rec, ext_id=None, source=""):
         con = _db()
         if ext_id:   # an edit in the logger (time/band changed) replaces the old row
             con.execute("UPDATE qso SET deleted=1 WHERE ext_id=? AND uid<>?", (ext_id, uid))
+        if not rec.get("P2P_DECISION"):   # WSJT-X and the logger both send it: keep what the operator decided
+            row = con.execute("SELECT data FROM qso WHERE uid=?", (uid,)).fetchone()
+            if row:
+                _carry_decision(json.loads(row[0]), rec)
         con.execute("""INSERT INTO qso(uid, call, qso_date, time_on, band, mode, data, source, received, deleted, ext_id)
                        VALUES(?,?,?,?,?,?,?,?,?,0,?)
                        ON CONFLICT(uid) DO UPDATE SET call=excluded.call, qso_date=excluded.qso_date,
@@ -47,6 +51,67 @@ def upsert(rec, ext_id=None, source=""):
         con.commit()
         con.close()
     return uid
+
+
+P2P_KEYS = ("P2P_DECISION", "P2P_CANDIDATE", "SIG", "SIG_INFO", "POTA_REF")
+
+
+def _carry_decision(src, dst):
+    if not src.get("P2P_DECISION"):
+        return
+    for k in ("SIG", "SIG_INFO", "POTA_REF"):
+        dst.pop(k, None)
+    for k in P2P_KEYS:
+        if src.get(k):
+            dst[k] = src[k]
+
+
+def apply_decision(rec, decision, parks):
+    """decision: 'yes' (spot candidate accepted), 'manual' (typed), 'no', or '' (undecided)."""
+    for k in ("SIG", "SIG_INFO", "POTA_REF"):
+        rec.pop(k, None)
+    if decision in ("yes", "manual", "log") and parks:
+        rec.update({"P2P_DECISION": decision, "SIG": "POTA", "SIG_INFO": ",".join(parks), "POTA_REF": ",".join(parks)})
+    elif decision == "no":
+        rec["P2P_DECISION"] = "no"
+    else:
+        rec.pop("P2P_DECISION", None)
+    return rec
+
+
+def set_p2p(uid, decision, parks, window=3):
+    """Record the operator's P2P decision for a QSO - and for the copy another
+    program may have reported for the same contact (WSJT-X vs the logger).
+    -> list of updated records."""
+    from potacommon import base_call, minutes, split_parks
+    parks = split_parks(parks)
+    updated = []
+    with _lock:
+        con = _db()
+        row = con.execute("SELECT call, qso_date, time_on, band FROM qso WHERE uid=? AND deleted=0", (uid,)).fetchone()
+        if not row:
+            con.close()
+            return []
+        c, d, t, band = row
+        try:
+            tm = minutes(d, t or "0000")
+        except ValueError:
+            tm = None
+        for u2, c2, t2, b2, data in con.execute("SELECT uid, call, time_on, band, data FROM qso WHERE qso_date=? AND deleted=0",
+                                                  (d,)).fetchall():
+            if u2 != uid:
+                try:
+                    near = tm is not None and abs(minutes(d, t2 or "0000") - tm) <= window
+                except ValueError:
+                    near = False
+                if not (near and base_call(c2) == base_call(c) and b2 == band):
+                    continue
+            rec = apply_decision(json.loads(data), decision, parks)
+            con.execute("UPDATE qso SET data=? WHERE uid=?", (json.dumps(rec, ensure_ascii=False), u2))
+            updated.append(rec)
+        con.commit()
+        con.close()
+    return updated
 
 
 def delete(ext_id=None, call=None, qso_date=None, time_on=None, window=3):
@@ -92,6 +157,20 @@ def records(dates=None):
     return dedupe([json.loads(r[0]) for r in rows])
 
 
+def between(t0, t1):
+    """Records whose time is within [t0, t1] (minutes, see potacommon.minutes), deduped."""
+    from potacommon import minutes
+    out = []
+    for r in records():
+        try:
+            t = minutes(r.get("QSO_DATE", ""), r.get("TIME_ON") or "0000")
+        except ValueError:
+            continue
+        if t0 <= t <= t1:
+            out.append(r)
+    return out
+
+
 def dedupe(recs, window=3):
     """Drop a QSO that another program already reported within a few minutes
     (e.g. WSJT-X logs the start time, the logger the end time)."""
@@ -106,7 +185,7 @@ def dedupe(recs, window=3):
         k = (base_call(r.get("CALL")), (r.get("BAND") or "").lower())
         if k in last and t - last[k][0] <= window:
             prev = last[k][1]
-            if len(r) > len(prev):          # keep the richer record
+            if (bool(r.get("P2P_DECISION")), len(r)) > (bool(prev.get("P2P_DECISION")), len(prev)):   # keep the richer record
                 kept[kept.index(prev)] = r
                 last[k] = (last[k][0], r)
             continue

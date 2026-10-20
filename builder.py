@@ -145,20 +145,37 @@ def list_activations(adif_path=None, recs=None):
 
 
 # ---------- main entry ----------
-def live_p2p(rec):
-    """Park(s) of the other station for a QSO that just arrived, from the spots
-    recorded so far (used to flag P2P the moment the logger sends the QSO)."""
+def live_p2p(rec, spots_only=False):
+    """Park(s) the other station was spotted at around the time of a QSO that just
+    arrived - the candidate the operator is asked to confirm. spots_only=False also
+    falls back to SIG_INFO/POTA_REF already in the record."""
     try:
         t = minutes(rec.get("QSO_DATE", ""), rec.get("TIME_ON") or "0000")
     except ValueError:
         return []
     spots = load_spots().get(base_call(rec.get("CALL")), [])
     parks, _ = their_parks_from_spots(spots, t)
-    return parks or split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO"))
+    if parks or spots_only:
+        return parks
+    return split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO"))
+
+
+def decided_parks(rec):
+    """-> (decided, parks): the operator's live decision for this QSO (or the logger's own
+    SIG_INFO, decision 'log'). decided=False when nobody has said anything yet."""
+    dec = rec.get("P2P_DECISION")
+    if not dec:
+        return False, []
+    if dec == "no":
+        return True, []
+    return True, split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO"))
 
 
 def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None, offline=False, log=print,
-          recs=None):
+          recs=None, confirmed_only=False):
+    """confirmed_only: the records come from the app's own log, where the operator confirms
+    P2P during the activation. Then spots are never used as a guess - only what was
+    confirmed (or typed), plus the pota.app hunter log, which is the other side's upload."""
     call = call.upper().strip()
     out_dir = out_dir or DEFAULT_OUT
     recs = recs if recs is not None else read_adif(adif_path)
@@ -182,17 +199,31 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
         h_parks = sorted({p for p, _ in h})
         for _, x in h:
             used_hunter.add(id(x))
-        s_parks, s_sure = their_parks_from_spots(spots.get(b, []), t)
-        log_parks = split_parks(r.get("POTA_REF") or r.get("SIG_INFO")) if r.get("SIG", "POTA").upper() in ("POTA", "") else []
+        decided, d_parks = decided_parks(r)
+        if decided:
+            s_parks, s_sure, log_parks = [], True, d_parks
+        elif confirmed_only:
+            s_parks, s_sure, log_parks = [], True, []
+            cand = split_parks(r.get("P2P_CANDIDATE"))
+            if cand:
+                notes.append("%s %s %s: スポットでは %s から出ていましたが、運用中に確認していないので P2P にしていません"
+                             % (r["QSO_DATE"], r["TIME_ON"][:4], r["CALL"], ",".join(cand)))
+        else:
+            s_parks, s_sure = their_parks_from_spots(spots.get(b, []), t)
+            log_parks = split_parks(r.get("POTA_REF") or r.get("SIG_INFO")) if r.get("SIG", "POTA").upper() in ("POTA", "") else []
         if h_parks:
             theirs, src = h_parks, "ハンターログ（確定）"
             extra = [p for p in log_parks + s_parks if p not in h_parks]
             if extra:
                 notes.append("%s %s %s: ハンターログでは %s。ログ/スポットにあった %s は使っていません"
                              % (r["QSO_DATE"], r["TIME_ON"][:4], r["CALL"], ",".join(h_parks), ",".join(extra)))
+            elif decided and not d_parks:
+                notes.append("%s %s %s: 運用中は「P2P ではない」にしましたが、相手のハンターログに %s があったので P2P にしています"
+                             % (r["QSO_DATE"], r["TIME_ON"][:4], r["CALL"], ",".join(h_parks)))
         else:
             theirs = sorted(set(log_parks) | set(s_parks))
-            src = "+".join(x for x, ok in (("ログ", log_parks), ("スポット", s_parks)) if ok)
+            src = ("確認済み" if r.get("P2P_DECISION") == "yes" else "手入力" if r.get("P2P_DECISION") == "manual"
+                   else "+".join(x for x, ok in (("ログ", log_parks), ("スポット", s_parks)) if ok))
             if not s_sure and not set(s_parks) <= set(log_parks):
                 notes.append("%s %s %s: %s が別々のスポットで近い時刻に出ていたので 2fer として扱いました（移動運用の可能性もあり）"
                              % (r["QSO_DATE"], r["TIME_ON"][:4], r["CALL"], ",".join(s_parks)))
