@@ -42,10 +42,11 @@
   // ---------- navigation ----------
   function show(view) {
     $$(".nav-item").forEach((b) => b.classList.toggle("is-active", b.dataset.view === view));
-    ["live", "build", "settings"].forEach((v) => ($("#view-" + v).hidden = v !== view));
+    ["live", "spots", "build", "settings"].forEach((v) => ($("#view-" + v).hidden = v !== view));
     $(".main").scrollTo(0, 0);
     if (view === "build" && st.source === "app") loadActs();
     if (view === "settings") api.poll_live(1e12, 1e12).then((r) => updateReceiver(r.receiver));
+    if (view === "spots") loadSpotsPage();
   }
   $$(".nav-item").forEach((b) => b.addEventListener("click", () => show(b.dataset.view)));
 
@@ -261,6 +262,54 @@
   $("#doneClose").addEventListener("click", () => ($("#doneCard").hidden = true));
   $("#doneOpen").addEventListener("click", () => api.open_out(st.outDir || st.out));
   $("#donePota").addEventListener("click", () => api.open_url("https://pota.app/"));
+
+  // ================================================================ spots page (like pota.app's list)
+  const MODE_GROUP = (m) => { m = String(m || "").toUpperCase();
+    return m === "CW" ? "cw" : /^(SSB|USB|LSB|FM|AM|PHONE|DV|DMR|C4FM)$/.test(m) ? "phone" : m ? "data" : ""; };
+  const bandOf = (khz) => { const k = parseFloat(khz) / 1000; const B = [[1.8, 2, "160m"], [3.5, 4, "80m"], [5, 5.5, "60m"], [7, 7.3, "40m"], [10.1, 10.15, "30m"],
+    [14, 14.35, "20m"], [18.068, 18.168, "17m"], [21, 21.45, "15m"], [24.89, 24.99, "12m"], [28, 29.7, "10m"], [50, 54, "6m"], [144, 148, "2m"], [430, 440, "70cm"]];
+    for (const [lo, hi, b] of B) if (k >= lo && k <= hi) return b; return ""; };
+  const sp = { items: [], worked: new Set(), region: "JP", group: "", band: "", q: "", twofer: false, timer: null };
+  async function loadSpotsPage() {
+    const r = await api.spots_now();
+    const err = $("#spotsError");
+    if (!r.ok) { err.textContent = r.error; err.hidden = false; return; }
+    err.hidden = true; sp.items = r.items; sp.worked = new Set(r.worked || []);
+    $("#spotsAt").textContent = `${r.at}Z 時点・${r.items.length} 局`;
+    const bands = [...new Set(sp.items.map((e) => bandOf(e.freq)).filter(Boolean))]
+      .sort((a, b) => parseFloat(b) * (b.endsWith("cm") ? .01 : 1) - parseFloat(a) * (a.endsWith("cm") ? .01 : 1));
+    const sel = $("#spotsBand"); const cur = sel.value;
+    sel.innerHTML = '<option value="">全バンド</option>' + bands.map((b) => `<option value="${b}">${b}</option>`).join("");
+    sel.value = bands.includes(cur) ? cur : "";
+    renderSpotsPage();
+    clearInterval(sp.timer); sp.timer = setInterval(() => { if (!$("#view-spots").hidden) loadSpotsPage(); else clearInterval(sp.timer); }, 60000);
+  }
+  function renderSpotsPage() {
+    const q = sp.q.toUpperCase();
+    const list = sp.items.filter((e) =>
+      (!sp.region || e.parks.some((p) => p.startsWith(sp.region))) &&
+      (!sp.group || MODE_GROUP(e.mode) === sp.group) &&
+      (!sp.band || bandOf(e.freq) === sp.band) &&
+      (!sp.twofer || e.twofer) &&
+      (!q || e.call.toUpperCase().includes(q) || e.parks.some((p) => p.includes(q))));
+    $("#spotsPage").innerHTML = list.map((e) => `
+      <li class="spot${e.twofer ? " is-twofer" : ""}${sp.worked.has(e.base) ? " is-worked" : ""}${e.ago >= 30 ? " is-stale" : ""}">
+        <span class="spot-time">${esc(e.time)}Z</span>
+        <span class="spot-call">${esc(e.call)}</span>
+        <span class="plates">${plates(e.parks)}${e.twofer ? `<span class="twofer-tag">${e.parks.length}fer</span>` : ""}</span>
+        <span class="spot-meta"><span class="spot-freq">${fmtFreq(e.freq)}</span>${e.mode ? `<span class="spot-mode">${esc(e.mode)}</span>` : ""}</span>
+        <span class="spot-ago">${e.ago ? `${e.ago} 分前` : "いま"}</span>
+        <span class="spot-note" title="${esc(e.comments)}">${esc(e.comments)}</span>
+      </li>`).join("");
+    $("#spotsPageEmpty").hidden = list.length > 0; $("#spotsPage").hidden = list.length === 0;
+    $("#spotsSummary").textContent = sp.items.length ? `${list.length} 局を表示（全 ${sp.items.length} 局）` : "いま公園から出ている局";
+  }
+  $$(".seg-region button").forEach((b) => b.addEventListener("click", () => { sp.region = b.dataset.region; segSet(".seg-region", "region", sp.region); renderSpotsPage(); }));
+  $$(".seg-mode button").forEach((b) => b.addEventListener("click", () => { sp.group = b.dataset.modegroup; segSet(".seg-mode", "modegroup", sp.group); renderSpotsPage(); }));
+  $("#spotsBand").addEventListener("change", (e) => { sp.band = e.target.value; renderSpotsPage(); });
+  $("#spotsSearch").addEventListener("input", (e) => { sp.q = e.target.value.trim(); renderSpotsPage(); });
+  $("#spotsTwofer").addEventListener("change", (e) => { sp.twofer = e.target.checked; renderSpotsPage(); });
+  $("#spotsRefresh").addEventListener("click", loadSpotsPage);
 
   // ================================================================ build
   $$(".seg-src button").forEach((b) => b.addEventListener("click", () => setSource(b.dataset.src)));

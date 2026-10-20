@@ -16,7 +16,7 @@ from builder import build, list_activations, live_p2p
 from potacommon import (APP_NAME, DATA_DIR, DEFAULT_OUT, VERSION, base_call, fetch_json, iso_minutes,
                         load_settings, minutes, save_settings, split_parks)
 from receiver import DEFAULT_LISTENERS, Receiver
-from spotlogger import SpotLogger
+from spotlogger import SpotLogger, summarize_spots
 import updater
 
 # pywebview >= 5 has FileDialog; the bare constants are deprecated in 6 and will be removed.
@@ -56,6 +56,7 @@ class Api:
         self.lock = threading.Lock()
         self._parks = {}
         self._full = None          # (x, y, w, h) of the window before it became a bar
+        self._spots_cache = (0, [])  # (fetched at, raw spots) for the アクティベート中 page
         self.start_receiver()
 
     # ---------- settings ----------
@@ -247,6 +248,23 @@ class Api:
                     "qsos": [e for e in self.qso_events if e["at"] > qsince],
                     "status": self.status, "receiver": dict(self.recv_status),
                     "running": bool(self.logger and self.logger.running())}
+
+    # ---------- who is activating now (own page, works without recording) ----------
+    def spots_now(self, max_age=45):
+        at, spots = self._spots_cache
+        if time.time() - at > max_age:
+            try:
+                spots = fetch_json("spot/activator", timeout=15) or []
+                self._spots_cache = (time.time(), spots)
+            except Exception as e:
+                if not spots:
+                    return {"ok": False, "error": "スポットを取得できませんでした: %s" % e}
+        worked = []
+        if self.logger and self.logger.running():
+            t0 = iso_minutes(self.logger.session["start"]) - 5
+            worked = sorted({base_call(r.get("CALL")) for r in qsolog.between(t0, 1 << 40)})
+        return {"ok": True, "at": time.strftime("%H:%M", time.gmtime(self._spots_cache[0])),
+                "items": summarize_spots(spots), "worked": worked}
 
     # ---------- build ----------
     def pick_adif(self):

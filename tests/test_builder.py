@@ -42,6 +42,22 @@ class BuilderTest(unittest.TestCase):
         write_adif(self.adif, recs, ["CALL", "QSO_DATE", "TIME_ON", "BAND", "MODE"])
         self.out = os.path.join(TMP, "out")
 
+    def test_summarize_spots(self):
+        import datetime as dt
+        from spotlogger import summarize_spots
+        now = dt.datetime(2026, 10, 20, 4, 50, tzinfo=dt.timezone.utc)
+        spots = [{"activator": "JS6UHQ/6", "reference": "JP-1788", "spotTime": "2026-10-20T04:41:00", "frequency": "21049", "mode": "SSB", "comments": "2fer JP-0157"},
+                 {"activator": "JR5JAQ/P", "reference": "JP-2100", "spotTime": "2026-10-20T04:34:12", "frequency": "7001", "mode": "CW", "comments": "RBN"},
+                 {"activator": "JR5JAQ/P", "reference": "JP-2101", "spotTime": "2026-10-20T04:30:00", "frequency": "7001", "mode": "CW", "comments": ""},
+                 {"activator": "JA1OLD", "reference": "JP-0001", "spotTime": "2026-10-20T03:00:00", "frequency": "7041", "mode": "FT8", "comments": ""},
+                 {"activator": "JA1OLD", "reference": "JP-0002", "spotTime": "2026-10-20T02:00:00", "frequency": "7041", "mode": "FT8", "comments": ""}]
+        rows = {r["base"]: r for r in summarize_spots(spots, now)}
+        self.assertEqual((rows["JS6UHQ"]["parks"], rows["JS6UHQ"]["twofer"]), (["JP-1788", "JP-0157"], True))   # comment
+        self.assertEqual((rows["JR5JAQ"]["parks"], rows["JR5JAQ"]["twofer"]), (["JP-2100", "JP-2101"], True))   # two spots, 4 min apart
+        self.assertEqual((rows["JA1OLD"]["parks"], rows["JA1OLD"]["twofer"]), (["JP-0001"], False))            # an hour apart: moved on
+        self.assertEqual([r["base"] for r in summarize_spots(spots, now)], ["JS6UHQ", "JR5JAQ", "JA1OLD"])  # newest first
+        self.assertEqual(rows["JS6UHQ"]["ago"], 9)
+
     def test_helpers(self):
         self.assertEqual(base_call("JS2PHO/2"), "JS2PHO")
         self.assertEqual(base_call("7J1/K1ABC"), "K1ABC")
