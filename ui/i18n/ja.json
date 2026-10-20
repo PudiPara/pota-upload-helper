@@ -147,6 +147,7 @@
  "res.qsoShort": "QSO・10 未満",
  "res.noP2P": "P2P はありませんでした",
  "res.lines": "POTA へ {n} 行",
+ "res.unique": "pota.app では {n}",
  "res.p2pOnly": "P2P だけ表示",
  "res.notes": "確認してください",
  "src.hunter": "確定",

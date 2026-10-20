@@ -91,6 +91,7 @@
   "api.badDate": "日期格式不正確",
   "res.qso": "QSO", "res.qsoShort": "QSO·不足 10", "res.noP2P": "沒有 P2P",
   "res.lines": "上傳 {n} 行",
+  "res.unique": "pota.app 計為 {n}",
   "res.p2pOnly": "只看 P2P", "res.notes": "請確認",
   "src.hunter": "已核實", "src.confirmed": "已確認", "src.manual": "手動", "src.spot": "spot", "src.log": "日誌", "src.logspot": "日誌+spot",
   "set.title": "連接日誌軟體",

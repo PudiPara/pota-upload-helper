@@ -91,6 +91,7 @@
   "api.badDate": "Data non valida",
   "res.qso": "QSO", "res.qsoShort": "QSO · meno di 10", "res.noP2P": "Nessun P2P",
   "res.lines": "{n} righe per POTA",
+  "res.unique": "{n} su pota.app",
   "res.p2pOnly": "Solo P2P", "res.notes": "Da verificare",
   "src.hunter": "verificato", "src.confirmed": "confermato", "src.manual": "digitato", "src.spot": "spot", "src.log": "log", "src.logspot": "log+spot",
   "set.title": "Collegamento al log",

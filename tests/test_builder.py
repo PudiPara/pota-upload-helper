@@ -126,7 +126,8 @@ class SummaryListsEveryQso(unittest.TestCase):
         recs = [{"CALL": "EI4HQ", "QSO_DATE": "20260107", "TIME_ON": "010000", "BAND": "20m", "MODE": "FT8", "MY_SIG": "POTA", "MY_SIG_INFO": "JP-1266",
                  "P2P_DECISION": "yes", "SIG": "POTA", "SIG_INFO": "IE-0023,IE-0141", "POTA_REF": "IE-0023,IE-0141"},
                 {"CALL": "JA1TST", "QSO_DATE": "20260107", "TIME_ON": "010500", "BAND": "20m", "MODE": "FT8", "MY_SIG": "POTA", "MY_SIG_INFO": "JP-1266"}]
+        recs.append(dict(recs[1], TIME_ON="010900"))                              # JA1TST again, same band and mode: a dupe for pota.app
         f = builder.build(None, None, None, "JL1FVA", out, offline=True, recs=recs, confirmed_only=True, log=lambda *a: None)["summary"][0]
-        self.assertEqual((f["qsos"], f["records"]), (2, 3))                      # their 2fer = one QSO, two lines
-        self.assertEqual([(r["call"], r["parks"]) for r in f["rows"]], [("EI4HQ", ["IE-0023", "IE-0141"]), ("JA1TST", [])])
+        self.assertEqual((f["qsos"], f["records"], f["unique"]), (3, 4, 2))        # their 2fer = one QSO, two lines; pota.app keeps 2
+        self.assertEqual([(r["call"], r["parks"]) for r in f["rows"]], [("EI4HQ", ["IE-0023", "IE-0141"]), ("JA1TST", []), ("JA1TST", [])])
 
