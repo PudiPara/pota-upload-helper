@@ -283,6 +283,22 @@
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
 <div class="cheer" id="cheer" hidden role="status"><strong>10 QSO</strong><span data-i18n="cheer.sub">アクティベーション成立</span></div>
+<div class="modal" id="editor" hidden role="dialog" aria-modal="true">
+  <div class="modal-card modal-wide">
+    <h2 id="editorTitle"></h2>
+    <div class="modal-body">
+      <p class="muted" id="editorNote" hidden></p>
+      <table class="ed">
+        <thead><tr>
+          <th data-i18n="ed.time">時刻</th><th data-i18n="ed.call">コール</th><th data-i18n="ed.band">バンド</th>
+          <th data-i18n="ed.mode">モード</th><th data-i18n="ed.my">自分の公園</th><th data-i18n="ed.parks">相手の公園（P2P）</th><th></th>
+        </tr></thead>
+        <tbody id="editorRows"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions"><button class="btn btn-primary" id="editorClose" data-i18n="done.close">閉じる</button></div>
+  </div>
+</div>
 <div class="modal" id="updModal" hidden role="dialog" aria-modal="true">
   <div class="modal-card">
     <h2 data-i18n="upd.modal.title">新しいバージョンがあります</h2>

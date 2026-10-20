@@ -24,10 +24,10 @@ import webview
 import i18n
 import qsolog
 import updater
-from builder import build, list_activations
+from builder import build, decided_parks, find_activation_qsos, list_activations
 from i18n import t
 from potacommon import (APP_NAME, DATA_DIR, DEFAULT_OUT, VERSION, base_call, fetch_json, iso_minutes,
-                        load_settings, lock_instance, save_settings, split_parks)
+                        load_settings, lock_instance, read_adif, save_settings, split_parks)
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import SpotLogger, candidate_for, summarize
 from window import BarMode
@@ -313,6 +313,60 @@ class Api:
             return {"path": path or "", "items": [{"date": d, "parks": p.split(","), "qsos": n} for d, p, n in rows]}
         except Exception as e:
             return {"path": path or "", "items": [], "error": t("api.logRead", err=e)}
+
+    # ---- the editor (アップロード作成 → 中身を見る): one activation day's QSOs
+    def activation_qsos(self, date, path=None):
+        """Rows for the editor: from the app log (editable) or from an ADIF file (read-only)."""
+        date = str(date or "")
+        if not re.fullmatch(r"\d{8}", date):
+            return {"ok": False, "error": t("api.badDate")}
+        try:
+            recs = read_adif(path) if path else qsolog.records([date])
+        except Exception as e:
+            return {"ok": False, "error": t("api.logRead", err=e)}
+        rows = []
+        for r, _, mp in find_activation_qsos(recs, dates=[date]):
+            _, parks = decided_parks(r)
+            rows.append({"uid": None if path else qsolog.make_uid(r), "call": r.get("CALL", ""), "time": r.get("TIME_ON", ""),
+                         "band": r.get("BAND", ""), "mode": r.get("SUBMODE") or r.get("MODE", ""), "my": sorted(mp), "parks": parks})
+        rows.sort(key=lambda x: x["time"])
+        return {"ok": True, "editable": not path, "rows": rows}
+
+    def save_qso(self, uid, fields):
+        """One edited cell of the editor. fields: {CALL|TIME_ON|BAND|MODE|parks: text}."""
+        clean = {}
+        for k, v in (fields or {}).items():
+            v = str(v or "").strip()
+            if k == "CALL":
+                v = v.upper()
+                if not CALL_RE.fullmatch(v):
+                    return {"ok": False, "error": t("cfg.calls.err")}
+            elif k == "TIME_ON":
+                if not re.fullmatch(r"\d{4}(\d{2})?", v):
+                    return {"ok": False, "error": t("api.badTime")}
+            elif k == "BAND":
+                v = v.lower()
+                if not re.fullmatch(r"\d+(\.\d+)?(m|cm|mm)", v):
+                    return {"ok": False, "error": t("api.badBand")}
+            elif k == "MODE":
+                v = v.upper()
+                if not re.fullmatch(r"[A-Z0-9-]+", v):
+                    return {"ok": False, "error": t("api.badMode")}
+            elif k == "parks":
+                if v and not split_parks(v):
+                    return {"ok": False, "error": t("api.badPark")}
+            else:
+                continue
+            clean[k] = v
+        new_uid = qsolog.update(uid, clean)
+        if not new_uid:
+            return {"ok": False, "error": t("api.qsoNotFound")}
+        return {"ok": True, "uid": new_uid}
+
+    def delete_qso(self, uid):
+        if not qsolog.delete_uid(uid):
+            return {"ok": False, "error": t("api.qsoNotFound")}
+        return {"ok": True, "log_count": qsolog.count()}
 
     def delete_activation(self, date):
         """Remove one UTC day's activation QSOs from the app's own log (the list on アップロード作成)."""

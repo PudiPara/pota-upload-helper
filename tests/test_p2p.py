@@ -125,3 +125,15 @@ class DeleteActivation(unittest.TestCase):
         left = [(r["QSO_DATE"], r.get("MY_SIG_INFO", "")) for r in qsolog.records() if r["CALL"] == "JA1DEL"]
         self.assertEqual(sorted(left), [("20250101", ""), ("20250102", "JP-9999")])
 
+
+class EditQso(unittest.TestCase):
+    def test_update_moves_the_record_to_its_new_key_and_keeps_the_decision_edit(self):
+        uid = qsolog.upsert(rec("JA1EDT", "070000", MY_SIG_INFO="JP-9998", QSO_DATE="20250103"), "e-1", "x")
+        new = qsolog.update(uid, {"CALL": "JA1EDT/1", "BAND": "20m", "parks": "JP-0007"})
+        self.assertNotEqual(new, uid)
+        recs = [r for r in qsolog.records(["20250103"]) if r["CALL"].startswith("JA1EDT")]
+        self.assertEqual(len(recs), 1)
+        self.assertEqual((recs[0]["CALL"], recs[0]["BAND"], recs[0]["SIG_INFO"], recs[0]["P2P_DECISION"]), ("JA1EDT/1", "20m", "JP-0007", "manual"))
+        self.assertTrue(qsolog.delete_uid(new)); self.assertFalse(qsolog.delete_uid(new))
+        self.assertEqual([r for r in qsolog.records(["20250103"]) if r["CALL"].startswith("JA1EDT")], [])
+

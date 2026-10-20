@@ -152,6 +152,46 @@ def delete(ext_id=None, call=None, qso_date=None, time_on=None, window=3):
     return n
 
 
+def update(uid, fields):
+    """Edit one stored QSO: CALL, TIME_ON, BAND, MODE and/or "parks" (their park, the operator's
+    decision). The key may change, so the old row is retired and the record stored again.
+    -> the new uid, or None when the QSO is gone."""
+    from potacommon import split_parks
+    with _lock:
+        con = _db()
+        row = con.execute("SELECT data, ext_id, source FROM qso WHERE uid=? AND deleted=0", (uid,)).fetchone()
+        con.close()
+    if not row:
+        return None
+    rec, ext_id, source = json.loads(row[0]), row[1], row[2]
+    for k in ("CALL", "TIME_ON", "BAND", "MODE"):
+        if k in fields:
+            rec[k] = fields[k]
+    if "MODE" in fields:
+        rec.pop("SUBMODE", None)
+    if "parks" in fields:
+        parks = split_parks(fields["parks"])
+        apply_decision(rec, "manual" if parks else "no", parks)
+    new_uid = make_uid(rec)
+    if new_uid != uid:
+        with _lock:
+            con = _db()
+            con.execute("UPDATE qso SET deleted=1 WHERE uid=?", (uid,))
+            con.commit()
+            con.close()
+    return upsert(rec, ext_id, source)
+
+
+def delete_uid(uid):
+    """Soft-delete one stored QSO. -> True when it existed."""
+    with _lock:
+        con = _db()
+        n = con.execute("UPDATE qso SET deleted=1 WHERE uid=? AND deleted=0", (uid,)).rowcount
+        con.commit()
+        con.close()
+    return n > 0
+
+
 def delete_activation(qso_date):
     """Drop (soft-delete) the activation QSOs of one UTC day - those with my park in them, which is
     what the アップロード作成 list shows. -> how many."""
