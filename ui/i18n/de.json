@@ -91,6 +91,7 @@
   "api.badDate": "Ungültiges Datum",
   "res.qso": "QSOs", "res.qsoShort": "QSOs · unter 10", "res.noP2P": "Kein P2P",
   "res.lines": "{n} Zeilen für POTA",
+  "res.unique": "{n} bei pota.app",
   "res.p2pOnly": "Nur P2P", "res.notes": "Bitte prüfen",
   "src.hunter": "bestätigt", "src.confirmed": "bestätigt", "src.manual": "eingetippt", "src.spot": "Spot", "src.log": "Log", "src.logspot": "Log+Spot",
   "set.title": "Logger-Anbindung",

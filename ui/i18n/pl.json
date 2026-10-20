@@ -91,6 +91,7 @@
   "api.badDate": "Nieprawidłowa data",
   "res.qso": "QSO", "res.qsoShort": "QSO · poniżej 10", "res.noP2P": "Brak P2P",
   "res.lines": "{n} wierszy do POTA",
+  "res.unique": "{n} na pota.app",
   "res.p2pOnly": "Tylko P2P", "res.notes": "Sprawdź",
   "src.hunter": "potwierdzone", "src.confirmed": "potwierdzone", "src.manual": "wpisane", "src.spot": "spot", "src.log": "log", "src.logspot": "log+spot",
   "set.title": "Połączenie z logiem",

@@ -147,6 +147,7 @@
  "res.qsoShort": "QSOs · under 10",
  "res.noP2P": "No P2P",
  "res.lines": "{n} lines to POTA",
+ "res.unique": "{n} on pota.app",
  "res.p2pOnly": "P2P only",
  "res.notes": "Please check",
  "src.hunter": "verified",
