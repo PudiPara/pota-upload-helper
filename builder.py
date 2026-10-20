@@ -126,7 +126,7 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
 
     os.makedirs(out_dir, exist_ok=True)
     files = defaultdict(list)
-    report = defaultdict(lambda: {"qsos": set(), "p2p": [], "calls": set()})
+    report = defaultdict(lambda: {"qsos": set(), "p2p": [], "rows": [], "calls": set()})
     notes = []
     used_hunter = set()
 
@@ -170,6 +170,8 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
             rep["calls"].add(b)
             if theirs:
                 rep["p2p"].append((r.get("TIME_ON", "")[:4], r["CALL"], ",".join(theirs), src))
+            rep["rows"].append({"time": r.get("TIME_ON", "")[:4], "call": r["CALL"], "band": band or "",
+                                "mode": r.get("SUBMODE") or r.get("MODE", ""), "parks": list(theirs), "source": src if theirs else ""})
             for tp in (theirs or [None]):
                 o = {k: r.get(k) for k in KEEP}
                 o.update({"STATION_CALLSIGN": call, "OPERATOR": r.get("OPERATOR") or call,
@@ -194,7 +196,7 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
         rep = report[(mp, d)]
         n = len(rep["qsos"])
         summary.append({"park": mp, "date": d, "file": fn, "qsos": n, "stations": len(rep["calls"]),
-                        "records": len(files[(mp, d)]),
+                        "records": len(files[(mp, d)]), "rows": rep["rows"],
                         "p2p": [{"time": tm, "call": c, "parks": ps.split(","), "source": src}
                                 for tm, c, ps, src in rep["p2p"]]})
         lines.append(tr("b.line.file", date=d, park=mp, n=n, stations=len(rep["calls"]), short="" if n >= 10 else tr("b.short"), file=fn))

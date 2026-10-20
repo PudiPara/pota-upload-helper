@@ -118,3 +118,15 @@ class RecordedParksBeatSessionWindows(unittest.TestCase):
         self.assertEqual(got["JA1AAA"], ["JP-1206", "JP-1266"])
         self.assertEqual(got["JA1BBB"], ["JP-1206", "JP-1946"])
 
+
+class SummaryListsEveryQso(unittest.TestCase):
+    def test_rows_and_lines(self):
+        import tempfile, builder
+        out = tempfile.mkdtemp()
+        recs = [{"CALL": "EI4HQ", "QSO_DATE": "20260107", "TIME_ON": "010000", "BAND": "20m", "MODE": "FT8", "MY_SIG": "POTA", "MY_SIG_INFO": "JP-1266",
+                 "P2P_DECISION": "yes", "SIG": "POTA", "SIG_INFO": "IE-0023,IE-0141", "POTA_REF": "IE-0023,IE-0141"},
+                {"CALL": "JA1TST", "QSO_DATE": "20260107", "TIME_ON": "010500", "BAND": "20m", "MODE": "FT8", "MY_SIG": "POTA", "MY_SIG_INFO": "JP-1266"}]
+        f = builder.build(None, None, None, "JL1FVA", out, offline=True, recs=recs, confirmed_only=True, log=lambda *a: None)["summary"][0]
+        self.assertEqual((f["qsos"], f["records"]), (2, 3))                      # their 2fer = one QSO, two lines
+        self.assertEqual([(r["call"], r["parks"]) for r in f["rows"]], [("EI4HQ", ["IE-0023", "IE-0141"]), ("JA1TST", [])])
+

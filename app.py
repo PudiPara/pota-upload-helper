@@ -68,7 +68,7 @@ def qso_event(rec, uid=None):
             "date": rec.get("QSO_DATE"), "time": (rec.get("TIME_ON") or "")[:4], "band": rec.get("BAND", ""),
             "ts": (rec.get("QSO_DATE") or "") + (rec.get("TIME_ON") or "").ljust(6, "0"),   # sort key, to the second
             "mode": rec.get("SUBMODE") or rec.get("MODE", ""), "decision": decision, "parks": parks,
-            "candidate": split_parks(rec.get("P2P_CANDIDATE"))}
+            "candidate": split_parks(rec.get("P2P_CANDIDATE")), "my": split_parks(rec.get("MY_SIG_INFO"))}
 
 
 class Api:
@@ -215,9 +215,19 @@ class Api:
                     "status": self._status, "receiver": self._receiver_texts(),
                     "running": bool(self._logger and self._logger.running())}
 
-    def session_qsos(self, start_iso):
-        """QSOs already in the app log since the session started (for re-opening the window)."""
-        return [dict(qso_event(r), at=0) for r in qsolog.between(iso_minutes(start_iso) - 5, 1 << 40)]
+    def session_qsos(self, start_iso, parks=""):
+        """The live list when a session starts or the window reopens: today's QSOs at any of these
+        parks (a park shared by several sessions keeps its count for the day) plus anything logged
+        since the session started."""
+        mine = set(split_parks(parks))
+        date = start_iso[:10].replace("-", "")
+        out = {}
+        for r in qsolog.records([date]):
+            if mine & set(split_parks(r.get("MY_SIG_INFO"))):
+                out[qsolog.make_uid(r)] = dict(qso_event(r), at=0)
+        for r in qsolog.between(iso_minutes(start_iso) - 5, 1 << 40):
+            out.setdefault(qsolog.make_uid(r), dict(qso_event(r), at=0))
+        return list(out.values())
 
     def set_p2p(self, uid, decision, parks=""):
         """The operator's answer for one QSO: 'yes' (candidate accepted), 'manual' (typed parks), 'no', ''."""

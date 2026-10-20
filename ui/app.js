@@ -117,13 +117,13 @@
 
   const refHtml = (p) => { const i = p.indexOf("-"); return `<span class="ref"><b>${esc(p.slice(0, i + 1))}</b>${esc(p.slice(i + 1))}</span>`; };
   async function enterRunning(parks, start) {
-    st.spots.clear(); st.qsos.clear(); st.lastAt = 0; st.start = utcMs(start); st.cheered = false;
+    st.spots.clear(); st.qsos.clear(); st.lastAt = 0; st.start = utcMs(start); st.cheered = false; st.parks = parks; st.seq = 0;
     $("#liveIdle").hidden = true; $("#liveRun").hidden = false; $("#liveDot").hidden = false;
     $("#signParks").innerHTML = parks.map((p) =>
       `<div class="sign-park">${refHtml(p)}<span class="name" data-ref="${esc(p)}"></span></div>`).join("");
     $("#barParks").innerHTML = parks.map(refHtml).join('<span class="plate-join" aria-hidden="true">+</span>');
     $("#liveStatus").textContent = t("live.status.first");
-    for (const q of await api.session_qsos(start)) st.qsos.set(q.uid, q);
+    for (const q of await api.session_qsos(start, parks.join(","))) { q.seq = ++st.seq; st.qsos.set(q.uid, q); }
     st.lastQ = Date.now() / 1000 - 1;
     st.cheered = st.qsos.size >= 10;            // re-opened mid-activation: don't celebrate twice
     renderSpots(); renderQsos();
@@ -155,7 +155,9 @@
         toast(t("live.deleted", { call: q.call }));
         continue;
       }
-      if (q.date && st.start && Date.parse(`${q.date.slice(0, 4)}-${q.date.slice(4, 6)}-${q.date.slice(6, 8)}T${q.time.slice(0, 2)}:${q.time.slice(2, 4)}:00Z`) < st.start - 300000) continue;
+      // keep today's QSOs at these parks (a shared park counts for the whole day) and anything since the start
+      const atMine = (q.my || []).some((p) => (st.parks || []).includes(p));
+      if (!atMine && q.date && st.start && Date.parse(`${q.date.slice(0, 4)}-${q.date.slice(4, 6)}-${q.date.slice(6, 8)}T${q.time.slice(0, 2)}:${q.time.slice(2, 4)}:00Z`) < st.start - 300000) continue;
       // WSJT-X logs the start time, the logger the end time: show the same contact once
       for (const [k, v] of st.qsos) {
         if (k !== q.uid && v.date === q.date && v.band === q.band && baseCall(v.call) === baseCall(q.call) && Math.abs(mins(v.time) - mins(q.time)) <= 3) {
@@ -163,6 +165,7 @@
           st.qsos.delete(k);
         }
       }
+      q.seq = (st.qsos.get(q.uid) || {}).seq || ++st.seq;   // arrival order breaks ties in the sort
       st.qsos.set(q.uid, q); freshQ.add(q.uid);
     }
     if (freshS.size || freshQ.size) { renderSpots(freshS); renderQsos(freshQ); }
@@ -219,19 +222,26 @@
   }
   function renderQsos(fresh) {
     const key = (q) => q.ts || q.date + q.time;           // to the second when the logger sent seconds
-    const list = [...st.qsos.values()].sort((a, b) => key(b).localeCompare(key(a)));
+    const list = [...st.qsos.values()].sort((a, b) => key(b).localeCompare(key(a)) || (b.seq || 0) - (a.seq || 0));   // newest first
     $("#qsos").innerHTML = list.map((q) => qsoRow(q, fresh)).join("");
     $("#barQsos").innerHTML = list.slice(0, 8).map((q) => qsoRow(q, fresh)).join("");
     $("#qsosEmpty").hidden = list.length > 0; $("#qsos").hidden = list.length === 0;
     $("#barEmpty").hidden = list.length > 0; $("#barQsos").hidden = list.length === 0;
     const uniq = new Set(list.map((q) => `${baseCall(q.call)}|${q.band}|${q.mode}`)).size;
-    const n = list.length, p2p = list.filter((q) => q.decision && q.decision !== "no" && q.parks.length).length;
+    // Count per park for the day: a 2fer whose parks differ (one shared with an earlier session)
+    // shows the smaller count as the number and the breakdown beside it.
+    const parks = st.parks || [];
+    const per = parks.map((p) => [p, list.filter((q) => !q.my || !q.my.length || q.my.includes(p)).length]);
+    const n = per.length ? Math.min(...per.map((x) => x[1])) : list.length;
+    const differ = per.length > 1 && new Set(per.map((x) => x[1])).size > 1;
+    const breakdown = differ ? per.map(([p, c]) => `${p.split("-")[1]}: ${c}`).join(" · ") : "";
+    const p2p = list.filter((q) => q.decision && q.decision !== "no" && q.parks.length).length;
     const pending = list.filter((q) => !q.decision && q.candidate.length).length;
-    $("#qsoCount").textContent = n; $("#barCount").textContent = n;
+    $("#qsoCount").textContent = n; $("#barCount").textContent = n; $("#barPer").textContent = breakdown;
     const w = Math.min(100, (n / 10) * 100) + "%";
     $("#qsoBar").style.width = w; $("#barMeter").style.width = w;
     $(".tally").classList.toggle("is-done", n >= 10); $(".bar-tally").classList.toggle("is-done", n >= 10);
-    $("#qsoNote").textContent = n >= 10 ? t("live.qsoNote.done", { n: uniq }) : t("live.qsoNote.left", { n: 10 - n });
+    $("#qsoNote").textContent = (breakdown ? breakdown + " — " : "") + (n >= 10 ? t("live.qsoNote.done", { n: uniq }) : t("live.qsoNote.left", { n: 10 - n }));
     $("#p2pCount").textContent = [p2p ? t("live.p2pCount", { n: p2p }) : "", pending ? t("live.pendingCount", { n: pending }) : ""].filter(Boolean).join(" · ");
     if (st.editing) { const el = $(`[data-in="${CSS.escape(st.editing)}"]`); if (el) el.focus(); }
     if (n >= 10 && !st.cheered) { st.cheered = true; cheer(); }
@@ -472,21 +482,29 @@
   const SRC_CLASS = { hunter: "src-ok", confirmed: "src-ok", manual: "src-ok", spot: "src-spot", log: "src-log", logspot: "src-log" };
   function resultsHtml(r) {
     const files = r.summary || [];
-    return files.map((f) => `
+    // every QSO of each file; P2P rows carry the other park(s) and how they were known; a switch hides the rest
+    const row = (q) => `
+          <div class="qrow${q.parks.length ? " is-p2p" : ""}"><span class="muted">${hhmm(q.time)}</span>
+          <span class="qrow-call">${esc(q.call)}</span><span class="qrow-bm">${esc(q.band)} ${esc(q.mode)}</span>
+          ${q.parks.length ? `<span class="plates">${plates(q.parks)}</span><span class="src ${SRC_CLASS[q.source] || "src-log"}">${esc(t("src." + q.source))}</span>` : ""}</div>`;
+    return (files.length ? `<div class="res-tools"><label class="switch switch-sm"><input type="checkbox" class="res-p2p-only"><span class="switch-ui"></span><span>${esc(t("res.p2pOnly"))}</span></label></div>` : "") +
+      files.map((f) => `
       <article class="file">
         <div class="file-head">
           ${plate(f.park)}
           <div><div class="file-date">${fmtDate(f.date)}</div><div class="file-name">${esc(f.file)}</div></div>
-          <div class="file-q${f.qsos < 10 ? " is-short" : ""}"><strong>${f.qsos}</strong><span>${esc(t(f.qsos < 10 ? "res.qsoShort" : "res.qso"))}</span></div>
+          <div class="file-q${f.qsos < 10 ? " is-short" : ""}"><strong>${f.qsos}</strong><span>${esc(t(f.qsos < 10 ? "res.qsoShort" : "res.qso"))}</span>
+            ${f.records && f.records !== f.qsos ? `<small>${esc(t("res.lines", { n: f.records }))}</small>` : ""}</div>
         </div>
-        ${f.p2p.length ? `<div class="p2p">${f.p2p.map((p) => `
-          <div class="p2p-row"><span class="muted">${hhmm(p.time)}</span>
-          <span class="p2p-call">${esc(p.call)}</span><span class="plates">${plates(p.parks)}</span>
-          <span class="src ${SRC_CLASS[p.source] || "src-log"}">${esc(t("src." + p.source))}</span></div>`).join("")}</div>` : `<div class="p2p-none">${esc(t("res.noP2P"))}</div>`}
+        ${(f.rows || []).length ? `<div class="p2p">${f.rows.map(row).join("")}</div>`
+          : f.p2p.length ? `<div class="p2p">${f.p2p.map((p) => row({ ...p, band: "", mode: "" })).join("")}</div>` : `<div class="p2p-none">${esc(t("res.noP2P"))}</div>`}
       </article>`).join("") +
       (files.length && r.notes && r.notes.length ? `<div class="notes"><h3>${esc(t("res.notes"))}</h3><ul>${r.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul></div>` : "") +
       (!files.length && r.notes && r.notes.length ? `<p class="muted">${esc(r.notes[0])}</p>` : "");
   }
+  document.addEventListener("change", (e) => {           // the "P2P only" switch inside any results box
+    if (e.target.classList && e.target.classList.contains("res-p2p-only")) e.target.closest(".res-tools").parentElement.classList.toggle("is-p2p-only", e.target.checked);
+  });
   $("#runBuild").addEventListener("click", async () => {
     if (st.source === "adif" && !st.adif) { toast(t("build.pickFirst")); return; }
     const btn = $("#runBuild"); btn.disabled = true; btn.textContent = t("build.working");
