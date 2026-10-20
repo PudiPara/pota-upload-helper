@@ -1,70 +1,83 @@
-# pota-upload-helper
+# POTA Upload Helper
 
-POTA（Parks on the Air）のアクティベーションログを、**P2P（Park to Park）と 2fer を自動判定して** pota.app にアップロードできる形に整えるツールです。
+POTA（Parks on the Air）のアクティベーションを、運用中からアップロードまで手伝うデスクトップアプリです。macOS と Windows で動きます。
 
-FT8 などでは相手が公園から運用しているのか、さらに 2fer なのかがその場では分かりません。このツールは
+FT8 などでは、相手が公園から運用しているのか、さらに 2fer なのかがその場では分かりません。このアプリは運用中に POTA のスポットを記録し、ロガーから届いた QSO とその場で突き合わせて **P2P（Park to Park）と 2fer を自動で判定**します。運用後は、自分の公園ごと・UTC 日付ごとに pota.app へそのまま上げられるファイルを作ります。
 
-1. **運用中**に POTA のスポットを記録し続け（相手が QRT してスポットが消えても記録が残る）
-2. **運用後**にロガー（RUMlogNG など）の ADIF と、スポット記録・pota.app のハンターログを突き合わせて
+![運用中の画面](docs/live.png)
 
-相手の公園を埋め、自分の公園ごと・UTC 日付ごとのアップロード用ファイルを作ります。
+## できること
 
-- 自分が 2fer / 3fer でも OK（公園ごとにファイルを分けます）
-- 相手が 2fer なら、その QSO を公園の数だけ複製します（自分も相手も 2fer なら 2×2=4 件）
-- 依存ライブラリなし（Python 3.8 以上の標準ライブラリのみ）
-- データは公開 API（api.pota.app）だけを使います。ログイン不要
+- **運用中**：自分の公園（2fer・3fer も可）と経過時間、QSO 数（10 QSO まであと何局か）を大きく表示。公園から出ている局を 1 分ごとに記録するので、相手が QRT しても後から判定できます。
+- **ロガーから QSO を受信**：OpsLog や JTAlert と同じく UDP で受け取ります。N1MM 形式（RUMlogNG・N1MM Logger+ など）、WSJT-X / JTDX（マルチキャスト対応）、ADIF（JTAlert・GridTracker・Log4OM など）。ロガーでの修正・削除も反映します。
+- **その場で P2P を表示**：届いた QSO の相手が公園から出ていれば、交信一覧に公園のプレートが付きます。
+- **転送**：受け取ったデータをそのまま別のアプリへ流せます（RUMlog → このアプリ → OpsLog）。
+- **アップロード用ファイルを作成**：`JL1FVA@JP-1281-20261020.adi` の形で公園ごとに出力。相手が 2fer なら QSO を公園の数だけ複製し、自分が 2fer なら公園ごとにファイルを分けます。
 
-## 使い方
-
-### 1. 運用を始めたらスポット記録を開始
-
-```sh
-python3 pota_spotlog.py --parks JP-1281
-python3 pota_spotlog.py --parks JP-1281,JP-1285   # 2fer
-```
-
-1 分ごとにスポットを取得して `data/` に保存します。新しく見つかった公園の局は画面に表示されます（`--prefix JP` で日本だけ表示）。終わったら `Ctrl+C`。
-このとき「自分の公園と運用時間」もセッションとして保存されるので、ロガー側で MY_SIG_INFO を入れ忘れても大丈夫です。
-
-### 2. 運用が終わったらアップロード用ファイルを作成
-
-ロガーから ADIF を書き出して:
-
-```sh
-python3 pota_build.py RUMlog_export.adif --date 20261020
-```
-
-`out/` に次のファイルができます。
-
-| ファイル | 内容 |
-|---|---|
-| `JL1FVA@JP-1281-20261020.adi` | pota.app にそのままアップロードするファイル（公園ごと） |
-| `report.txt` | QSO 数（10 局以上か）、P2P 一覧と判定根拠、要確認事項 |
-| `rumlog_p2p_fix.adi` | ロガーに入っていなかった相手の公園（ログ修正用） |
+![アップロード作成](docs/build.png)
 
 相手の公園は次の優先順で決めます。
 
 1. **pota.app ハンターログ**（相手がアップロードした記録 = 確定）。時刻 ±5 分・同じバンドで照合
 2. **運用中のスポット記録**（QSO の 30 分前〜10 分後のスポット）
-3. ロガーの SIG_INFO
+3. ロガーの SIG_INFO / POTA_REF
 
-別々のスポットで複数の公園が近い時刻に出ていた場合（2fer か移動か判別できない）は `report.txt` の「Please check」に出ます。
+使うのは公開 API（api.pota.app）だけで、ログインは不要です。ロガーのログは読むだけで書き換えません。
 
-### オプション
+## ダウンロード
 
-| オプション | 説明 |
+[Releases](../../releases) から最新版を取ってください。
+
+| OS | ファイル | 使い方 |
+|---|---|---|
+| macOS（Apple Silicon） | `POTA-Upload-Helper-macOS.zip` | 展開した `POTA Upload Helper.app` をアプリケーションへ |
+| Windows 10 / 11 | `POTA-Upload-Helper-Windows.zip` | 展開した `POTA Upload Helper.exe` を実行 |
+
+署名していないアプリなので、初回は警告が出ます。
+
+- **macOS**：アプリを右クリック →「開く」→「開く」。開けないときは「システム設定 → プライバシーとセキュリティ」の下の方にある「このまま開く」
+- **Windows**：「Windows によって PC が保護されました」→「詳細情報」→「実行」
+
+## ロガーとの接続
+
+アプリの「ロガーとの接続」で受信口を作ります（いくつでも追加できます）。
+
+![ロガーとの接続](docs/settings.png)
+
+**RUMlogNG**：Preferences → UDP の「Contact info」を **Contact info N1MM** にし、Host `127.0.0.1`、Port を受信口と同じ番号に。ほかのアプリ（OpsLog など）にも渡したいときは、受信口の「転送先」にそのアプリのポートを入れます。
+
+**WSJT-X / JTDX**：Settings → Reporting の UDP Server を `224.0.0.1`（マルチキャスト）にすると、ほかのアプリと同時に受け取れます。WSJT-X とロガーの両方から同じ QSO が届いても 1 件として扱います。
+
+## データの保存場所
+
+| OS | 場所 |
 |---|---|
-| `--date YYYYMMDD` | 対象の UTC 日付（複数指定可）。省略時はファイル内の全アクティベーション |
-| `--my-parks JP-1281,JP-1285` | 自分の公園を指定（ログ・セッションより優先） |
-| `--call JL1FVA` | 自分のコールサイン |
-| `--offline` | pota.app にアクセスせず、保存済みデータだけで処理 |
+| macOS | `~/Library/Application Support/POTA Upload Helper/` |
+| Windows | `%APPDATA%\POTA Upload Helper\` |
 
-## 注意
+`qsolog.db`（受け取った QSO）、`spots-YYYYMMDD.jsonl`（スポット記録）、`sessions.json`（自分の運用時間と公園）、`hunter.json`（ハンターログの控え）、`settings.json`。
+pota.app の公開プロフィールに出るハンターログは直近 25 件だけなので、記録中と作成のたびに `hunter.json` に追記して履歴を貯めます。
 
-- pota.app の公開プロフィールに出るハンターログは直近 25 件だけです。`pota_spotlog.py` 実行中と `pota_build.py` 実行のたびに `data/hunter.json` に追記して履歴を貯めます。
-- 相手のアップロードが遅れている場合はハンターログに載らないので、運用中のスポット記録が頼りになります。
-- 自分のスポットは記録しません（`--call` と同じコールは除外）。
-- `data/` と `out/` には個人のログが入るので Git には含めません（`.gitignore` 済み）。
+## ソースから動かす
+
+```sh
+pip install -r requirements.txt
+python3 app.py
+```
+
+コマンドラインだけでも使えます（標準ライブラリのみ）。
+
+```sh
+python3 pota_spotlog.py --parks JP-1281,JP-1285
+python3 pota_build.py export.adif --date 20261020
+```
+
+## 開発
+
+```sh
+python3 -m unittest discover -s tests
+git tag v1.0.0 && git push origin v1.0.0   # GitHub Actions が macOS / Windows 版を Release に添付
+```
 
 ## License
 
