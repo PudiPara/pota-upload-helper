@@ -51,7 +51,18 @@
   $$(".nav-item").forEach((b) => b.addEventListener("click", () => show(b.dataset.view)));
 
   // ================================================================ live
-  function renderPreview() { $("#parksPreview").innerHTML = plates(splitParks($("#parks").value)); }
+  // Under the park input: the plate(s) plus the park name from pota.app (fetched after a pause in typing).
+  function renderPreview() {
+    const parks = splitParks($("#parks").value);
+    $("#parksPreview").innerHTML = parks.map((p) => `${plate(p)}<span class="park-name" data-ref="${esc(p)}"></span>`).join("");
+    clearTimeout(renderPreview.h);
+    if (parks.length) renderPreview.h = setTimeout(async () => {
+      try {
+        const info = await api.park_info(parks.join(","));
+        $$("#parksPreview .park-name").forEach((el) => { const i = info[el.dataset.ref] || {}; el.textContent = i.local || i.name || ""; });
+      } catch (e) { /* optional */ }
+    }, 500);
+  }
   $("#parks").addEventListener("input", renderPreview);
   $("#parks").addEventListener("keydown", (e) => { if (e.key === "Enter") startLive(); });
 
