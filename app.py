@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
-"""POTA Upload Helper - desktop app (pywebview: WebKit on macOS, Edge WebView2 on Windows)."""
+"""POTA Upload Helper - desktop app (pywebview: WebKit on macOS, Edge WebView2 on Windows).
+
+This file is the bridge between the UI (ui/) and the modules that do the work. Every public
+method of Api is callable from JavaScript as window.pywebview.api.<name>() and returns plain
+JSON-able data. Rules of the house:
+  * Api decides nothing about radio: spots.py knows spots and 2fer, qsolog.py knows the log and
+    the operator's decisions, builder.py knows upload files, receiver.py knows UDP, updater.py
+    knows GitHub releases, window.py knows the bar window.
+  * Errors come back as {"ok": False, "error": text}; text is translated with i18n.t().
+  * Nothing here writes the logger's log.
+"""
 import copy
 import os
 import re
@@ -13,21 +23,16 @@ import webview
 
 import i18n
 import qsolog
-from builder import build, list_activations, live_p2p
+import updater
+from builder import build, list_activations
 from i18n import t
 from potacommon import (APP_NAME, DATA_DIR, DEFAULT_OUT, VERSION, base_call, fetch_json, iso_minutes,
-                        load_settings, minutes, save_settings, split_parks)
-from receiver import DEFAULT_LISTENERS, Receiver
-from spotlogger import SpotLogger, summarize_spots
-import updater
+                        load_settings, save_settings, split_parks)
+from receiver import DEFAULT_LISTENERS, Receiver, describe_state
+from spots import SpotLogger, candidate_for, summarize
+from window import BarMode
 
-# pywebview >= 5 has FileDialog; the bare constants are deprecated in 6 and will be removed.
-_FD = getattr(webview, "FileDialog", None)
-OPEN_DIALOG = _FD.OPEN if _FD else webview.OPEN_DIALOG
-FOLDER_DIALOG = _FD.FOLDER if _FD else webview.FOLDER_DIALOG
-
-
-BAR_W, BAR_H = 640, 236          # compact "bar" window while an activation is running
+SETTINGS_KEYS = ("call", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted")
 
 
 def resource(*parts):
@@ -44,24 +49,32 @@ def open_path(path):
         subprocess.Popen(["xdg-open", path])
 
 
-class Api:
-    """Every public method is callable from JavaScript as window.pywebview.api.<name>()."""
+def qso_event(rec, uid=None):
+    """What the UI needs to draw one QSO row: identity, the spot candidate, the decision so far."""
+    decision = rec.get("P2P_DECISION") or ""
+    parks = split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO")) if decision and decision != "no" else []
+    return {"action": "upsert", "uid": uid or qsolog.make_uid(rec), "call": rec.get("CALL"),
+            "date": rec.get("QSO_DATE"), "time": (rec.get("TIME_ON") or "")[:4], "band": rec.get("BAND", ""),
+            "mode": rec.get("SUBMODE") or rec.get("MODE", ""), "decision": decision, "parks": parks,
+            "candidate": split_parks(rec.get("P2P_CANDIDATE"))}
 
+
+class Api:
     def __init__(self):
         self.window = None
-        self.logger = None
+        self.bar = None               # BarMode, once the window exists
+        self.logger = None            # SpotLogger while an activation is being recorded
         self.receiver = None
-        self.events = []          # spots seen while recording
-        self.qso_events = []      # QSOs received from loggers
+        self.events = []              # spots seen while recording, for the live view
+        self.qso_events = []          # QSOs received from loggers, for the live view
         self.status = ""
-        self.recv_status = {}
+        self.recv_status = {}         # listener name -> state dict (codes; see receiver.describe_state)
         self.lock = threading.Lock()
-        self._parks = {}
-        self._full = None          # (x, y, w, h) of the window before it became a bar
-        self._spots_cache = (0, [])  # (fetched at, raw spots) for the アクティベート中 page
+        self._parks = {}              # park reference -> info from pota.app, cached
+        self._spots_cache = (0, [])   # (fetched at, raw spots) for the アクティベート中 page
         self.start_receiver()
 
-    # ---------- settings ----------
+    # ================================================================ settings
     def get_state(self):
         s = load_settings()
         live = None
@@ -69,33 +82,19 @@ class Api:
             live = {"parks": self.logger.parks, "start": self.logger.session["start"]}
         return {"version": VERSION, "call": s.get("call", "JL1FVA"), "parks": s.get("parks", ""),
                 "prefix": s.get("prefix", "JP"), "adif": s.get("adif", ""), "out": s.get("out", DEFAULT_OUT),
-                "source": s.get("source", "app"), "live": live, "bar": self._full is not None,
+                "source": s.get("source", "app"), "live": live, "bar": bool(self.bar and self.bar.active),
                 "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
                 "terms_accepted": s.get("terms_accepted") or "",
-                "log_count": qsolog.count(), "receiver": self._recv_texts()}
+                "log_count": qsolog.count(), "receiver": self._receiver_texts()}
 
     def save(self, data):
-        keep = {k: v for k, v in data.items() if k in ("call", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted")}
+        keep = {k: v for k, v in data.items() if k in SETTINGS_KEYS}
         if "lang" in keep:
             keep["lang"] = i18n.set_lang(keep["lang"])
         save_settings(keep)
         return True
 
-    def _recv_texts(self):
-        """Receiver states, translated for the current language: {name: {code, text}}."""
-        out = {}
-        for name, st in list(self.recv_status.items()):
-            if not isinstance(st, dict):
-                st = {"code": "off"}
-            code = st.get("code", "off")
-            where = "%s:%s" % (st["multicast"], st["port"]) if st.get("multicast") else t("recv.port", port=st.get("port", ""))
-            text = {"off": t("recv.off"), "error": t("recv.cantOpen", port=st.get("port", ""), err=st.get("err", "")),
-                    "badforward": t("recv.badForward"), "listening": t("recv.listening", where=where),
-                    "receiving": t("recv.receiving", where=where)}.get(code, code)
-            out[name] = {"code": code, "text": text}
-        return out
-
-    # ---------- UDP receiving ----------
+    # ================================================================ UDP listeners
     def listeners(self):
         return load_settings().get("listeners") or copy.deepcopy(DEFAULT_LISTENERS)
 
@@ -119,7 +118,7 @@ class Api:
         save_settings({"listeners": clean})
         self.start_receiver()
         time.sleep(0.4)
-        return {"ok": True, "listeners": clean, "receiver": self._recv_texts()}
+        return {"ok": True, "listeners": clean, "receiver": self._receiver_texts()}
 
     def start_receiver(self):
         if self.receiver:
@@ -129,11 +128,16 @@ class Api:
         self.receiver.start()
         self.recv_status.update(self.receiver.state)
 
-    def _on_recv_status(self, name, msg):
+    def _receiver_texts(self):
+        return {name: describe_state(st) for name, st in list(self.recv_status.items())}
+
+    def _on_recv_status(self, name, state):
         with self.lock:
-            self.recv_status[name] = msg
+            self.recv_status[name] = state
 
     def _on_qso(self, action, rec, ext_id, listener):
+        """A logger reported a QSO (or deleted one). Store it, tag it with my park and the spot
+        candidate, and queue an event for the live view."""
         if action == "delete":
             n = qsolog.delete(ext_id, rec.get("CALL"), rec.get("QSO_DATE"), rec.get("TIME_ON"))
             ev = {"action": "delete", "call": rec.get("CALL"), "date": rec.get("QSO_DATE"),
@@ -141,21 +145,22 @@ class Api:
         else:
             if self.logger and self.logger.running() and not rec.get("MY_SIG_INFO"):
                 rec["MY_SIG"], rec["MY_SIG_INFO"] = "POTA", ",".join(self.logger.parks)
-            cand = live_p2p(rec, spots_only=True)
+            cand = candidate_for(rec)
             if cand:
                 rec["P2P_CANDIDATE"] = ",".join(cand)
             logged = split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO"))
             if logged and not rec.get("P2P_DECISION"):      # the operator typed it in the logger
                 qsolog.apply_decision(rec, "log", logged)
             uid = qsolog.upsert(rec, ext_id, listener)
-            ev = self._event(rec, uid)
+            ev = qso_event(rec, uid)
         ev.update({"source": listener, "at": time.time()})
         with self.lock:
             self.qso_events.append(ev)
             self.qso_events = self.qso_events[-500:]
-            self.recv_status[listener] = (self.receiver.state.get(listener) if self.receiver else "") or ""
+            if self.receiver and listener in self.receiver.state:
+                self.recv_status[listener] = self.receiver.state[listener]
 
-    # ---------- live spot logging ----------
+    # ================================================================ the activation (運用中)
     def start_live(self, parks, call):
         parks = split_parks(parks)
         if not parks:
@@ -169,14 +174,6 @@ class Api:
         self.logger.start()
         return {"ok": True, "parks": parks, "start": self.logger.session["start"]}
 
-    def stop_live(self):
-        if not self.logger:
-            return {"ok": True}
-        self.logger.stop()
-        s = self.logger.session
-        self.logger = None
-        return {"ok": True, "start": s["start"], "end": s["end"]}
-
     def _on_spot(self, tm, act, parks, freq, mode, twofer):
         with self.lock:
             self.events.append({"time": tm, "call": act, "parks": parks, "freq": freq, "mode": mode,
@@ -186,20 +183,16 @@ class Api:
         with self.lock:
             self.status = msg
 
-    @staticmethod
-    def _event(rec, uid=None):
-        """What the UI needs to draw one QSO row."""
-        decision = rec.get("P2P_DECISION") or ""
-        parks = split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO")) if decision and decision != "no" else []
-        return {"action": "upsert", "uid": uid or qsolog.make_uid(rec), "call": rec.get("CALL"),
-                "date": rec.get("QSO_DATE"), "time": (rec.get("TIME_ON") or "")[:4], "band": rec.get("BAND", ""),
-                "mode": rec.get("SUBMODE") or rec.get("MODE", ""), "decision": decision, "parks": parks,
-                "candidate": split_parks(rec.get("P2P_CANDIDATE"))}
+    def poll_live(self, since, qsince):
+        with self.lock:
+            return {"events": [e for e in self.events if e["at"] > since],
+                    "qsos": [e for e in self.qso_events if e["at"] > qsince],
+                    "status": self.status, "receiver": self._receiver_texts(),
+                    "running": bool(self.logger and self.logger.running())}
 
     def session_qsos(self, start_iso):
         """QSOs already in the app log since the session started (for re-opening the window)."""
-        t0 = iso_minutes(start_iso) - 5
-        return [dict(self._event(r), at=0) for r in qsolog.between(t0, 1 << 40)]
+        return [dict(qso_event(r), at=0) for r in qsolog.between(iso_minutes(start_iso) - 5, 1 << 40)]
 
     def set_p2p(self, uid, decision, parks=""):
         """The operator's answer for one QSO: 'yes' (candidate accepted), 'manual' (typed parks), 'no', ''."""
@@ -209,11 +202,11 @@ class Api:
         updated = qsolog.set_p2p(uid, decision, parks)
         if not updated:
             return {"ok": False, "error": t("api.qsoNotFound")}
-        return {"ok": True, "events": [self._event(r) for r in updated]}
+        return {"ok": True, "events": [qso_event(r) for r in updated]}
 
     def finish_live(self, online=True):
-        """End the activation at this park: stop recording, write the upload file(s) for
-        the QSOs of this session, and report what was written."""
+        """End the activation at this park: stop recording, write the upload file(s) for the
+        QSOs of this session, and report what was written."""
         if not self.logger:
             return {"ok": False, "error": t("api.notRecording")}
         self.logger.stop()
@@ -228,48 +221,19 @@ class Api:
         except Exception as e:
             return {"ok": False, "session": sess, "error": str(e)}
 
-    # ---------- bar mode ----------
+    def stop_live(self):
+        """Stop recording without writing files (kept for the CLI-like flow; the UI uses finish_live)."""
+        if not self.logger:
+            return {"ok": True}
+        self.logger.stop()
+        sess = self.logger.session
+        self.logger = None
+        return {"ok": True, "start": sess["start"], "end": sess["end"]}
+
     def set_bar(self, on):
-        """Shrink the window to a strip kept above the logger, or grow it back."""
-        w = self.window
-        if not w:
-            return False
+        return self.bar.set(on) if self.bar else False
 
-        def step(what, fn):          # each window call is best effort; report instead of aborting the rest
-            try:
-                fn()
-            except Exception as e:
-                print("set_bar %s failed: %s" % (what, e), file=sys.stderr)
-
-        if on and self._full is None:
-            self._full = (w.x, w.y, w.width, w.height)
-            step("on_top", lambda: setattr(w, "on_top", True))
-            step("resize", lambda: w.resize(BAR_W, BAR_H))
-
-            def move_top_right():
-                scr = webview.screens           # a list-like proxy in pywebview 5/6, a function in 4
-                try:
-                    scr = scr[0]
-                except TypeError:
-                    scr = scr()[0]
-                w.move(max(0, scr.width - BAR_W - 24), 40)
-            step("move", move_top_right)
-        elif not on and self._full is not None:
-            x, y, width, height = self._full
-            self._full = None
-            step("on_top", lambda: setattr(w, "on_top", False))
-            step("resize", lambda: w.resize(width, height))
-            step("move", lambda: w.move(x, y))
-        return self._full is not None
-
-    def poll_live(self, since, qsince):
-        with self.lock:
-            return {"events": [e for e in self.events if e["at"] > since],
-                    "qsos": [e for e in self.qso_events if e["at"] > qsince],
-                    "status": self.status, "receiver": self._recv_texts(),
-                    "running": bool(self.logger and self.logger.running())}
-
-    # ---------- who is activating now (own page, works without recording) ----------
+    # ================================================================ who is activating now
     def spots_now(self, max_age=45):
         at, spots = self._spots_cache
         if time.time() - at > max_age:
@@ -284,9 +248,25 @@ class Api:
             t0 = iso_minutes(self.logger.session["start"]) - 5
             worked = sorted({base_call(r.get("CALL")) for r in qsolog.between(t0, 1 << 40)})
         return {"ok": True, "at": time.strftime("%H:%M", time.gmtime(self._spots_cache[0])),
-                "items": summarize_spots(spots), "worked": worked}
+                "items": summarize(spots), "worked": worked}
 
-    # ---------- build ----------
+    def park_info(self, refs):
+        """{ref: {name, local, grid}} - local is the Japanese name when pota.app has one."""
+        out = {}
+        for ref in split_parks(refs):
+            if ref not in self._parks:
+                try:
+                    p = fetch_json("park/%s" % ref, timeout=8) or {}
+                    local = (p.get("parkComments") or "").strip()
+                    if not re.search(r"[぀-ヿ一-鿿]", local) or len(local) > 40:
+                        local = ""
+                    self._parks[ref] = {"name": p.get("name") or "", "local": local, "grid": p.get("grid6") or ""}
+                except Exception:
+                    self._parks[ref] = {"name": "", "local": "", "grid": ""}
+            out[ref] = self._parks[ref]
+        return out
+
+    # ================================================================ upload files (アップロード作成)
     def pick_adif(self):
         r = self.window.create_file_dialog(OPEN_DIALOG, allow_multiple=False,
                                            file_types=("ADIF (*.adi;*.adif;*.ADI;*.ADIF)", "All files (*.*)"))
@@ -320,32 +300,16 @@ class Api:
     def build(self, params):
         try:
             src_app = params.get("source") == "app"
-            res = build(None if src_app else params["adif"], params.get("dates") or None,
-                        params.get("override") or None, params.get("call") or "JL1FVA",
-                        params.get("out") or DEFAULT_OUT, offline=not params.get("online", True),
-                        recs=qsolog.records(params.get("dates") or None) if src_app else None)
+            dates = params.get("dates") or None
+            res = build(None if src_app else params["adif"], dates, params.get("override") or None,
+                        params.get("call") or "JL1FVA", params.get("out") or DEFAULT_OUT,
+                        offline=not params.get("online", True),
+                        recs=qsolog.records(dates) if src_app else None, confirmed_only=src_app)
             return {"ok": True, **res}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
-    # ---------- park names ----------
-    def park_info(self, refs):
-        """{ref: {name, local, grid}} - local is the Japanese name when pota.app has one."""
-        out = {}
-        for ref in split_parks(refs):
-            if ref not in self._parks:
-                try:
-                    p = fetch_json("park/%s" % ref, timeout=8) or {}
-                    local = (p.get("parkComments") or "").strip()
-                    if not re.search(r"[぀-ヿ一-鿿]", local) or len(local) > 40:
-                        local = ""
-                    self._parks[ref] = {"name": p.get("name") or "", "local": local, "grid": p.get("grid6") or ""}
-                except Exception:
-                    self._parks[ref] = {"name": "", "local": "", "grid": ""}
-            out[ref] = self._parks[ref]
-        return out
-
-    # ---------- updates (GitHub Releases) ----------
+    # ================================================================ updates (GitHub Releases)
     def check_update(self):
         try:
             return {"ok": True, **updater.check()}
@@ -362,13 +326,13 @@ class Api:
         return {"ok": True, **res}
 
     def _relaunch(self, path):
-        time.sleep(1.0)              # let the UI show "再起動します"
+        time.sleep(1.0)              # let the UI show "restarting"
         updater.relaunch(path)
         self.shutdown()
         if self.window:
             self.window.destroy()
 
-    # ---------- misc ----------
+    # ================================================================ misc
     def open_out(self, path):
         path = path or DEFAULT_OUT
         os.makedirs(path, exist_ok=True)
@@ -389,13 +353,21 @@ class Api:
             self.receiver.stop()
 
 
+# pywebview >= 5 has FileDialog; the bare constants are deprecated in 6 and will be removed.
+_FD = getattr(webview, "FileDialog", None)
+OPEN_DIALOG = _FD.OPEN if _FD else webview.OPEN_DIALOG
+FOLDER_DIALOG = _FD.FOLDER if _FD else webview.FOLDER_DIALOG
+
+
 def main():
     updater.cleanup()
     i18n.set_lang(load_settings().get("lang") or "ja")
     api = Api()
+    from window import BAR_W
     win = webview.create_window(APP_NAME, resource("ui", "index.html"), js_api=api,
                                 width=1180, height=800, min_size=(BAR_W, 160))
     api.window = win
+    api.bar = BarMode(win)
     win.events.closing += api.shutdown
     webview.start(debug=bool(os.environ.get("POTA_HELPER_DEBUG")))
 

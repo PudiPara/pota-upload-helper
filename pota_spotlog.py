@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Command-line spot logger (the app does the same in its "運用中" tab).
 
-    python3 pota_spotlog.py --parks JP-1281
-    python3 pota_spotlog.py --parks JP-1281,JP-1285 --prefix JP
+    python3 pota_spotlog.py --parks JP-1266
+    python3 pota_spotlog.py --parks JP-1266,JP-1206 --prefix JP
 """
 import argparse
 import time
 
-from spotlogger import SpotLogger
+from spots import SpotLogger
 
 
 def main():

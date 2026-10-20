@@ -63,6 +63,38 @@ def fetch_json(path, timeout=20):
         return json.loads(out.stdout.decode("utf-8"))
 
 
+# ---------- bands and modes ----------
+BAND_EDGES = [(1.8, 2.0, "160m"), (3.5, 4.0, "80m"), (5.0, 5.5, "60m"), (7.0, 7.3, "40m"), (10.1, 10.15, "30m"),
+              (14.0, 14.35, "20m"), (18.068, 18.168, "17m"), (21.0, 21.45, "15m"), (24.89, 24.99, "12m"),
+              (28.0, 29.7, "10m"), (50.0, 54.0, "6m"), (144.0, 148.0, "2m"), (222.0, 225.0, "1.25m"),
+              (420.0, 450.0, "70cm"), (902.0, 928.0, "33cm"), (1240.0, 1300.0, "23cm")]
+PHONE_MODES = {"SSB", "USB", "LSB", "FM", "AM", "PHONE", "DV", "DMR", "C4FM", "DSTAR"}
+
+
+def band_from_mhz(mhz):
+    try:
+        mhz = float(mhz)
+    except (TypeError, ValueError):
+        return ""
+    for lo, hi, b in BAND_EDGES:
+        if lo <= mhz <= hi:
+            return b
+    return ""
+
+
+def band_from_khz(khz):
+    try:
+        return band_from_mhz(float(khz) / 1000.0)
+    except (TypeError, ValueError):
+        return ""
+
+
+def mode_group(mode):
+    """'cw' | 'phone' | 'data' | '' - how pota.app groups modes."""
+    m = (mode or "").upper().strip()
+    return "cw" if m == "CW" else "phone" if m in PHONE_MODES else "data" if m else ""
+
+
 def base_call(call):
     """JK1XOQ/P -> JK1XOQ, JS2PHO/2 -> JS2PHO, 7J1/K1ABC -> K1ABC."""
     call = (call or "").upper().strip()

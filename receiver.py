@@ -14,28 +14,17 @@ import struct
 import threading
 import xml.etree.ElementTree as ET
 
-from potacommon import FIELD_RE
+from i18n import t
+from potacommon import FIELD_RE, band_from_mhz
 
 WSJTX_MAGIC = 0xADBCCBDA
 N1MM_BANDS = {"1.8": "160m", "3.5": "80m", "5": "60m", "7": "40m", "10": "30m", "14": "20m", "18": "17m",
               "21": "15m", "24": "12m", "28": "10m", "50": "6m", "144": "2m", "222": "1.25m", "420": "70cm",
               "430": "70cm", "432": "70cm", "902": "33cm", "1240": "23cm", "1296": "23cm"}
-BAND_EDGES = [(1.8, 2.0, "160m"), (3.5, 4.0, "80m"), (5.0, 5.5, "60m"), (7.0, 7.3, "40m"), (10.1, 10.15, "30m"),
-              (14.0, 14.35, "20m"), (18.068, 18.168, "17m"), (21.0, 21.45, "15m"), (24.89, 24.99, "12m"),
-              (28.0, 29.7, "10m"), (50.0, 54.0, "6m"), (144.0, 148.0, "2m"), (420.0, 450.0, "70cm"),
-              (1240.0, 1300.0, "23cm")]
-
 DEFAULT_LISTENERS = [
     {"name": "WSJT-X / JTDX", "kind": "wsjtx", "port": 2237, "multicast": "224.0.0.1", "enabled": True, "forward": ""},
     {"name": "RUMlogNG (N1MM)", "kind": "n1mm", "port": 2334, "multicast": "", "enabled": False, "forward": ""},
 ]
-
-
-def band_from_mhz(mhz):
-    for lo, hi, b in BAND_EDGES:
-        if lo <= mhz <= hi:
-            return b
-    return ""
 
 
 # ---------------------------------------------------------------- parsers
@@ -118,8 +107,24 @@ def parse_packet(data):
 
 
 # ---------------------------------------------------------------- receiver
+def describe_state(state):
+    """A listener's state dict (see Receiver.state) -> {"code", "text"} in the current language."""
+    if not isinstance(state, dict):
+        state = {"code": "off"}
+    code = state.get("code", "off")
+    port = state.get("port", "")
+    where = "%s:%s" % (state["multicast"], port) if state.get("multicast") else t("recv.port", port=port)
+    text = {"off": t("recv.off"), "error": t("recv.cantOpen", port=port, err=state.get("err", "")),
+            "badforward": t("recv.badForward"), "listening": t("recv.listening", where=where),
+            "receiving": t("recv.receiving", where=where)}.get(code, code)
+    return {"code": code, "text": text}
+
+
 class Receiver:
-    """on_qso(action, record, uid, listener_name) is called from worker threads."""
+    """One UDP socket per enabled listener. on_qso(action, record, uid, listener_name) and
+    on_status(listener_name, state) are called from worker threads. self.state[name] is a dict:
+    {"code": off|error|badforward|listening|receiving, "port", "multicast", "err"} - codes, not text,
+    so the UI can translate them (describe_state)."""
 
     def __init__(self, listeners, on_qso, on_status=None):
         self.listeners = listeners

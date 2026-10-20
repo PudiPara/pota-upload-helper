@@ -1,20 +1,21 @@
-"""Build pota.app upload files (one per your park and UTC date) from a logger ADIF.
+"""Build pota.app upload files (one per your park and UTC date).
 
-The other station's park (park-to-park) is taken from, in this order:
+Input is either the app's own log (records carry the operator's P2P decisions, confirmed_only=True)
+or an ADIF exported from the logger. The other station's park (park-to-park) comes from, in order:
   1. the pota.app hunter log (what the other activator uploaded -> verified)
-  2. spots recorded by the spot logger during your activation
-  3. SIG_INFO / POTA_REF already in your log
-If the other station was a 2fer the QSO is repeated once per park; if you
-were in several parks a file is written for each of them.
+  2. the decision made while activating (app log) - or, for an ADIF file, spots recorded at the time
+  3. SIG_INFO / POTA_REF already in the log
+If the other station was a 2fer the QSO is repeated once per park; if you were in several parks a
+file is written for each of them (pota.app does not accept multi-value references).
+What a spot means (parks, 2fer, time windows) is spots.py's business; this module only asks it.
 """
 import json
 import os
-import glob
 from collections import defaultdict
 
 from i18n import t as tr
-from potacommon import (DATA_DIR, DEFAULT_OUT, base_call, fetch_json, iso_minutes, minutes,
-                        read_adif, split_parks, write_adif)
+from potacommon import DATA_DIR, DEFAULT_OUT, base_call, fetch_json, iso_minutes, minutes, read_adif, split_parks, write_adif
+from spots import load_sessions, load_spots, their_parks_at
 
 ORDER = ["STATION_CALLSIGN", "OPERATOR", "CALL", "QSO_DATE", "TIME_ON", "BAND", "FREQ", "MODE", "SUBMODE",
          "RST_SENT", "RST_RCVD", "MY_SIG", "MY_SIG_INFO", "MY_POTA_REF", "SIG", "SIG_INFO", "POTA_REF",
@@ -22,9 +23,6 @@ ORDER = ["STATION_CALLSIGN", "OPERATOR", "CALL", "QSO_DATE", "TIME_ON", "BAND", 
 KEEP = ["CALL", "QSO_DATE", "TIME_ON", "BAND", "FREQ", "MODE", "SUBMODE", "RST_SENT", "RST_RCVD",
         "MY_GRIDSQUARE", "GRIDSQUARE"]
 HUNTER_WINDOW = 5      # minutes: hunter log time vs your log time
-SPOT_BEFORE = 30       # minutes: a spot this long before the QSO still counts
-SPOT_AFTER = 10        # minutes: a spot this long after the QSO still counts
-TWOFER_GAP = 15        # minutes: two parks spotted this close together = 2fer
 
 
 def band_norm(b):
@@ -61,52 +59,6 @@ def load_hunter(call, offline=False, log=print):
         except Exception:
             pass
     return out
-
-
-def load_spots():
-    out = defaultdict(list)   # base call -> [(minute, [parks], rec)]
-    for f in sorted(glob.glob(os.path.join(DATA_DIR, "spots-*.jsonl"))):
-        for line in open(f, encoding="utf-8"):
-            try:
-                s = json.loads(line)
-                m = iso_minutes(s.get("spotTime") or s["seen"])
-            except Exception:
-                continue
-            if s.get("parks"):
-                out[s["base"]].append((m, s["parks"], s))
-    return out
-
-
-def load_sessions():
-    path = os.path.join(DATA_DIR, "sessions.json")
-    res = []
-    try:
-        data = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else []
-    except ValueError:
-        data = []
-    for s in data:
-        if s.get("start") and s.get("end"):
-            res.append((iso_minutes(s["start"]) - 5, iso_minutes(s["end"]) + 5, s["parks"]))
-    return res
-
-
-def their_parks_from_spots(spots, t):
-    """-> (parks, sure). sure=False when several parks come from separate spots
-    (could be a 2fer, could be a rover moving between parks)."""
-    best, together = {}, set()
-    for m, parks, _ in spots:
-        if t - SPOT_BEFORE <= m <= t + SPOT_AFTER:
-            if len(parks) > 1:
-                together.add(frozenset(parks))
-            for p in parks:
-                d = abs(m - t)
-                best[p] = min(best.get(p, 999), d)
-    if not best:
-        return [], True
-    near = min(best.values())
-    res = sorted(p for p, d in best.items() if d <= near + TWOFER_GAP)
-    sure = len(res) == 1 or any(set(res) <= g for g in together)
-    return res, sure
 
 
 # ---------- selecting activation QSOs ----------
@@ -146,21 +98,6 @@ def list_activations(adif_path=None, recs=None):
 
 
 # ---------- main entry ----------
-def live_p2p(rec, spots_only=False):
-    """Park(s) the other station was spotted at around the time of a QSO that just
-    arrived - the candidate the operator is asked to confirm. spots_only=False also
-    falls back to SIG_INFO/POTA_REF already in the record."""
-    try:
-        t = minutes(rec.get("QSO_DATE", ""), rec.get("TIME_ON") or "0000")
-    except ValueError:
-        return []
-    spots = load_spots().get(base_call(rec.get("CALL")), [])
-    parks, _ = their_parks_from_spots(spots, t)
-    if parks or spots_only:
-        return parks
-    return split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO"))
-
-
 def decided_parks(rec):
     """-> (decided, parks): the operator's live decision for this QSO (or the logger's own
     SIG_INFO, decision 'log'). decided=False when nobody has said anything yet."""
@@ -209,7 +146,7 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
             if cand:
                 notes.append(tr("b.note.unconfirmed", date=r["QSO_DATE"], time=r["TIME_ON"][:4], call=r["CALL"], parks=",".join(cand)))
         else:
-            s_parks, s_sure = their_parks_from_spots(spots.get(b, []), t)
+            s_parks, s_sure = their_parks_at(spots.get(b, []), t)
             log_parks = split_parks(r.get("POTA_REF") or r.get("SIG_INFO")) if r.get("SIG", "POTA").upper() in ("POTA", "") else []
         if h_parks:
             theirs, src = h_parks, "hunter"        # src codes: hunter | confirmed | manual | log | spot | logspot
