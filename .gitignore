@@ -15,3 +15,6 @@ __pycache__/
 .claude/
 CLAUDE.local.md
 .mcp.json
+dmg/
+*.dmg
+POTA-Upload-Helper-*
