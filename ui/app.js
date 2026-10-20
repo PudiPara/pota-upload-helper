@@ -6,7 +6,7 @@
   const st = {
     call: "JL1FVA", prefix: "JP", spots: new Map(), qsos: new Map(), lastAt: 0, lastQ: 0,
     start: null, timer: null, poll: null, source: "app", adif: "", out: "", outDir: "",
-    acts: [], selected: new Set(), listeners: [], receiver: {},
+    acts: [], selected: new Set(), listeners: [], receiver: {}, editing: null, bar: false, cheered: false,
   };
 
   // ---------- helpers ----------
@@ -57,26 +57,28 @@
     const parks = splitParks($("#parks").value);
     const err = $("#liveError");
     if (!parks.length) { err.textContent = "公園番号を JP-1281 の形で入力してください。"; err.hidden = false; return; }
-    err.hidden = true;
+    err.hidden = true; $("#doneCard").hidden = true;
     const r = await api.start_live(parks.join(","), st.call);
     if (!r.ok) { err.textContent = r.error; err.hidden = false; return; }
     enterRunning(r.parks, r.start);
   }
   $("#startLive").addEventListener("click", startLive);
 
+  const refHtml = (p) => { const i = p.indexOf("-"); return `<span class="ref"><b>${esc(p.slice(0, i + 1))}</b>${esc(p.slice(i + 1))}</span>`; };
   async function enterRunning(parks, start) {
-    st.spots.clear(); st.qsos.clear(); st.lastAt = 0; st.start = utcMs(start);
+    st.spots.clear(); st.qsos.clear(); st.lastAt = 0; st.start = utcMs(start); st.cheered = false;
     $("#liveIdle").hidden = true; $("#liveRun").hidden = false; $("#liveDot").hidden = false;
-    $("#signParks").innerHTML = parks.map((p) => {
-      const i = p.indexOf("-");
-      return `<div class="sign-park"><span class="ref"><b>${esc(p.slice(0, i + 1))}</b>${esc(p.slice(i + 1))}</span><span class="name" data-ref="${esc(p)}"></span></div>`;
-    }).join("");
+    $("#signParks").innerHTML = parks.map((p) =>
+      `<div class="sign-park">${refHtml(p)}<span class="name" data-ref="${esc(p)}"></span></div>`).join("");
+    $("#barParks").innerHTML = parks.map(refHtml).join('<span class="plate-join" aria-hidden="true">+</span>');
     $("#liveStatus").textContent = "最初のスポットを取得しています";
-    for (const q of await api.session_qsos(start)) st.qsos.set(`${baseCall(q.call)}|${q.date}${q.time}|${q.band}`, q);
+    for (const q of await api.session_qsos(start)) st.qsos.set(q.uid, q);
     st.lastQ = Date.now() / 1000 - 1;
+    st.cheered = st.qsos.size >= 10;            // re-opened mid-activation: don't celebrate twice
     renderSpots(); renderQsos();
     tick(); clearInterval(st.timer); st.timer = setInterval(tick, 1000);
     poll(); clearInterval(st.poll); st.poll = setInterval(poll, 2500);
+    setBar(true);
     try {
       const info = await api.park_info(parks.join(","));
       $$("#signParks .name").forEach((el) => { const i = info[el.dataset.ref] || {}; el.textContent = i.local || i.name || ""; });
@@ -85,7 +87,8 @@
   function tick() {
     const s = Math.max(0, Math.floor((Date.now() - st.start) / 1000));
     const p = (n) => String(n).padStart(2, "0");
-    $("#elapsed").textContent = `${p(Math.floor(s / 3600))}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}`;
+    const t = `${p(Math.floor(s / 3600))}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}`;
+    $("#elapsed").textContent = t; $("#barElapsed").textContent = t;
   }
   async function poll() {
     const r = await api.poll_live(st.lastAt, st.lastQ);
@@ -102,9 +105,7 @@
         continue;
       }
       if (q.date && st.start && Date.parse(`${q.date.slice(0, 4)}-${q.date.slice(4, 6)}-${q.date.slice(6, 8)}T${q.time.slice(0, 2)}:${q.time.slice(2, 4)}:00Z`) < st.start - 300000) continue;
-      const k = `${baseCall(q.call)}|${q.date}${q.time}|${q.band}`;
-      st.qsos.set(k, q); freshQ.add(k);
-      if (q.parks && q.parks.length) toast(`P2P: ${q.call}（${q.parks.join(" + ")}）`);
+      st.qsos.set(q.uid, q); freshQ.add(q.uid);
     }
     if (freshS.size || freshQ.size) { renderSpots(freshS); renderQsos(freshQ); }
   }
@@ -124,35 +125,134 @@
     const tw = list.filter((e) => e.twofer).length;
     $("#liveCount").textContent = list.length ? `${list.length} 局${tw ? `・2fer 以上 ${tw} 局` : ""}` : "";
   }
-  function renderQsos(fresh) {
-    const list = [...st.qsos.entries()].sort((a, b) => (b[1].date + b[1].time).localeCompare(a[1].date + a[1].time));
-    $("#qsos").innerHTML = list.map(([k, q]) => {
-      const p2p = q.parks && q.parks.length;
-      return `<li class="qso${p2p ? " is-p2p" : ""}${p2p > 1 ? " is-twofer" : ""}${fresh && fresh.has(k) ? " is-new" : ""}">
+
+  // One QSO row. The P2P part is a small state machine:
+  //   candidate from spots, no answer yet  -> 「P2P の可能性」 [はい] [いいえ] [手で入力]
+  //   no candidate, no answer              -> an input for the park number (Phone/CW: the other side tells you)
+  //   yes / manual / typed in the logger   -> P2P plates + 変更
+  //   no                                   -> 「P2P ではない」 + 変更
+  function qsoRow(q, fresh) {
+    const decided = q.decision && q.decision !== "no";
+    const p2p = decided && q.parks.length;
+    const editing = st.editing === q.uid;
+    const input = `<span class="p2p-in"><input data-in="${esc(q.uid)}" placeholder="相手の公園 JP-0000" spellcheck="false" autocomplete="off"
+        value="${esc(editing ? (q.parks || []).join(",") : "")}"><button class="chip chip-yes" data-act="manual" data-uid="${esc(q.uid)}">記録</button>
+        ${q.candidate.length || decided || q.decision === "no" ? `<button class="link" data-act="cancel" data-uid="${esc(q.uid)}">やめる</button>` : ""}</span>`;
+    let ctl;
+    if (editing) ctl = input;
+    else if (p2p) ctl = `<span class="p2p-tag">P2P</span><span class="plates">${plates(q.parks)}</span><button class="link" data-act="edit" data-uid="${esc(q.uid)}">変更</button>`;
+    else if (q.decision === "no") ctl = `<span class="qso-none">P2P ではない</span><button class="link" data-act="edit" data-uid="${esc(q.uid)}">変更</button>`;
+    else if (q.candidate.length) ctl = `<span class="ask-text">P2P の可能性</span><span class="plates">${plates(q.candidate)}</span>
+        <button class="chip chip-yes" data-act="yes" data-uid="${esc(q.uid)}">はい、P2P</button><button class="chip" data-act="no" data-uid="${esc(q.uid)}">いいえ</button>
+        <button class="link" data-act="edit" data-uid="${esc(q.uid)}">手で入力</button>`;
+    else ctl = input;
+    const ask = !decided && q.decision !== "no" && q.candidate.length && !editing;
+    return `<li class="qso${p2p ? " is-p2p" : ""}${p2p > 1 ? " is-twofer" : ""}${ask ? " is-ask" : ""}${fresh && fresh.has(q.uid) ? " is-new" : ""}" data-uid="${esc(q.uid)}">
         <span class="qso-time">${hhmm(q.time)}</span>
         <span class="qso-call">${esc(q.call)}</span>
         <span class="qso-band">${esc(q.band)} ${esc(q.mode)}</span>
-        ${p2p ? `<span class="plates"><span class="p2p-tag">P2P</span>${plates(q.parks)}</span>` : ""}
+        <span class="qso-p2p">${ctl}</span>
       </li>`;
-    }).join("");
-    $("#qsosEmpty").hidden = list.length > 0; $("#qsos").hidden = list.length === 0;
-    const uniq = new Set(list.map(([, q]) => `${baseCall(q.call)}|${q.band}|${q.mode}`)).size;
-    const n = list.length, p2p = list.filter(([, q]) => q.parks && q.parks.length).length;
-    $("#qsoCount").textContent = n;
-    $("#qsoBar").style.width = Math.min(100, (n / 10) * 100) + "%";
-    $(".tally").classList.toggle("is-done", n >= 10);
-    $("#qsoNote").textContent = n >= 10 ? `アクティベーション成立（${uniq} 局・バンド・モード）` : `あと ${10 - n} QSO でアクティベーション成立`;
-    $("#p2pCount").textContent = p2p ? `P2P ${p2p} 件` : "";
   }
+  function renderQsos(fresh) {
+    const list = [...st.qsos.values()].sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+    $("#qsos").innerHTML = list.map((q) => qsoRow(q, fresh)).join("");
+    $("#barQsos").innerHTML = list.slice(0, 8).map((q) => qsoRow(q, fresh)).join("");
+    $("#qsosEmpty").hidden = list.length > 0; $("#qsos").hidden = list.length === 0;
+    $("#barEmpty").hidden = list.length > 0; $("#barQsos").hidden = list.length === 0;
+    const uniq = new Set(list.map((q) => `${baseCall(q.call)}|${q.band}|${q.mode}`)).size;
+    const n = list.length, p2p = list.filter((q) => q.decision && q.decision !== "no" && q.parks.length).length;
+    const pending = list.filter((q) => !q.decision && q.candidate.length).length;
+    $("#qsoCount").textContent = n; $("#barCount").textContent = n;
+    const w = Math.min(100, (n / 10) * 100) + "%";
+    $("#qsoBar").style.width = w; $("#barMeter").style.width = w;
+    $(".tally").classList.toggle("is-done", n >= 10); $(".bar-tally").classList.toggle("is-done", n >= 10);
+    $("#qsoNote").textContent = n >= 10 ? `アクティベーション成立（${uniq} 局・バンド・モード）` : `あと ${10 - n} QSO でアクティベーション成立`;
+    $("#p2pCount").textContent = [p2p ? `P2P ${p2p} 件` : "", pending ? `確認待ち ${pending} 件` : ""].filter(Boolean).join("・");
+    if (st.editing) { const el = $(`[data-in="${CSS.escape(st.editing)}"]`); if (el) el.focus(); }
+    if (n >= 10 && !st.cheered) { st.cheered = true; cheer(); }
+  }
+  function cheer() {
+    const c = $("#cheer"); c.hidden = false;
+    clearTimeout(cheer.h); cheer.h = setTimeout(() => (c.hidden = true), 7000);
+  }
+  $("#cheer").addEventListener("click", () => ($("#cheer").hidden = true));
+
+  async function decide(uid, decision, parks) {
+    const r = await api.set_p2p(uid, decision, parks || "");
+    if (!r.ok) { toast(r.error); return; }
+    st.editing = null;
+    for (const ev of r.events) { const old = st.qsos.get(ev.uid); if (old) st.qsos.set(ev.uid, { ...old, ...ev }); }
+    renderQsos();
+    const q = st.qsos.get(uid);
+    if (q && q.parks.length) toast(`${q.call} を P2P（${q.parks.join(" + ")}）として記録しました`);
+  }
+  function onQsoClick(e) {
+    const b = e.target.closest("[data-act]"); if (!b) return;
+    const uid = b.dataset.uid, act = b.dataset.act;
+    if (act === "edit") { st.editing = uid; renderQsos(); }
+    else if (act === "cancel") { st.editing = null; renderQsos(); }
+    else if (act === "manual") decide(uid, "manual", b.closest(".p2p-in").querySelector("input").value);
+    else decide(uid, act, act === "yes" ? (st.qsos.get(uid).candidate || []).join(",") : "");
+  }
+  function onQsoKey(e) {
+    if (e.key === "Enter" && e.target.matches("[data-in]")) { e.preventDefault(); decide(e.target.dataset.in, "manual", e.target.value); }
+    if (e.key === "Escape" && e.target.matches("[data-in]")) { st.editing = null; renderQsos(); }
+  }
+  for (const id of ["#qsos", "#barQsos"]) { $(id).addEventListener("click", onQsoClick); $(id).addEventListener("keydown", onQsoKey); }
+
+  // ---- bar mode: the window shrinks to a strip kept above the logger
+  async function setBar(on) {
+    document.body.classList.toggle("is-bar", on); $("#bar").hidden = !on; st.bar = on;
+    try { await api.set_bar(on); } catch (e) { /* window control is best effort */ }
+  }
+  $("#toBar").addEventListener("click", () => setBar(true));
+  $("#barExpand").addEventListener("click", () => setBar(false));
+
   $$("#liveRun .seg button").forEach((b) => b.addEventListener("click", () => {
     st.prefix = b.dataset.prefix; segSet("#liveRun .seg", "prefix", st.prefix); api.save({ prefix: st.prefix }); renderSpots();
   }));
-  $("#stopLive").addEventListener("click", async () => {
-    const r = await api.stop_live();
+
+  // ---- 終了: stop, write this park's upload file(s), back to the start
+  async function finishLive() {
+    const pending = [...st.qsos.values()].filter((q) => !q.decision && q.candidate.length).length;
+    const btns = [$("#finishLive"), $("#barFinish")];
+    if (pending && !st.finishArmed) {           // window.confirm is not available in the embedded view
+      st.finishArmed = true;
+      btns.forEach((b) => (b.textContent = `未確認 ${pending} 件のまま終了`));
+      toast(`P2P の可能性がある QSO が ${pending} 件、未確認です。もう一度押すと P2P なしで書き出します`);
+      clearTimeout(finishLive.h);
+      finishLive.h = setTimeout(() => { st.finishArmed = false; btns.forEach((b, i) => (b.textContent = i ? "運用を終了" : "この公園での運用を終了")); }, 6000);
+      return;
+    }
+    st.finishArmed = false; clearTimeout(finishLive.h);
+    btns.forEach((b) => { b.disabled = true; b.textContent = "作成しています…"; });
+    const r = await api.finish_live(true);
+    btns.forEach((b, i) => { b.disabled = false; b.textContent = i ? "運用を終了" : "この公園での運用を終了"; });
     clearInterval(st.timer); clearInterval(st.poll);
+    await setBar(false);
     $("#liveRun").hidden = true; $("#liveIdle").hidden = false; $("#liveDot").hidden = true;
-    if (r.start) toast(`記録を止めました（${r.start.slice(11)}〜${r.end.slice(11)} UTC）`);
-  });
+    const card = $("#doneCard"); card.hidden = false;
+    if (!r.ok) {
+      $("#doneTitle").textContent = "記録は止めましたが、ファイルを作れませんでした";
+      $("#doneBody").innerHTML = `<p class="error">${esc(r.error)}</p><p class="muted">「アップロード作成」タブから作り直せます。</p>`;
+      return;
+    }
+    const files = r.summary || [];
+    const s = r.session || {};
+    $("#doneTitle").textContent = files.length
+      ? `${(s.parks || []).join(" + ")} の運用を終了。${files.length} 個のファイルを作成しました`
+      : `${(s.parks || []).join(" + ")} の運用を終了しました`;
+    $("#doneBody").innerHTML = resultsHtml(r) + `<p class="muted">${esc(r.out_dir || "")}</p>`;
+    st.outDir = r.out_dir;
+    toast(`記録を止めました（${(s.start || "").slice(11)}〜${(s.end || "").slice(11)} UTC）`);
+    $("#parks").focus();
+  }
+  $("#finishLive").addEventListener("click", finishLive);
+  $("#barFinish").addEventListener("click", finishLive);
+  $("#doneClose").addEventListener("click", () => ($("#doneCard").hidden = true));
+  $("#doneOpen").addEventListener("click", () => api.open_out(st.outDir || st.out));
+  $("#donePota").addEventListener("click", () => api.open_url("https://pota.app/"));
 
   // ================================================================ build
   $$(".seg-src button").forEach((b) => b.addEventListener("click", () => setSource(b.dataset.src)));
@@ -193,18 +293,11 @@
   $("#pickAdif").addEventListener("click", async () => { const r = await api.pick_adif(); if (r) renderActs(r); });
   $("#pickOut").addEventListener("click", async () => { const p = await api.pick_out(); if (p) { st.out = p; $("#outPath").textContent = p; } });
 
-  const SRC = (s) => s.includes("ハンター") ? ["src-ok", "確定"] : s.includes("スポット") ? ["src-spot", "スポット"] : ["src-log", "ログ"];
-  $("#runBuild").addEventListener("click", async () => {
-    if (st.source === "adif" && !st.adif) { toast("先に ADIF を選んでください"); return; }
-    const btn = $("#runBuild"); btn.disabled = true; btn.textContent = "作成しています…";
-    const r = await api.build({ source: st.source, adif: st.adif, dates: [...st.selected], override: $("#override").value,
-                                call: st.call, out: st.out, online: $("#online").checked });
-    btn.disabled = false; btn.textContent = "アップロード用ファイルを作成";
-    const box = $("#results"); box.hidden = false;
-    if (!r.ok) { $("#resultsTitle").textContent = "作成できませんでした"; $("#resultsBody").innerHTML = `<p class="error">${esc(r.error)}</p>`; return; }
+  const SRC = (s) => s.includes("ハンター") ? ["src-ok", "確定"] : s.includes("確認済み") ? ["src-ok", "確認済み"]
+    : s.includes("手入力") ? ["src-ok", "手入力"] : s.includes("スポット") ? ["src-spot", "スポット"] : ["src-log", "ログ"];
+  function resultsHtml(r) {
     const files = r.summary || [];
-    $("#resultsTitle").textContent = files.length ? `${files.length} 個のファイルを作成しました` : "作成するファイルがありません";
-    $("#resultsBody").innerHTML = files.map((f) => `
+    return files.map((f) => `
       <article class="file">
         <div class="file-head">
           ${plate(f.park)}
@@ -219,6 +312,18 @@
       (r.p2p_fixes ? `<p class="fixnote">ロガーに入っていなかった相手の公園が ${r.p2p_fixes} 件ありました。logger_p2p_fix.adi に書き出しています。</p>` : "") +
       (files.length && r.notes && r.notes.length ? `<div class="notes"><h3>確認してください</h3><ul>${r.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul></div>` : "") +
       (!files.length && r.notes && r.notes.length ? `<p class="muted">${esc(r.notes[0])}</p>` : "");
+  }
+  $("#runBuild").addEventListener("click", async () => {
+    if (st.source === "adif" && !st.adif) { toast("先に ADIF を選んでください"); return; }
+    const btn = $("#runBuild"); btn.disabled = true; btn.textContent = "作成しています…";
+    const r = await api.build({ source: st.source, adif: st.adif, dates: [...st.selected], override: $("#override").value,
+                                call: st.call, out: st.out, online: $("#online").checked });
+    btn.disabled = false; btn.textContent = "アップロード用ファイルを作成";
+    const box = $("#results"); box.hidden = false;
+    if (!r.ok) { $("#resultsTitle").textContent = "作成できませんでした"; $("#resultsBody").innerHTML = `<p class="error">${esc(r.error)}</p>`; return; }
+    const files = r.summary || [];
+    $("#resultsTitle").textContent = files.length ? `${files.length} 個のファイルを作成しました` : "作成するファイルがありません";
+    $("#resultsBody").innerHTML = resultsHtml(r);
     st.outDir = r.out_dir;
     box.scrollIntoView({ behavior: "smooth", block: "start" });
   });

@@ -3,10 +3,16 @@
 Owner: JL1FVA (藤原 雅也). Talk to the owner in Japanese. UI copy is Japanese.
 
 ## What this is
-Desktop app (macOS Apple Silicon + Windows) for POTA activators:
-- **運用中**: records POTA spots every 60 s (api.pota.app/spot/activator) so the other station's park(s) are known even after they QRT; shows own park plates, elapsed time, QSO count toward 10.
-- **ロガーとの接続**: receives QSOs over UDP like OpsLog (N1MM XML, WSJT-X binary msg 12 incl. multicast, ADIF / ADIF-in-XML), optional raw forwarding to another app. QSOs go to the app's SQLite log.
-- **アップロード作成**: writes one ADIF per (my park, UTC date), named `CALL@PARK-YYYYMMDD.adi`, ready for pota.app. P2P park(s) from: 1) pota.app public hunter log (verified), 2) recorded spots, 3) SIG_INFO/POTA_REF in the log. Their 2fer → QSO duplicated per park; my 2fer → one file per park (Cartesian product). POTA uploads do not accept multi-value refs (as of 2024).
+Desktop app (macOS Apple Silicon + Windows) for POTA activators. The owner's intended flow (agreed 2026-10-20):
+open the logger and this app → type the park → the window becomes a small always-on-top **bar** above the logger →
+each QSO arrives over UDP → if the other station was spotted at a park the row asks 「P2P の可能性 … はい / いいえ」
+(never automatic); with no spot (Phone/CW) the operator types the park into the row → at 10 QSOs a full-window banner →
+「この公園での運用を終了」 stops recording, writes this park's upload file(s) to the out dir and returns to the park prompt
+for the next park. Logging itself stays in the logger; this app never writes the logger's log.
+- **運用中**: records POTA spots every 60 s (api.pota.app/spot/activator) so the other station's park(s) are known even after they QRT. `Api.set_bar` shrinks/moves the window (`BAR_W×BAR_H`, `on_top`); `Api.finish_live` = stop + `builder.build(confirmed_only=True)` on the session's QSOs.
+- **ロガーとの接続**: receives QSOs over UDP like OpsLog (N1MM XML, WSJT-X binary msg 12 incl. multicast, ADIF / ADIF-in-XML), optional raw forwarding to another app. QSOs go to the app's SQLite log with `P2P_CANDIDATE` (from spots) and, once answered, `P2P_DECISION` = yes | no | manual | log (log = SIG_INFO came from the logger). `qsolog.set_p2p` applies a decision to the WSJT-X and logger copies of the same contact; `upsert` carries a decision over when the logger re-sends.
+- **アップロード作成**: writes one ADIF per (my park, UTC date), named `CALL@PARK-YYYYMMDD.adi`, ready for pota.app. P2P park(s) from: 1) pota.app public hunter log (verified), 2) the operator's decision (app log, `confirmed_only`), 3) recorded spots (ADIF-file builds only), 4) SIG_INFO/POTA_REF in the log. Their 2fer → QSO duplicated per park; my 2fer → one file per park (Cartesian product). POTA uploads do not accept multi-value refs (as of 2024).
+- Not done yet: nearby parks from the current location (map / list to pick from) — the owner wants it after the flow above is solid.
 
 ## Layout
 | file | role |
@@ -30,6 +36,7 @@ Data dir: macOS `~/Library/Application Support/POTA Upload Helper/`, Windows `%A
 ## Status (2026-10-20)
 - v1.0.0 released; CI green on macOS and Windows.
 - Verified from source on the owner's Mac (python 3.9 from Xcode CLT, pywebview 6.2.1): all three views, folder dialog, spot recording with park name + 2fer plates, live P2P from UDP QSOs, upload build (2fer duplicated per park, `logger_p2p_fix.adi`), clean exit on window close. Nothing in the core flow was broken.
+- 2026-10-20 (later): bar mode, per-row P2P confirmation / manual entry, 10-QSO banner, 終了 → build. Verified from source: bar above RUMlogNG, はい / 手入力 both land in the ADIF as 確認済み / 手入力, unanswered candidates are left non-P2P with a note, window grows back on 終了. `window.confirm` is not available in the embedded view - 終了 with unanswered candidates needs a second press instead.
 - Changes after that check: `FileDialog` constants (the bare `OPEN_DIALOG`/`FOLDER_DIALOG` are deprecated in pywebview 6), and CI now writes `NSLocalNetworkUsageDescription` into the macOS Info.plist and re-signs ad hoc, so macOS 15+ shows the "Local Network" prompt needed to receive multicast from WSJT-X. Not yet confirmed with the Release build: ask the owner whether WSJT-X QSOs arrive in the `.app`; if not, System Settings → Privacy → Local Network is the first place to look.
 - Verified against the owner's real log: activation 2026-05-06 JP-1281 → 62 QSO, 11 P2P (9 were missing in RUMlog), JI1IKC/P 2fer JP-1206+JP-1946 split correctly; 35 activations total = pota.app count.
 

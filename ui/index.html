@@ -59,15 +59,42 @@
         <p class="hint">2fer・3fer はカンマで区切ります（JP-1281,JP-1285）</p>
         <div class="plates plates-lg" id="parksPreview"></div>
         <p class="error" id="liveError" hidden></p>
+
+        <section class="done" id="doneCard" hidden aria-live="polite">
+          <div class="done-head">
+            <h2 id="doneTitle"></h2>
+            <button class="link" id="doneClose">閉じる</button>
+          </div>
+          <div id="doneBody"></div>
+          <div class="done-actions">
+            <button class="btn" id="doneOpen">保存先を開く</button>
+            <button class="btn" id="donePota">pota.app を開く</button>
+          </div>
+        </section>
       </div>
 
       <div id="liveRun" hidden>
+        <div class="bar" id="bar" hidden>
+          <div class="bar-head">
+            <div class="bar-parks" id="barParks"></div>
+            <div class="bar-tally" aria-label="QSO 数"><strong id="barCount">0</strong><span>/10</span><i class="bar-meter"><b id="barMeter"></b></i></div>
+            <div class="bar-clock" id="barElapsed">00:00:00</div>
+            <button class="bar-btn" id="barExpand">広げる</button>
+            <button class="bar-btn bar-btn-finish" id="barFinish">運用を終了</button>
+          </div>
+          <ol class="qsos qsos-bar" id="barQsos"></ol>
+          <div class="bar-empty" id="barEmpty">ロガーからの QSO を待っています。P2P の候補が出たら、ここで「はい」「いいえ」を押すか公園番号を入力してください。</div>
+        </div>
+
         <header class="sign">
           <div class="sign-parks" id="signParks"></div>
           <div class="sign-side">
             <div class="clock" id="elapsed" aria-label="経過時間">00:00:00</div>
             <div class="sign-status" id="liveStatus"></div>
-            <button class="btn btn-quiet" id="stopLive">記録を止める</button>
+            <div class="sign-actions">
+              <button class="btn btn-quiet" id="toBar">バー表示にする</button>
+              <button class="btn btn-finish" id="finishLive">この公園での運用を終了</button>
+            </div>
           </div>
           <div class="tally" aria-live="polite">
             <div class="tally-n"><strong id="qsoCount">0</strong><span>QSO</span></div>
@@ -188,6 +215,7 @@
   </main>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
+<div class="cheer" id="cheer" hidden role="status"><strong>10 QSO</strong><span>アクティベーション成立</span></div>
 <script src="app.js"></script>
 </body>
 </html>
