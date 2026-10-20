@@ -27,6 +27,10 @@
         <span>運用中</span>
         <small>スポットを記録</small>
       </button>
+      <button class="nav-item" data-view="spots">
+        <span>アクティベート中</span>
+        <small id="spotsSummary">いま公園から出ている局</small>
+      </button>
       <button class="nav-item" data-view="build">
         <span>アップロード作成</span>
         <small>pota.app 用ファイル</small>
@@ -138,6 +142,33 @@
           </section>
         </div>
       </div>
+    </section>
+
+    <!-- ======================= spots: who is on the air now ======================= -->
+    <section class="view view-wide" id="view-spots" hidden>
+      <div class="spots-head">
+        <h1 class="view-title">いまアクティベート中の局</h1>
+        <div class="spots-meta"><span id="spotsAt"></span><button class="link" id="spotsRefresh">更新</button></div>
+      </div>
+      <div class="filters">
+        <div class="seg seg-region" role="radiogroup" aria-label="地域">
+          <button role="radio" data-region="JP" class="is-on">日本</button>
+          <button role="radio" data-region="">全世界</button>
+        </div>
+        <div class="seg seg-mode" role="radiogroup" aria-label="モード">
+          <button role="radio" data-modegroup="" class="is-on">すべて</button>
+          <button role="radio" data-modegroup="cw">CW</button>
+          <button role="radio" data-modegroup="phone">Phone</button>
+          <button role="radio" data-modegroup="data">Data</button>
+        </div>
+        <select id="spotsBand" aria-label="バンド"><option value="">全バンド</option></select>
+        <input id="spotsSearch" placeholder="コール・公園番号で絞る" spellcheck="false" autocomplete="off" aria-label="検索">
+        <label class="switch switch-sm"><input type="checkbox" id="spotsTwofer"><span class="switch-ui"></span><span>2fer だけ</span></label>
+      </div>
+      <ol class="spots spots-page" id="spotsPage"></ol>
+      <div class="empty" id="spotsPageEmpty" hidden><p>条件に合う局がいません。</p></div>
+      <p class="error" id="spotsError" hidden></p>
+      <p class="hint">pota.app のスポットを 1 分ごとに取り直します。公園番号はスポットの参照番号とコメント中の番号（「2fer JP-0157」など）を合わせたもので、同じ局が 15 分以内に別の公園でもスポットされていれば 2fer として並べます。</p>
     </section>
 
     <!-- ======================= build ======================= -->

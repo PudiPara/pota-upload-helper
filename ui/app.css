@@ -313,6 +313,23 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .empty { text-align: center; padding: 48px 20px; border: 1.5px dashed var(--line); border-radius: var(--r-md); margin-top: 0; }
 .empty p { margin: 4px 0; }
 
+/* ---------- spots page ---------- */
+.view-wide { max-width: 1100px; }
+.spots-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.spots-meta { display: flex; gap: 12px; align-items: baseline; color: var(--ink-2); font-size: 13px; }
+.filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 4px 0 16px; }
+.filters select, .filters input[type=text], #spotsSearch { padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 13px; }
+#spotsSearch { width: 220px; text-transform: uppercase; }
+#spotsSearch::placeholder { text-transform: none; }
+.switch-sm { font-size: 13px; }
+.spots-page { max-height: none; }
+.spots-page .spot { grid-template-columns: 56px minmax(140px, 1fr) minmax(0, 2fr) auto; gap: 4px 14px; padding: 10px 16px; }
+.spots-page .spot .plates { grid-column: 3; grid-row: 1 / span 2; align-self: center; }
+.spots-page .spot .spot-meta { grid-column: 4; }
+.spot-ago { grid-column: 1; grid-row: 2; font-size: 11px; color: var(--ink-2); }
+.spot-note { grid-column: 2; grid-row: 2; font-size: 12px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spot.is-stale { opacity: .6; }
+
 /* ---------- build ---------- */
 .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 26px; }
 .step-head { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; margin-bottom: 10px; }

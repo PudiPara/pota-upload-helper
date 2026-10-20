@@ -19,6 +19,45 @@ def _save_json(path, obj):
     os.replace(tmp, path)
 
 
+def _spot_time(s):
+    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M"):
+        try:
+            return dt.datetime.strptime((s.get("spotTime") or "")[:19], fmt).replace(tzinfo=dt.timezone.utc)
+        except ValueError:
+            pass
+    return None
+
+
+def summarize_spots(spots, now=None, gap_minutes=15):
+    """Who is activating right now, one row per station, from api.pota.app/spot/activator.
+    A station's parks are the spot's reference plus park numbers written in the comment
+    ("2fer JP-0157"), merged over its spots of the last gap_minutes; more than one park = 2fer.
+    Newest first."""
+    now = now or now_utc()
+    by = {}
+    for s in spots:
+        t = _spot_time(s)
+        base = base_call(s.get("activator"))
+        if not t or not base:
+            continue
+        refs = [(s.get("reference") or "").upper()] + parks_in(s.get("comments"))
+        by.setdefault(base, []).append((t, s, [r for i, r in enumerate(refs) if r and r not in refs[:i]]))
+    out = []
+    for base, items in by.items():
+        items.sort(key=lambda x: x[0], reverse=True)
+        t0, newest, parks = items[0]
+        parks = list(parks)
+        for t, _, refs in items[1:]:
+            if (t0 - t).total_seconds() <= gap_minutes * 60:
+                parks += [r for r in refs if r not in parks]
+        out.append({"call": newest.get("activator") or base, "base": base, "parks": parks, "twofer": len(parks) > 1,
+                    "freq": newest.get("frequency"), "mode": newest.get("mode") or "", "time": t0.strftime("%H:%M"),
+                    "ago": max(0, int((now - t0).total_seconds() // 60)), "comments": newest.get("comments") or "",
+                    "spots": len(items)})
+    out.sort(key=lambda e: (e["ago"], e["base"]))
+    return out
+
+
 class SpotLogger:
     """Polls api.pota.app/spot/activator. Callbacks (called from the worker thread):
          on_activator(time_str, activator, parks_list, freq, mode, is_2fer)
