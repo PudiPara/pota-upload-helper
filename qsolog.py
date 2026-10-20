@@ -243,7 +243,9 @@ def dedupe(recs, window=3):
         except ValueError:
             kept.append(r)
             continue
-        k = (base_call(r.get("CALL")), (r.get("BAND") or "").lower(), mode_of(r))
+        # my parks are part of the key: the same station worked again minutes later from another
+        # park is a second QSO, not the logger's copy of the first one
+        k = (base_call(r.get("CALL")), (r.get("BAND") or "").lower(), mode_of(r), r.get("MY_SIG_INFO") or "")
         if k in last and t - last[k][0] <= window:
             prev = last[k][1]
             if (bool(r.get("P2P_DECISION")), len(r)) > (bool(prev.get("P2P_DECISION")), len(prev)):   # keep the richer record

@@ -137,3 +137,12 @@ class EditQso(unittest.TestCase):
         self.assertTrue(qsolog.delete_uid(new)); self.assertFalse(qsolog.delete_uid(new))
         self.assertEqual([r for r in qsolog.records(["20250103"]) if r["CALL"].startswith("JA1EDT")], [])
 
+
+class ReworkedFromAnotherPark(unittest.TestCase):
+    def test_same_station_from_another_park_minutes_later_is_a_second_qso(self):
+        a = rec("DG4DW", "131830", MY_SIG_INFO="JP-1206,JP-1946", QSO_DATE="20250106")
+        b = rec("DG4DW", "132115", MY_SIG_INFO="JP-1206,JP-1272", QSO_DATE="20250106")
+        self.assertEqual(len(qsolog.dedupe([a, b])), 2)
+        twin = rec("DG4DW", "131900", MY_SIG_INFO="JP-1206,JP-1946", QSO_DATE="20250106")   # the logger's copy
+        self.assertEqual(len(qsolog.dedupe([a, twin, b])), 2)
+
