@@ -48,3 +48,40 @@ class ReceiverTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BindTest(unittest.TestCase):
+    """Unicast listeners take packets from this computer only (CodeQL: no binding to all interfaces)."""
+
+    def test_bind_address(self):
+        from receiver import bind_address
+        self.assertEqual(bind_address(""), "127.0.0.1")
+        self.assertEqual(bind_address("224.0.0.1"), "" if os.name == "nt" else "224.0.0.1")
+
+    def test_unicast_listener_receives_on_loopback_only(self):
+        import socket
+        import time
+        from receiver import Receiver
+        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+        probe.close()
+        got = []
+        rx = Receiver([{"name": "t", "port": port, "multicast": "", "enabled": True, "forward": ""}],
+                      lambda a, r, u, n: got.append(r["CALL"]))
+        rx.start()
+        try:
+            for _ in range(20):
+                if rx.state.get("t", {}).get("code") == "listening":
+                    break
+                time.sleep(0.05)
+            self.assertEqual(rx.state["t"]["code"], "listening")
+            socket.socket(socket.AF_INET, socket.SOCK_DGRAM).sendto(
+                b"<call:6>JA1AAA <qso_date:8>20261020 <time_on:4>0100 <band:3>40m <mode:3>FT8 <eor>", ("127.0.0.1", port))
+            for _ in range(40):
+                if got:
+                    break
+                time.sleep(0.05)
+            self.assertEqual(got, ["JA1AAA"])
+        finally:
+            rx.stop()

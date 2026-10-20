@@ -44,6 +44,7 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
 - **No write-back to the logger.** RUMlogNG ignores a UDP record whose time/band/mode already exist and
   its AppleScript only logs new QSOs; its ADIF import with "No Dupes + Update QSO record" works but is
   manual every time, so the owner dropped the feature. Decisions live only in the app log and files.
+- **Listeners bind to 127.0.0.1** (`receiver.bind_address`): only loggers on the same computer can feed QSOs in (CodeQL alert "binding a socket to all network interfaces"). Multicast listeners bind the group (Windows: the wildcard, membership filters). A logger on another PC is not supported; if that is ever wanted, make it an explicit per-listener option, not the default.
 - **Window close ≠ finish.** `finish_live` stops, builds and resets; `shutdown` only stops threads.
 - **Bar mode** is a resize/move/on-top of the one window (pywebview can't do a second window cheaply);
   `window.confirm` is unavailable in the web view, so "finish with unconfirmed" needs a second press.
