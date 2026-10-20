@@ -123,6 +123,8 @@ def summarize(spots, now=None):
             if (t0 - tm).total_seconds() <= TWOFER_GAP * 60:
                 parks += [r for r in refs if r not in parks]
         out.append({"call": newest.get("activator") or base, "base": base, "parks": parks, "twofer": len(parks) > 1,
+                    "country": parks[0].split("-")[0] if parks else "",      # park prefix = ISO 3166 alpha-2
+                    "location": newest.get("locationDesc") or "",            # "JP-13", "US-NY,US-NJ"
                     "freq": newest.get("frequency"), "band": band_from_khz(newest.get("frequency")),
                     "mode": newest.get("mode") or "", "group": mode_group(newest.get("mode")),
                     "time": t0.strftime("%H:%M"), "ago": max(0, int((now - t0).total_seconds() // 60)),

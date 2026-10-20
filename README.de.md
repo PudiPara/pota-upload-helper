@@ -11,7 +11,7 @@ Bei FT8 sieht man nicht, ob die Gegenstation in einem Park steht, geschweige den
 ## Was sie kann
 
 - **Leistenmodus während der Aktivierung**: Park eintippen, Aufzeichnung starten, und das Fenster wird zu einer schmalen Leiste über dem Logger (dein Park, Zeit, QSO-Zähler, letzte QSOs). „Vergrößern“ holt es zurück. Aus Parks gespottete Stationen werden jede Minute notiert und sind auch nach deren QRT noch beurteilbar.
-- **Gerade aktiv**: auch ohne Aufzeichnung eine Liste der Stationen, die gerade aus Parks funken, aus den pota.app-Spots (jede Minute neu). Filter: Region (Japan / Welt), Band, Mode (CW / Phone / Data), Rufzeichen oder Park, nur 2fer.
+- **Gerade aktiv**: auch ohne Aufzeichnung eine Liste der Stationen, die gerade aus Parks funken, aus den pota.app-Spots (jede Minute neu). Filter: Land (mit Flagge) und Region, Band, Mode (CW / Phone / Data), Rufzeichen oder Park, nur 2fer.
 - **QSOs vom Logger**: per UDP wie bei OpsLog oder JTAlert. N1MM-Format (RUMlogNG, N1MM Logger+, DXLog …), WSJT-X / JTDX (Multicast möglich), ADIF (JTAlert, GridTracker, Log4OM …). Korrekturen und Löschungen im Logger werden übernommen.
 - **P2P sofort bestätigen**: wurde die Gegenstation aus einem Park gespottet, zeigt die Zeile „Mögliches P2P“ mit der Referenz – Ja oder Nein. Steht die Station nicht in den Spots (Phone oder CW, der Park wird dir gesagt), tippst du die Referenz in die Zeile. Nichts wird von selbst zu P2P.
 - **10 QSOs**: ein Vollbild-Banner, sobald die Aktivierung steht.
@@ -80,7 +80,7 @@ Das öffentliche pota.app-Profil zeigt nur die letzten 25 Hunter-QSOs; die App e
 
 ## Sprachen
 
-日本語, English, 简体中文, 繁體中文, Français, Deutsch, Español, Italiano, Português (Brasil), 한국어, Polski. Wird aus der Systemsprache gewählt, umschaltbar unter „Sprache“ in der Seitenleiste.
+日本語, English, 简体中文, 繁體中文, Français, Deutsch, Español, Italiano, Português (Brasil), 한국어, Polski. Wird aus der Systemsprache gewählt, umschaltbar unter „Sprache“ in den Einstellungen.
 
 ## Nutzungsbedingungen und Haftungsausschluss
 
@@ -116,3 +116,5 @@ python3 -m unittest discover -s tests
 ## License
 
 MIT
+
+Country flags are drawn with the flags-only font from [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), built from Twemoji (CC-BY 4.0).

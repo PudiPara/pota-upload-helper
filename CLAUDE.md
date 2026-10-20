@@ -65,6 +65,10 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
   TERMS_VERSION` (app.js), also `TERMS.md` and README. The app is not affiliated with POTA.
 - **Languages**: ja, en, zh-CN, zh-TW, fr, de, es, it, pt-BR, ko, pl; same keys in every file (check with a
   key diff before committing); language from `navigator.language` on first run, switchable in the rail.
+- **Flags and countries** (アクティベート中): a station's country is its first park's prefix (ISO 3166 alpha-2),
+  sent by `spots.summarize` with `location` (pota.app's locationDesc, e.g. JP-13) for the region filter. The
+  UI draws the flag from regional indicators with `ui/fonts/TwemojiCountryFlags.woff2` (78 KB, flags only:
+  Windows has no flag glyphs) and names the country with `Intl.DisplayNames` in the UI language.
 - **Example park references** in copy: JP-1266, and JP-1266,JP-1206 for a 2fer.
 
 ## Design system (keep it)

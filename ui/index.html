@@ -142,15 +142,14 @@
 
     <!-- ======================= spots: who is on the air now ======================= -->
     <section class="view view-wide" id="view-spots" hidden>
+      <div class="spots-top">
       <div class="spots-head">
         <h1 class="view-title" data-i18n="spots.title">いまアクティベート中の局</h1>
         <div class="spots-meta"><span id="spotsAt"></span><button class="link" id="spotsRefresh" data-i18n="spots.refresh">更新</button></div>
       </div>
       <div class="filters">
-        <div class="seg seg-region" role="radiogroup">
-          <button role="radio" data-region="JP" class="is-on" data-i18n="live.seg.jp">日本</button>
-          <button role="radio" data-region="" data-i18n="live.seg.world">全世界</button>
-        </div>
+        <select id="spotsCountry"></select>
+        <select id="spotsArea"></select>
         <div class="seg seg-mode" role="radiogroup">
           <button role="radio" data-modegroup="" class="is-on" data-i18n="spots.mode.all">すべて</button>
           <button role="radio" data-modegroup="cw">CW</button>
@@ -160,6 +159,7 @@
         <select id="spotsBand"><option value="" data-i18n="spots.band.all">全バンド</option></select>
         <input id="spotsSearch" placeholder="コール・公園番号で絞る" data-i18n-ph="spots.search.ph" spellcheck="false" autocomplete="off">
         <label class="switch switch-sm"><input type="checkbox" id="spotsTwofer"><span class="switch-ui"></span><span data-i18n="spots.twofer">2fer だけ</span></label>
+      </div>
       </div>
       <ol class="spots spots-page" id="spotsPage"></ol>
       <div class="empty" id="spotsPageEmpty" hidden><p data-i18n="spots.empty">条件に合う局がいません。</p></div>

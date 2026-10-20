@@ -77,6 +77,8 @@
  "spots.at": "{at}Z 時点・{n} 局",
  "spots.mode.all": "すべて",
  "spots.band.all": "全バンド",
+ "spots.country.all": "すべての国",
+ "spots.area.all": "すべての地域",
  "spots.search.ph": "コール・公園番号で絞る",
  "spots.twofer": "2fer だけ",
  "spots.empty": "条件に合う局がいません。",
