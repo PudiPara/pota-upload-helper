@@ -384,11 +384,7 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .notes h3 { margin: 0 0 6px; font-size: 14px; }
 .notes ul { margin: 0; padding-left: 1.2em; font-size: 13px; }
 .notes li + li { margin-top: 4px; }
-.fixnote { font-size: 13px; color: var(--ink-2); margin-top: 12px; }
-.loggerbox { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 18px; margin-top: 14px; font-size: 13px; }
-.loggerbox h3 { margin: 0 0 4px; font-size: 13.5px; }
-.loggerbox p { margin: 4px 0; color: var(--ink-2); text-wrap: pretty; }
-.loggerbox b { color: var(--ink); }
+
 
 .toast {
   position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);

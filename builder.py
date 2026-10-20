@@ -24,7 +24,6 @@ HUNTER_WINDOW = 5      # minutes: hunter log time vs your log time
 SPOT_BEFORE = 30       # minutes: a spot this long before the QSO still counts
 SPOT_AFTER = 10        # minutes: a spot this long after the QSO still counts
 TWOFER_GAP = 15        # minutes: two parks spotted this close together = 2fer
-LOGGER_FILE = "logger_update.adi"   # one record per QSO, parks comma-joined, for the logger's ADIF import
 
 
 def band_norm(b):
@@ -185,13 +184,12 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
     activ = find_activation_qsos(recs, dates, my_parks)
     if not activ:
         msg = "アクティベーションのQSOが見つかりませんでした（MY_SIG_INFO、スポット記録のセッション、または「自分の公園」の指定が必要です）。"
-        return {"text": msg, "files": [], "out_dir": out_dir, "p2p_fixes": 0, "summary": [], "notes": [msg]}
+        return {"text": msg, "files": [], "out_dir": out_dir, "summary": [], "notes": [msg]}
 
     os.makedirs(out_dir, exist_ok=True)
     files = defaultdict(list)
     report = defaultdict(lambda: {"qsos": set(), "p2p": [], "calls": set()})
-    fixes, notes = [], []
-    p2p_fixes = 0
+    notes = []
     used_hunter = set()
 
     for r, t, mp_list in activ:
@@ -229,21 +227,6 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
             if not s_sure and not set(s_parks) <= set(log_parks):
                 notes.append("%s %s %s: %s が別々のスポットで近い時刻に出ていたので 2fer として扱いました（移動運用の可能性もあり）"
                              % (r["QSO_DATE"], r["TIME_ON"][:4], r["CALL"], ",".join(s_parks)))
-        # One line per QSO for the logger (RUMlogNG: Logbook → Import ADIF with "No Dupes" +
-        # "Update QSO record"): parks comma-joined, never split. The logger keys on time,
-        # band and mode (case-sensitive: "Data-U" != "DATA-U"), and RUMlogNG logs a WSJT-X
-        # QSO at its end time - so use the logger's own mode spelling and TIME_OFF.
-        changed = bool(theirs) and sorted(theirs) != sorted(log_parks)
-        if confirmed_only or changed:
-            u = {"CALL": r["CALL"], "QSO_DATE": r.get("QSO_DATE_OFF") or r["QSO_DATE"],
-                 "TIME_ON": r.get("TIME_OFF") or r.get("TIME_ON"), "BAND": r.get("BAND"),
-                 "MODE": r.get("LOGGER_MODE") or r.get("MODE"), "SUBMODE": r.get("SUBMODE"),
-                 "MY_SIG": "POTA", "MY_SIG_INFO": ",".join(mp_list), "MY_POTA_REF": ",".join(mp_list)}
-            if theirs:
-                u.update({"SIG": "POTA", "SIG_INFO": ",".join(theirs), "POTA_REF": ",".join(theirs)})
-            fixes.append(u)
-            if changed:
-                p2p_fixes += 1
         for mp in mp_list:
             key = (mp, r["QSO_DATE"])
             rep = report[key]
@@ -282,17 +265,10 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
                      "" if n >= 10 else "  ※10QSO未満", fn))
         for tm, c, ps, src in rep["p2p"]:
             lines.append("      P2P %s %-10s %-20s [%s]" % (tm, c, ps, src))
-    if fixes:
-        write_adif(os.path.join(out_dir, LOGGER_FILE), fixes,
-                   ["CALL", "QSO_DATE", "TIME_ON", "BAND", "MODE", "SUBMODE", "MY_SIG", "MY_SIG_INFO", "MY_POTA_REF",
-                    "SIG", "SIG_INFO", "POTA_REF"])
-        lines.append("\nロガー更新用: %d 件 → %s（相手の公園がログに無かったもの %d 件）" % (len(fixes), LOGGER_FILE, p2p_fixes))
     if notes:
         lines.append("\n要確認:")
         lines += ["  - " + n for n in notes]
     text = "\n".join(lines)
     with open(os.path.join(out_dir, "report.txt"), "w", encoding="utf-8") as fh:
         fh.write(text + "\n")
-    return {"text": text, "files": written, "out_dir": out_dir, "p2p_fixes": p2p_fixes,
-            "logger_file": LOGGER_FILE if fixes else "", "logger_records": len(fixes),
-            "summary": summary, "notes": notes}
+    return {"text": text, "files": written, "out_dir": out_dir, "summary": summary, "notes": notes}

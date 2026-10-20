@@ -60,7 +60,7 @@ class BuilderTest(unittest.TestCase):
         self.assertEqual(by["JA9ZZZ"], [None])                          # not P2P
         self.assertEqual(len(recs), 14)   # 12 QSOs + 2 extra for the 2fers
         self.assertTrue(all(r["MY_SIG_INFO"] == "JP-1281" for r in recs))
-        self.assertEqual(res["p2p_fixes"], 3)
+        self.assertFalse([f for f in os.listdir(self.out) if f.startswith("logger_")])   # nothing for the logger
 
 
 if __name__ == "__main__":
