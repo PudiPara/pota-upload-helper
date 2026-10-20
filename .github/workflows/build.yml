@@ -2,7 +2,9 @@ name: Build apps
 
 on:
   push:
+    branches: [main]
     tags: ["v*"]
+    paths-ignore: ["docs/**", "README.md"]
   workflow_dispatch:
 
 permissions:
@@ -48,15 +50,20 @@ jobs:
           path: ${{ matrix.asset }}
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - id: ver
+        run: echo "v=v$(python3 -c 'import potacommon; print(potacommon.VERSION)')" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v4
         with:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.ver.outputs.v }}
+          name: POTA Upload Helper ${{ steps.ver.outputs.v }}
+          target_commitish: ${{ github.sha }}
           files: |
             POTA-Upload-Helper-macOS.zip
             POTA-Upload-Helper-Windows.zip
