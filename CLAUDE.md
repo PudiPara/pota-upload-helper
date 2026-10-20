@@ -47,9 +47,10 @@ Data dir: macOS `~/Library/Application Support/POTA Upload Helper/`, Windows `%A
 - `gh` is not logged in on this Mac; CI/Release status must be read on github.com (or `gh auth login`).
 
 ## Owner's station context
-- Logger: RUMlogNG (Mac). Prefs → UDP has two "Contact info" outputs, both **N1MM** now: `127.0.0.1:2333` → OpsLog (inbound "RUMlog N1MM"), `127.0.0.1:12060` → QSO Upload Utility (HamQTH/HRDlog). Club Log is synced by RUMlog itself.
-- WSJT-X sends to multicast `224.0.0.1:2237`; RUMlog and GridTracker listen there.
-- Planned wiring (not done yet, ask before changing): RUMlog `2333` → this app's N1MM listener on 2333 with forward to `127.0.0.1:2335`, and OpsLog's inbound moved to 2335.
+- Logger: RUMlogNG (Mac). Prefs → UDP has two "Contact info N1MM" outputs: `127.0.0.1:2333` → OpsLog (inbound "RUMlog N1MM"), and since 2026-10-20 `127.0.0.1:2334` → **this app's "RUMlogNG (N1MM)" listener** (it used to go to QSO Upload Utility on 12060 for HamQTH/HRDlog; the owner disabled that and Club Log real-time sync (Prefs → Databases) so test QSOs never reach online services - re-enable both when testing is over).
+- WSJT-X sends to multicast `224.0.0.1:2237`; RUMlog, GridTracker, a QSLWorld bridge script and this app all listen there. A WSJT-X QSO therefore reaches the app twice (WSJT-X copy at start time, RUMlog's N1MM copy at end time, no `<ID>`); `qsolog.dedupe` and the live list merge them (±3 min, base call, band).
+- Verified end to end 2026-10-20 with real loggers: RUMlog manual QSO (Save QSO) and WSJT-X 「Log QSO」 both appeared in the bar with the right spot candidates (JS6UHQ/6 2fer JP-0157+JP-1788, JM7GTK/P JP-1028) and ended up as 確認済み in the ADIF. RUMlog manual entries take the rig's mode (`DATA-U`), which is not a valid ADIF mode - only a test artefact, real entries carry SSB/CW/FT8.
+- OpsLog still receives everything RUMlog logs (2333), so test QSOs land there too.
 - RUMlog ADIF exports omit `<SIG>POTA` on hunted parks (only SIG_INFO) — tools must not rely on SIG.
 
 ## Ideas not done yet
