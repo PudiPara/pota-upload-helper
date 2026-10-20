@@ -75,12 +75,12 @@ def find_activation_qsos(recs, dates=None, my_parks=None, sessions=None):
         except ValueError:
             continue
         mp = override
-        if not mp:
-            for a, b, parks in sessions:
-                if a <= t <= b:
-                    mp = parks
         if not mp and (r.get("MY_SIG", "POTA").upper() in ("POTA", "")):
-            mp = split_parks(r.get("MY_POTA_REF") or r.get("MY_SIG_INFO"))
+            mp = split_parks(r.get("MY_POTA_REF") or r.get("MY_SIG_INFO"))   # recorded with the QSO: wins
+        if not mp:
+            for a, b, parks in sessions:        # else the session window it fell in (windows carry a margin,
+                if a <= t <= b:                 # so they must never override a QSO's own parks)
+                    mp = parks
         if mp:
             activ.append((r, t, mp))
     return activ

@@ -103,3 +103,18 @@ class BuilderTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RecordedParksBeatSessionWindows(unittest.TestCase):
+    def test_next_session_window_does_not_steal_earlier_qsos(self):
+        from builder import find_activation_qsos
+        from potacommon import minutes
+        recs = [{"CALL": "JA1AAA", "QSO_DATE": "20260105", "TIME_ON": "130130", "BAND": "20m", "MODE": "FT8",
+                 "MY_SIG": "POTA", "MY_SIG_INFO": "JP-1206,JP-1266"},
+                {"CALL": "JA1BBB", "QSO_DATE": "20260105", "TIME_ON": "130300", "BAND": "20m", "MODE": "FT8"}]   # no parks: window decides
+        t = lambda hhmm: minutes("20260105", hhmm)
+        sessions = [(t("1257"), t("1309"), ["JP-1206", "JP-1266"]), (t("1259"), t("1310"), ["JP-1206", "JP-1946"])]  # widened, overlapping
+        got = {r["CALL"]: sorted(mp) for r, _, mp in find_activation_qsos(recs, sessions=sessions)}
+        self.assertEqual(got["JA1AAA"], ["JP-1206", "JP-1266"])
+        self.assertEqual(got["JA1BBB"], ["JP-1206", "JP-1946"])
+
