@@ -341,7 +341,7 @@ class Api:
                 rows = list_activations(path)
             else:
                 rows = list_activations(recs=qsolog.records())
-            return {"path": path or "", "items": [{"date": d, "parks": p.split(","), "qsos": n, "per": per} for d, p, n, per in rows]}
+            return {"path": path or "", "items": [{"date": d, "parks": p.split(","), "qsos": n, "per": per, "pota": pota} for d, p, n, per, pota in rows]}
         except Exception as e:
             return {"path": path or "", "items": [], "error": t("api.logRead", err=e)}
 

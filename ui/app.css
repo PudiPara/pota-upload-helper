@@ -500,3 +500,4 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .act-parks { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
 .act-park { display: inline-flex; align-items: center; gap: 4px; }
 .act-park small { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.act-park .act-pota { font-weight: 500; color: var(--ink-3); }

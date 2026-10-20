@@ -90,13 +90,18 @@ def list_activations(adif_path=None, recs=None):
     """[(date, 'JP-1281,JP-1285', qso_count, {park: its qso_count})] newest first, for the GUI.
     The parks of a day are listed, not joined as one 2fer: a day may hold several sessions."""
     recs = recs if recs is not None else read_adif(adif_path)
-    agg = defaultdict(lambda: [defaultdict(int), 0])
+    agg = defaultdict(lambda: [defaultdict(int), 0, defaultdict(set)])
     for r, t, mp in find_activation_qsos(recs):
         a = agg[r["QSO_DATE"]]
+        _, theirs = decided_parks(r)
+        mode = (r.get("SUBMODE") or r.get("MODE") or "").upper()
         for p in mp:
             a[0][p] += 1
+            for tp in (theirs or [""]):        # what pota.app keeps: CALL+BAND+MODE+SIG_INFO per line
+                a[2][p].add((r["CALL"].upper(), band_norm(r.get("BAND")), mode, tp))
         a[1] += 1
-    return sorted(((d, ",".join(sorted(v[0])), v[1], dict(v[0])) for d, v in agg.items()), reverse=True)
+    return sorted(((d, ",".join(sorted(v[0])), v[1], dict(v[0]), {p: len(k) for p, k in v[2].items()})
+                   for d, v in agg.items()), reverse=True)
 
 
 # ---------- main entry ----------
