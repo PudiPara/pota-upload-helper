@@ -8,6 +8,7 @@ Every listener can also forward the raw packet to another host:port, so the
 app can sit between your logger and another program (e.g. RUMlog -> here -> OpsLog).
 """
 import html
+import os
 import re
 import socket
 import struct
@@ -107,6 +108,20 @@ def parse_packet(data):
 
 
 # ---------------------------------------------------------------- receiver
+LOOPBACK = "127.0.0.1"
+
+
+def bind_address(group):
+    """Where a listener binds. Unicast listeners take packets from this computer only
+    (loggers send to 127.0.0.1), so nothing on the network can feed QSOs in.
+    A multicast listener (WSJT-X on 224.0.0.1) must bind the group itself to receive it;
+    Windows can't bind a multicast address, so there it binds the wildcard and the
+    group membership does the filtering."""
+    if not group:
+        return LOOPBACK
+    return "" if os.name == "nt" else group
+
+
 def describe_state(state):
     """A listener's state dict (see Receiver.state) -> {"code", "text"} in the current language."""
     if not isinstance(state, dict):
@@ -159,7 +174,7 @@ class Receiver:
             except OSError:
                 pass
         group = (cfg.get("multicast") or "").strip()
-        s.bind(("", int(cfg["port"])))
+        s.bind((bind_address(group), int(cfg["port"])))
         if group:
             mreq = struct.pack("4s4s", socket.inet_aton(group), socket.inet_aton("0.0.0.0"))
             s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
