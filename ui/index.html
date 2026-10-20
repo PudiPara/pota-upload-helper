@@ -38,13 +38,9 @@
         <span data-i18n="nav.build">アップロード作成</span>
         <small data-i18n="nav.build.sub">pota.app 用ファイル</small>
       </button>
-      <button class="nav-item" data-view="settings">
-        <span data-i18n="nav.settings">ロガーとの接続</span>
-        <small id="recvSummary" data-i18n="nav.settings.sub">UDP 受信</small>
-      </button>
       <button class="nav-item" data-view="config">
         <span data-i18n="nav.config">設定</span>
-        <small data-i18n="nav.config.sub">コールサイン・言語・更新</small>
+        <small id="recvSummary" data-i18n="nav.config.sub">コールサイン・受信口・言語</small>
       </button>
     </nav>
 
@@ -148,8 +144,8 @@
         <div class="spots-meta"><span id="spotsAt"></span><button class="link" id="spotsRefresh" data-i18n="spots.refresh">更新</button></div>
       </div>
       <div class="filters">
+        <select id="spotsRegion"></select>
         <select id="spotsCountry"></select>
-        <select id="spotsArea"></select>
         <div class="seg seg-mode" role="radiogroup">
           <button role="radio" data-modegroup="" class="is-on" data-i18n="spots.mode.all">すべて</button>
           <button role="radio" data-modegroup="cw">CW</button>
@@ -228,26 +224,6 @@
       </section>
     </section>
 
-    <!-- ======================= settings ======================= -->
-    <section class="view" id="view-settings" hidden>
-      <h1 class="view-title" data-i18n="set.title">ロガーとの接続</h1>
-      <p class="lede" data-i18n="set.lede">ロガーが記録した QSO を UDP で受け取ります。</p>
-      <div class="listeners" id="listeners"></div>
-      <div class="listeners-actions">
-        <button class="btn" id="addListener" data-i18n="set.add">受信口を追加</button>
-        <button class="btn btn-primary" id="saveListeners" data-i18n="set.save">保存して受信し直す</button>
-      </div>
-      <p class="error" id="listenError" hidden></p>
-      <aside class="howto">
-        <h2 data-i18n="set.howto.general.h">対応するロガー</h2>
-        <p data-i18n-html="set.howto.general.p"></p>
-        <ul class="howto-list" data-i18n-html="set.howto.loggers.p"></ul>
-        <p data-i18n-html="set.howto.fwd.p"></p>
-        <h2 data-i18n="set.howto.dup.h">同じ QSO が 2 つの受信口から届いたら</h2>
-        <p data-i18n-html="set.howto.dup.p"></p>
-      </aside>
-    </section>
-
     <!-- ======================= config (設定) ======================= -->
     <section class="view" id="view-config" hidden>
       <h1 class="view-title" data-i18n="cfg.title">設定</h1>
@@ -261,6 +237,29 @@
             <button class="btn" type="submit" data-i18n="cfg.calls.add">追加</button>
           </form>
           <p class="error" id="callsError" hidden></p>
+        </section>
+        <section class="cfg-block">
+          <h2 data-i18n="cfg.p2p.h">P2P</h2>
+          <label class="switch"><input type="checkbox" id="p2pAuto"><span class="switch-ui"></span><span data-i18n="cfg.p2p.auto">スポットで相手の公園が分かるときは、確認せずに P2P として記録する</span></label>
+          <p class="cfg-help cfg-help-after" data-i18n="cfg.p2p.p"></p>
+        </section>
+        <section class="cfg-block cfg-listeners">
+          <h2 data-i18n="set.title">ロガーとの接続</h2>
+              <p class="cfg-help" data-i18n="set.lede">ロガーが記録した QSO を UDP で受け取ります。</p>
+          <div class="listeners" id="listeners"></div>
+          <div class="listeners-actions">
+            <button class="btn" id="addListener" data-i18n="set.add">受信口を追加</button>
+            <button class="btn btn-primary" id="saveListeners" data-i18n="set.save">保存して受信し直す</button>
+          </div>
+          <p class="error" id="listenError" hidden></p>
+          <aside class="howto">
+            <h2 data-i18n="set.howto.general.h">対応するロガー</h2>
+            <p data-i18n-html="set.howto.general.p"></p>
+            <ul class="howto-list" data-i18n-html="set.howto.loggers.p"></ul>
+            <p data-i18n-html="set.howto.fwd.p"></p>
+            <h2 data-i18n="set.howto.dup.h">同じ QSO が 2 つの受信口から届いたら</h2>
+            <p data-i18n-html="set.howto.dup.p"></p>
+          </aside>
         </section>
         <section class="cfg-block">
           <h2 data-i18n="cfg.lang.h">言語</h2>

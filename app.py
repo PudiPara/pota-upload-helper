@@ -32,7 +32,7 @@ from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import SpotLogger, candidate_for, summarize
 from window import BarMode
 
-SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted")
+SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted", "p2p_auto")
 CALL_RE = re.compile(r"[A-Z0-9/]{3,}")
 
 
@@ -66,6 +66,7 @@ def qso_event(rec, uid=None):
     parks = split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO")) if decision and decision != "no" else []
     return {"action": "upsert", "uid": uid or qsolog.make_uid(rec), "call": rec.get("CALL"),
             "date": rec.get("QSO_DATE"), "time": (rec.get("TIME_ON") or "")[:4], "band": rec.get("BAND", ""),
+            "ts": (rec.get("QSO_DATE") or "") + (rec.get("TIME_ON") or "").ljust(6, "0"),   # sort key, to the second
             "mode": rec.get("SUBMODE") or rec.get("MODE", ""), "decision": decision, "parks": parks,
             "candidate": split_parks(rec.get("P2P_CANDIDATE"))}
 
@@ -99,13 +100,15 @@ class Api:
                 "prefix": s.get("prefix", "JP"), "adif": s.get("adif", ""), "out": s.get("out", DEFAULT_OUT),
                 "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
                 "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
-                "terms_accepted": s.get("terms_accepted") or "",
+                "terms_accepted": s.get("terms_accepted") or "", "p2p_auto": bool(s.get("p2p_auto")),
                 "log_count": qsolog.count(), "receiver": self._receiver_texts()}
 
     def save(self, data):
         keep = {k: v for k, v in data.items() if k in SETTINGS_KEYS}
         if "lang" in keep:
             keep["lang"] = i18n.set_lang(keep["lang"])
+        if "p2p_auto" in keep:
+            keep["p2p_auto"] = bool(keep["p2p_auto"])
         if "calls" in keep or "call" in keep:
             s = load_settings()
             calls = clean_calls(keep.get("calls", s.get("calls")), keep.get("call", s.get("call")))
@@ -170,7 +173,10 @@ class Api:
             logged = split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO"))
             if logged and not rec.get("P2P_DECISION"):      # the operator typed it in the logger
                 qsolog.apply_decision(rec, "log", logged)
-            uid = qsolog.upsert(rec, ext_id, listener)
+            uid = qsolog.upsert(rec, ext_id, listener)       # may carry a decision over from the other copy
+            if cand and not rec.get("P2P_DECISION") and load_settings().get("p2p_auto"):
+                qsolog.set_p2p(uid, "yes", ",".join(cand))     # 設定: trust the spot, don't ask (all copies)
+                qsolog.apply_decision(rec, "yes", cand)
             ev = qso_event(rec, uid)
         ev.update({"source": listener, "at": time.time()})
         with self._lock:
