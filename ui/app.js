@@ -28,11 +28,12 @@
     $$("[data-i18n]").forEach((el) => (el.textContent = t(el.dataset.i18n)));
     $$("[data-i18n-ph]").forEach((el) => (el.placeholder = t(el.dataset.i18nPh)));
     $$("[data-i18n-html]").forEach((el) => (el.innerHTML = t(el.dataset.i18nHtml)));   // our own dictionaries only
+    $$("[data-i18n-title]").forEach((el) => (el.title = t(el.dataset.i18nTitle)));
     $("#termsBody").innerHTML = t("terms.body");
     $("#lang").value = lang;
   }
   function rerender() {           // dynamic parts that hold translated text
-    renderListeners(); updateReceiver(st.receiver);
+    renderListeners(); updateReceiver(st.receiver); renderCalls();
     if (!$("#liveRun").hidden) { renderQsos(); renderSpots(); }
     if (!$("#view-spots").hidden) renderSpotsPage();
     if (st.source) renderActs({ items: st.acts, path: st.adif }, st.source === "adif" && !st.adif);
@@ -76,7 +77,7 @@
   // ---------- navigation ----------
   function show(view) {
     $$(".nav-item").forEach((b) => b.classList.toggle("is-active", b.dataset.view === view));
-    ["live", "spots", "build", "settings"].forEach((v) => ($("#view-" + v).hidden = v !== view));
+    ["live", "spots", "build", "settings", "config"].forEach((v) => ($("#view-" + v).hidden = v !== view));
     $(".main").scrollTo(0, 0);
     if (view === "build" && st.source === "app") loadActs();
     if (view === "settings") api.poll_live(1e12, 1e12).then((r) => updateReceiver(r.receiver));
@@ -508,11 +509,37 @@
     $("#terms").hidden = true;
   });
 
-  // ---------- rail ----------
-  $("#openData").addEventListener("click", () => api.open_data());
-  $("#call").addEventListener("change", (e) => {
-    st.call = e.target.value.trim().toUpperCase() || "JL1FVA"; e.target.value = st.call; api.save({ call: st.call });
+  // ---------- settings (設定): callsigns, language, app ----------
+  // The saved callsigns are a list; st.call is the one in use. Python keeps the list clean
+  // (uppercase, valid, the chosen one first), the UI only shows it.
+  function renderCalls() {
+    $("#calls").innerHTML = st.calls.map((c) => `
+      <li class="call-row"><span class="call-name">${esc(c)}</span>
+        <button class="link" data-del="${esc(c)}">${esc(t("cfg.calls.remove"))}</button></li>`).join("");
+    $("#liveCall").innerHTML = st.calls.map((c) => `<option value="${esc(c)}"${c === st.call ? " selected" : ""}>${esc(c)}</option>`).join("");
+  }
+  async function saveCalls(calls, call) {
+    st.calls = calls; st.call = call;
+    await api.save({ calls, call });
+    renderCalls();
+  }
+  $("#callsAdd").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const err = $("#callsError"), c = $("#callNew").value.trim().toUpperCase();
+    if (!/^[A-Z0-9/]{3,}$/.test(c)) { err.textContent = t("cfg.calls.err"); err.hidden = false; return; }
+    err.hidden = true; $("#callNew").value = "";
+    saveCalls(st.calls.includes(c) ? st.calls : [...st.calls, c], st.calls.length ? st.call : c);
   });
+  $("#calls").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-del]"); if (!b) return;
+    const err = $("#callsError");
+    if (st.calls.length <= 1) { err.textContent = t("cfg.calls.last"); err.hidden = false; return; }
+    err.hidden = true;
+    const calls = st.calls.filter((c) => c !== b.dataset.del);
+    saveCalls(calls, calls.includes(st.call) ? st.call : calls[0]);
+  });
+  $("#liveCall").addEventListener("change", (e) => saveCalls(st.calls, e.target.value));
+  $("#openData").addEventListener("click", () => api.open_data());
   $("#lang").addEventListener("change", async (e) => {
     await api.save({ lang: e.target.value }); await loadLang(e.target.value); rerender();
   });
@@ -521,14 +548,14 @@
   async function boot() {
     api = window.pywebview.api;
     const s = await api.get_state();
-    Object.assign(st, { call: s.call, prefix: s.prefix, out: s.out, adif: s.adif, source: s.source || "app", listeners: s.listeners,
+    Object.assign(st, { call: s.call, calls: s.calls || [s.call], prefix: s.prefix, out: s.out, adif: s.adif, source: s.source || "app", listeners: s.listeners,
                         langs: s.langs || [["ja", "日本語"]], termsAccepted: s.terms_accepted || "" });
     $("#lang").innerHTML = st.langs.map(([c, name]) => `<option value="${esc(c)}">${esc(name)}</option>`).join("");
     const lang = s.lang || pickLang(navigator.language);
     if (!s.lang) api.save({ lang });
     await loadLang(lang);
     $("#version").textContent = `v${s.version}`;
-    $("#call").value = s.call;
+    renderCalls();
     $("#parks").value = s.parks; renderPreview();
     $("#outPath").textContent = s.out;
     $("#logCount").textContent = s.log_count ? " " + t("build.count", { n: s.log_count }) : "";

@@ -27,12 +27,23 @@ import updater
 from builder import build, list_activations
 from i18n import t
 from potacommon import (APP_NAME, DATA_DIR, DEFAULT_OUT, VERSION, base_call, fetch_json, iso_minutes,
-                        load_settings, save_settings, split_parks)
+                        load_settings, lock_instance, save_settings, split_parks)
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import SpotLogger, candidate_for, summarize
 from window import BarMode
 
-SETTINGS_KEYS = ("call", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted")
+SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted")
+CALL_RE = re.compile(r"[A-Z0-9/]{3,}")
+
+
+def clean_calls(calls, call):
+    """The saved callsigns, uppercase and valid, the chosen one first."""
+    out = []
+    for c in [call] + list(calls or []):
+        c = (c or "").strip().upper()
+        if c and CALL_RE.fullmatch(c) and c not in out:
+            out.append(c)
+    return out or ["JL1FVA"]
 
 
 def resource(*parts):
@@ -83,7 +94,8 @@ class Api:
         live = None
         if self._logger and self._logger.running():
             live = {"parks": self._logger.parks, "start": self._logger.session["start"]}
-        return {"version": VERSION, "call": s.get("call", "JL1FVA"), "parks": s.get("parks", ""),
+        calls = clean_calls(s.get("calls"), s.get("call"))
+        return {"version": VERSION, "call": calls[0], "calls": calls, "parks": s.get("parks", ""),
                 "prefix": s.get("prefix", "JP"), "adif": s.get("adif", ""), "out": s.get("out", DEFAULT_OUT),
                 "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
                 "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
@@ -94,6 +106,10 @@ class Api:
         keep = {k: v for k, v in data.items() if k in SETTINGS_KEYS}
         if "lang" in keep:
             keep["lang"] = i18n.set_lang(keep["lang"])
+        if "calls" in keep or "call" in keep:
+            s = load_settings()
+            calls = clean_calls(keep.get("calls", s.get("calls")), keep.get("call", s.get("call")))
+            keep.update(calls=calls, call=calls[0])
         save_settings(keep)
         return True
 
@@ -363,6 +379,10 @@ FOLDER_DIALOG = _FD.FOLDER if _FD else webview.FOLDER_DIALOG
 
 
 def main():
+    if not lock_instance():            # already running: show that window, don't start a second one
+        from window import focus_running
+        focus_running(APP_NAME)
+        return
     updater.cleanup()
     i18n.set_lang(load_settings().get("lang") or "ja")
     api = Api()
