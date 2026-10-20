@@ -39,7 +39,10 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
 - **One 設定 page** holds callsigns, the P2P switch, the UDP listeners (ロガーとの接続), language and app
   items; the rail has four views. QSO rows sort by `ts` (date + TIME_ON to the second) sent by Python.
 - **2fer rules**: a station's parks = the spot's reference + references in its comment, merged over its
-  spots within `TWOFER_GAP` (15 min). At build time, parks from *separate* spots near the QSO are a
+  spots within `TWOFER_GAP` (15 min), plus its pota.app spot history (`spot/comments/{activator}/{park}`,
+  `spots.history_parks`): the activator's own comments count always, other spotters' only when they say
+  2fer/3fer (a hunter's "P2P from US-1234" is the hunter's park). The アクティベート中 page fills the
+  history on a worker (rows are `pending` until then); a received QSO fetches it synchronously. At build time, parks from *separate* spots near the QSO are a
   2fer but `sure=False` (could be a rover) → a note. pota.app does not accept multi-value references, so
   their 2fer = the QSO repeated per park; my 2fer = one file per park.
 - **Duplicates**: WSJT-X reports a QSO at its start, the logger at its end; same base call + band + mode

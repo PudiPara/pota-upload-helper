@@ -346,6 +346,7 @@
     spotsOptions();
     renderSpotsPage();
     clearInterval(sp.timer); sp.timer = setInterval(() => { if (!$("#view-spots").hidden) loadSpotsPage(); else clearInterval(sp.timer); }, 60000);
+    if (r.pending) setTimeout(() => { if (!$("#view-spots").hidden) loadSpotsPage(); }, 4000);   // spot histories still loading
   }
   // Region (continent) and country selects: only what is on the air now, with counts.
   function spotsOptions() {
