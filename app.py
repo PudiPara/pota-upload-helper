@@ -262,6 +262,8 @@ class Api:
         call = (call or "").strip().upper()
         if not CALL_RE.fullmatch(call):
             return {"ok": False, "error": t("api.noCall")}
+        if len(parks) > 1 and common_locations(parks)["none"]:   # no prefecture/state in common: no 2fer
+            return {"ok": False, "error": t("live.err.noLoc")}
         locs = self._locs_for(parks, loc)
         self._stop_logger()
         with self._lock:
@@ -416,8 +418,13 @@ class Api:
         return {ref: park_info(ref) for ref in split_parks(refs)}
 
     def park_locations(self, refs):
-        """spots.common_locations: where the operator can stand for these parks together."""
-        return common_locations(refs)
+        """spots.common_locations: where the operator can stand for these parks together; with "spread_km",
+        how far apart the parks' points are (the widest pair) - a 2fer needs being inside every park at
+        once, which a park's single point can't tell, so the page only notes the distance."""
+        parks = split_parks(refs)
+        km = [distance_km([a], [b]) for i, a in enumerate(parks) for b in parks[i + 1:]]
+        km = [k for k in km if k is not None]
+        return dict(common_locations(refs), spread_km=max(km) if km else None)
 
     def my_parks(self, refs):
         """{ref: mypota.activations} - this park's next activation by the operator's record (None per

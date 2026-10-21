@@ -396,20 +396,24 @@ def park_comments(ref):
 def common_locations(refs):
     """Where the operator can stand for these parks together: {"options": [{code, name}] the locations
     every park has in common (one = fixed, several = the operator picks, none = they don't overlap),
-    "multi": parks spanning several locations, "apart": [[a, b]] pairs pota.app says don't overlap}."""
+    "multi": parks spanning several locations, "apart": [[a, b]] pairs pota.app says don't overlap,
+    "none": True when two or more parks with known locations have none in common - then they cannot overlap
+    (JP-1206 in JP-TK + US-1409 in US-PA): no 2fer, recording refuses to start}."""
     parks = split_parks(refs)
     info = {ref: park_info(ref) for ref in parks}
-    common = None
+    common, known = None, 0
     for ref in parks:
         codes = [loc["code"] for loc in info[ref]["locations"]]
         if codes:                          # unknown to pota.app: no constraint from it
+            known += 1
             common = codes if common is None else [c for c in common if c in codes]
     names = {loc["code"]: loc["name"] for ref in parks for loc in info[ref]["locations"]}
     notes = {ref: park_comments(ref) for ref in parks} if len(parks) > 1 else {}
     apart = [[a, b] for i, a in enumerate(parks) for b in parks[i + 1:]
              if says_no_overlap(notes[a], b) or says_no_overlap(notes[b], a)]
     return {"options": [{"code": c, "name": names.get(c, "")} for c in (common or [])],
-            "multi": [ref for ref in parks if len(info[ref]["locations"]) > 1], "apart": apart}
+            "multi": [ref for ref in parks if len(info[ref]["locations"]) > 1], "apart": apart,
+            "none": known >= 2 and not common}
 
 
 # ---------------------------------------------------------------- who is on the air now
