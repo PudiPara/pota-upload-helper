@@ -17,6 +17,7 @@ returns to the park prompt. Logging stays in the logger; this app never writes t
 | `potacommon.py` | stdlib helpers used everywhere: pota.app fetch (urllib, curl fallback), ADIF read/write, `base_call`, `split_parks`, `parks_in`, data dir + settings, `VERSION`, **the band table and mode groups** | know about spots, the log, or the UI |
 | `spots.py` | everything a pota.app spot means: `parks_of` (reference + references in the comment), `their_parks_at` (which park a station was at around a QSO; `SPOT_BEFORE/AFTER`, `TWOFER_GAP`), `candidate_for` (the P2P candidate for a received QSO), `summarize` (the アクティベート中 page rows incl. band/mode group), `SpotLogger` (records `spots-YYYYMMDD.jsonl` + `sessions.json` while activating), `load_spots/load_sessions` | decide P2P for the upload (builder) or store decisions (qsolog) |
 | `qsolog.py` | the SQLite log of received QSOs, dedupe of WSJT-X vs logger copies (±3 min, base call, band), the operator's P2P decision (`P2P_DECISION` yes/no/manual/log + `SIG_INFO`), `set_p2p` applied to all copies, `between` for a session window | parse UDP or talk to pota.app |
+| `hamlog.py` | Turbo HAMLOG (Windows): ask a running HAMLOG through its published WM_COPYDATA API (Th527API: 116 = record count, 119 = one record) on a message-only window; `parse_record` (JST unless the time ends in U) | write to HAMLOG; use Hamlog50.DLL |
 | `receiver.py` | UDP listeners and packet parsing (N1MM XML, WSJT-X msg 12, ADIF text/XML), raw forwarding, listener state as **codes** + `describe_state` for the UI | store anything |
 | `builder.py` | upload files: hunter log (`hunter.json`), choosing activation QSOs (session window / MY_SIG_INFO / override), `build()` with `confirmed_only` for app-log records, one file per (my park, UTC date), their 2fer duplicated per park | guess from spots for app-log records (only the operator's decision + hunter log count) |
 | `updater.py` | GitHub Releases check, download, swap (.app / .exe), relaunch, cleanup | UI text (it raises translated errors only) |
@@ -57,6 +58,10 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
 - **No write-back to the logger.** RUMlogNG ignores a UDP record whose time/band/mode already exist and
   its AppleScript only logs new QSOs; its ADIF import with "No Dupes + Update QSO record" works but is
   manual every time, so the owner dropped the feature. Decisions live only in the app log and files.
+- **Turbo HAMLOG** has no UDP output and locks HAMLOG.HDB while running, so a listener of kind
+  "hamlog" polls it every 2 s (`Receiver._run_hamlog`); on first contact it also takes the records of the
+  last 12 h. API terms (Th527API Readme): only for tools for Turbo HAMLOG - this is one; tell the author
+  (JG1MOU) once it ships.
 - **Listeners bind to 127.0.0.1** (`receiver.bind_address`): only loggers on the same computer can feed QSOs in (CodeQL alert "binding a socket to all network interfaces"). Multicast listeners bind the group with membership on the default interface (macOS/Linux, verified with WSJT-X); on Windows they bind 127.0.0.1 and join on loopback, so WSJT-X must list loopback under Outgoing interfaces (verified on Windows 11 with a multicast sender on loopback; sending on the default NIC does not arrive). Nothing binds every interface. A logger on another PC is not supported; if that is ever wanted, make it an explicit per-listener option, not the default.
 - **`Api` state is private** (`self._window`, `self._logger`, …): pywebview exposes every public attribute
   of the js_api object and (6.x) walks them recursively; on Windows that walk entered the WinForms window

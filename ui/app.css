@@ -528,3 +528,4 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .pop button { text-align: left; background: transparent; border: 0; padding: 8px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; color: var(--ink); }
 .pop button:hover { background: var(--surface-2); }
 .lookup-list { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.lis-note { grid-column: span 3; font-size: 12px; color: var(--ink-2); margin: 0; align-self: center; }

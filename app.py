@@ -136,6 +136,10 @@ class Api:
     def save_listeners(self, items):
         clean = []
         for it in items:
+            if it.get("kind") == "hamlog":            # asks HAMLOG through its window messages: no port
+                clean.append({"name": (it.get("name") or "Turbo HAMLOG").strip()[:40], "kind": "hamlog", "port": 0,
+                              "multicast": "", "enabled": bool(it.get("enabled")), "forward": ""})
+                continue
             try:
                 port = int(it.get("port"))
             except (TypeError, ValueError):

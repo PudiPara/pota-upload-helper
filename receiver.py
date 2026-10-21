@@ -139,8 +139,11 @@ def describe_state(state):
         state = {"code": "off"}
     code = state.get("code", "off")
     port = state.get("port", "")
-    where = "%s:%s" % (state["multicast"], port) if state.get("multicast") else t("recv.port", port=port)
+    where = state.get("where") or ("%s:%s" % (state["multicast"], port) if state.get("multicast") else t("recv.port", port=port))
+    if state.get("where") and code == "error":
+        return {"code": code, "text": t("recv.hamlogError", err=state.get("err", ""))}
     text = {"off": t("recv.off"), "error": t("recv.cantOpen", port=port, err=state.get("err", "")),
+            "waiting": t("recv.hamlogWaiting"),
             "badforward": t("recv.badForward"), "listening": t("recv.listening", where=where),
             "receiving": t("recv.receiving", where=where)}.get(code, code)
     return {"code": code, "text": text}
@@ -166,7 +169,8 @@ class Receiver:
             if not cfg.get("enabled"):
                 self.state[cfg["name"]] = {"code": "off"}
                 continue
-            t = threading.Thread(target=self._run, args=(cfg,), daemon=True)
+            run = self._run_hamlog if cfg.get("kind") == "hamlog" else self._run
+            t = threading.Thread(target=run, args=(cfg,), daemon=True)
             t.start()
             self._threads.append(t)
 
@@ -192,6 +196,55 @@ class Receiver:
             s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
         s.settimeout(1.0)
         return s
+
+    HAMLOG_POLL = 2          # seconds
+    HAMLOG_BACK = 12 * 60    # minutes: on first contact, pick up the QSOs logged this recently
+
+    def _run_hamlog(self, cfg):
+        """Turbo HAMLOG sends nothing out: ask it for its record count every HAMLOG_POLL seconds and
+        fetch the new records (hamlog.py). Old records are not imported, except the last HAMLOG_BACK
+        minutes when we first find HAMLOG (the app may have been started after the first QSOs)."""
+        import datetime as dt
+        import hamlog
+        name = cfg["name"]
+        base = {"port": "", "multicast": "", "where": "HAMLOG"}
+
+        def status(code, **kw):
+            st = dict(base, code=code, **kw)
+            if self.state.get(name) != st:
+                self.state[name] = st
+                self.on_status(name, st)
+
+        try:
+            client = hamlog.Client()
+        except OSError as e:
+            status("error", err=str(e))
+            return
+        last = None
+        while not self._stop.is_set():
+            n = client.count()
+            if n is None:
+                status("waiting")
+                last = None
+            else:
+                if last is None:                       # first contact: look back a little
+                    cut = (dt.datetime.utcnow() - dt.timedelta(minutes=self.HAMLOG_BACK)).strftime("%Y%m%d%H%M%S")
+                    last = n
+                    while last > 0:
+                        rec = client.record(last)
+                        if not rec or rec["QSO_DATE"] + rec["TIME_ON"] < cut:
+                            break
+                        last -= 1
+                    status("listening")
+                if n < last:                           # records deleted in HAMLOG: start over from here
+                    last = n
+                for i in range(last + 1, n + 1):
+                    rec = client.record(i)
+                    if rec:
+                        status("receiving")
+                        self.on_qso("upsert", rec, "hamlog:%d" % i, name)
+                last = n
+            self._stop.wait(self.HAMLOG_POLL)
 
     def _run(self, cfg):
         name = cfg["name"]
