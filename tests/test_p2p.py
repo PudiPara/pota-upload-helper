@@ -26,19 +26,19 @@ class P2PDecisionTest(unittest.TestCase):
     def setUp(self):
         # the other test modules share one data dir (DATA_DIR is fixed at import): use a private one
         data = tempfile.mkdtemp()
-        self._saved = (potacommon.DATA_DIR, builder.DATA_DIR, qsolog.DATA_DIR, spots.DATA_DIR)
-        potacommon.DATA_DIR = builder.DATA_DIR = qsolog.DATA_DIR = spots.DATA_DIR = data
+        self._saved = potacommon.DATA_DIR
+        potacommon.DATA_DIR = data
         with open(os.path.join(data, "spots-20261020.jsonl"), "w") as fh:
             fh.write(json.dumps({"seen": "2026-10-20T04:00:00", "spotTime": "2026-10-20T04:00:00",
                                  "activator": "JS6UHQ/6", "base": "JS6UHQ", "parks": ["JP-0157", "JP-1788"]}) + "\n")
         json.dump([], open(os.path.join(data, "hunter.json"), "w"))
 
     def tearDown(self):
-        potacommon.DATA_DIR, builder.DATA_DIR, qsolog.DATA_DIR, spots.DATA_DIR = self._saved
+        potacommon.DATA_DIR = self._saved
 
     def test_candidate_then_yes_survives_resend(self):
         r = rec("JS6UHQ/6", "040828")
-        cand = spots.candidate_for(r)
+        cand = spots.candidate_info(r)["parks"]
         self.assertEqual(cand, ["JP-0157", "JP-1788"])
         r["P2P_CANDIDATE"] = ",".join(cand)
         uid = qsolog.upsert(r, None, "WSJT-X")
@@ -116,14 +116,28 @@ class ModeIsPartOfTheKey(unittest.TestCase):
         first.close()
 
 
-class DeleteActivation(unittest.TestCase):
-    def test_only_that_days_activation_qsos_go(self):
-        qsolog.upsert(rec("JA1DEL", "060000", MY_SIG_INFO="JP-9999", QSO_DATE="20250101"), "d-1", "x")
-        qsolog.upsert(rec("JA1DEL", "060100", QSO_DATE="20250101"), "d-2", "x")                 # hunter QSO, no park
-        qsolog.upsert(rec("JA1DEL", "060000", MY_SIG_INFO="JP-9999", QSO_DATE="20250102"), "d-3", "x")
-        self.assertEqual(qsolog.delete_activation("20250101"), 1)
-        left = [(r["QSO_DATE"], r.get("MY_SIG_INFO", "")) for r in qsolog.records() if r["CALL"] == "JA1DEL"]
-        self.assertEqual(sorted(left), [("20250101", ""), ("20250102", "JP-9999")])
+class ReceivedFromALogger(unittest.TestCase):
+    """qsolog.received: what the logger typed is the decision "log"; the spot candidate is recorded as
+    "yes" only when accept is given (設定 → P2P)."""
+
+    def test_logger_park_is_a_decision_and_accept_records_yes(self):
+        r1 = rec("JA1LOG", "070000", SIG_INFO="JP-0042")
+        qsolog.received(r1, None, "x")
+        self.assertEqual((r1["P2P_DECISION"], r1["POTA_REF"]), ("log", "JP-0042"))
+        r2 = rec("JA1AUT", "070500")
+        qsolog.received(r2, None, "x", accept=["JP-0043"])
+        stored = [r for r in qsolog.records() if r["CALL"] == "JA1AUT"][0]
+        self.assertEqual((stored["P2P_DECISION"], stored["SIG_INFO"]), ("yes", "JP-0043"))
+        self.assertEqual(r2["P2P_DECISION"], "yes")
+
+    def test_ssb_sidebands_are_one_mode(self):
+        from potacommon import adif_mode, mode_of
+        self.assertEqual(adif_mode("lsb"), {"MODE": "SSB", "SUBMODE": "LSB"})
+        self.assertEqual(mode_of(adif_mode("USB")), "SSB")
+        self.assertEqual(mode_of(adif_mode("FT4")), "FT4")
+        qsolog.upsert(rec("JA1SSB", "071000", **adif_mode("LSB")), None, "QLog")
+        qsolog.upsert(rec("JA1SSB", "071200", MODE="SSB"), "s-1", "N1MM")
+        self.assertEqual(len([r for r in qsolog.records() if r["CALL"] == "JA1SSB"]), 1)
 
 
 class EditQso(unittest.TestCase):

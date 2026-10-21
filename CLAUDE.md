@@ -14,9 +14,9 @@ returns to the park prompt. Logging stays in the logger; this app never writes t
 ## Modules and what each one owns
 | module | owns | must not |
 |---|---|---|
-| `potacommon.py` | stdlib helpers used everywhere: pota.app fetch (urllib, curl fallback), ADIF read/write, `base_call`, `split_parks`, `parks_in`, data dir + settings, `VERSION`, **the band table and mode groups** | know about spots, the log, or the UI |
-| `spots.py` | everything a pota.app spot means: `parks_of` (reference + references in the comment), `their_parks_at` (which park a station was at around a QSO; `SPOT_BEFORE/AFTER`, `TWOFER_GAP`), `candidate_for` (the P2P candidate for a received QSO), `summarize` (the アクティベート中 page rows incl. band/mode group), `SpotLogger` (records `spots-YYYYMMDD.jsonl` + `sessions.json` while activating), `load_spots/load_sessions` | decide P2P for the upload (builder) or store decisions (qsolog) |
-| `qsolog.py` | the SQLite log of received QSOs, dedupe of WSJT-X vs logger copies (±3 min, base call, band), the operator's P2P decision (`P2P_DECISION` yes/no/manual/log + `SIG_INFO`), `set_p2p` applied to all copies, `between` for a session window | parse UDP or talk to pota.app |
+| `potacommon.py` | stdlib helpers used everywhere: pota.app fetch (urllib, curl fallback), ADIF read/write, `base_call`, `split_parks`, `parks_in`, data dir (`data_path`, read at call time) + settings + `read_json`/`write_json` (atomic), `my_call`, `VERSION`, time helpers (`rec_minutes`, `iso_date`, `utc_stamp`), **the band table, mode groups and mode rules** (`adif_mode` for loggers' mode words, `mode_of` / `pota_key` = how pota.app tells QSOs apart) | know about spots, the log, or the UI |
+| `spots.py` | everything a pota.app spot or park means: `parks_of` (reference + references in the comment), `their_parks_at` (which park a station was at around a QSO; `SPOT_BEFORE/AFTER`, `TWOFER_GAP`), `candidate_info` / `tag_candidate` (the P2P candidate for a received QSO), `summarize` (the アクティベート中 page rows incl. band/mode group), `park_info` / `common_locations` (pota.app park data, where parks meet), `SpotLogger` (records `spots-YYYYMMDD.jsonl` + `sessions.json` while activating), `load_spots/load_sessions`, `SESSION_MARGIN` | decide P2P for the upload (builder) or store decisions (qsolog) |
+| `qsolog.py` | the SQLite log of received QSOs (`received` = store one from a logger with its decision), copies of one contact (`TWIN_WINDOW`, `_twins`; `dedupe` on read), the operator's P2P decision (`P2P_DECISION` yes/no/manual/log + `SIG_INFO`; `apply_decision`, `decided_parks`), `set_p2p` / `delete` applied to all copies, `between` for a session window | parse UDP or talk to pota.app |
 | `hamlog.py` | Turbo HAMLOG (Windows): ask a running HAMLOG through its published WM_COPYDATA API (Th527API: 116 = record count, 119 = one record) on a message-only window; `parse_record` (JST unless the time ends in U) | write to HAMLOG; use Hamlog50.DLL |
 | `receiver.py` | UDP listeners and packet parsing (N1MM XML, WSJT-X msg 12, ADIF text/XML), raw forwarding, listener state as **codes** + `describe_state` for the UI | store anything |
 | `builder.py` | upload files: hunter log (`hunter.json`), choosing activation QSOs (session window / MY_SIG_INFO / override), `build()` with `confirmed_only` for app-log records, one file per (my park, UTC date), their 2fer duplicated per park | guess from spots for app-log records (only the operator's decision + hunter log count) |
@@ -73,8 +73,9 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
 - **Editor** (アップロード作成 → 中身を見る): `Api.activation_qsos` lists one day's activation QSOs via
   `builder.find_activation_qsos`; app-log rows are edited cell by cell (`qsolog.update` retires the old
   uid and stores the record under the new key, `qsolog.delete_uid`), ADIF files are view-only.
-- **Deleting an activation** (アップロード作成, app log only): `qsolog.delete_activation(date)` soft-deletes
-  that UTC day's QSOs that carry my park; two presses in the UI since `window.confirm` is unavailable.
+- **Deleting an activation** (アップロード作成, app log only): `Api.delete_activation(date)` soft-deletes
+  exactly what the list counted (`builder.find_activation_qsos`) with their copies; two presses in the UI
+  since `window.confirm` is unavailable.
 - **A QSO's own parks win.** `builder.find_activation_qsos`: override (手で上書き) → the record's
   MY_POTA_REF/MY_SIG_INFO (set while recording) → the sessions.json window it fell in. Windows carry a
   ±5 min margin and overlap when sessions follow each other quickly, so they are a fallback only.
@@ -127,6 +128,10 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
   installed file name (`POTA Upload Helper.exe/.app`) so shortcuts keep working.
 - **Repository**: `PudiPara/potaroo` since 2.0.2 (was `pota-upload-helper`; GitHub redirects the old name, and
   2.0.1+ accept download URLs under either name - 2.0.0 and older refuse the new one and need a manual install).
+- **No owner callsign in code**: the callsign comes from 設定 (`potacommon.my_call`); with none saved,
+  記録を始める and the file build answer `api.noCall`. Tests may use any call.
+- **SSB sidebands are one mode** (`mode_of`): loggers send LSB/USB as MODE SSB + SUBMODE (`adif_mode`),
+  and an FT4 QSO is MFSK + FT4; pota.app's key uses the data submode, not the sideband.
 - **Example park references** in copy: JP-1266, and JP-1266,JP-1206 for a 2fer.
 
 ## Design system (keep it)

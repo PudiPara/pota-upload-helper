@@ -1,4 +1,6 @@
-"""Shared helpers for the JL1FVA POTA tools (stdlib only, Python 3.8+)."""
+"""Shared helpers used by every module (stdlib only, Python 3.8+): pota.app fetch, data folder,
+settings and JSON files, ADIF, callsigns, parks, bands and modes, time."""
+import datetime as dt
 import json
 import os
 import re
@@ -70,21 +72,50 @@ def lock_instance():
     return True
 
 
-def load_settings():
-    path = os.path.join(DATA_DIR, "settings.json")
+def data_path(name=""):
+    """A file in the data folder (read at call time, so tests can point DATA_DIR elsewhere)."""
+    return os.path.join(DATA_DIR, name) if name else DATA_DIR
+
+
+def read_json(path, default):
+    """The JSON in path, or default when the file is missing or broken."""
     try:
         with open(path, encoding="utf-8") as fh:
             return json.load(fh)
     except (OSError, ValueError):
-        return {}
+        return default
+
+
+def write_json(path, obj):
+    """Write through a temp file and rename, so a crash never leaves half a file."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(obj, fh, ensure_ascii=False, indent=1)
+    os.replace(tmp, path)
+
+
+def load_settings():
+    return read_json(data_path("settings.json"), {})
 
 
 def save_settings(d):
-    os.makedirs(DATA_DIR, exist_ok=True)
     cur = load_settings()
     cur.update(d)
-    with open(os.path.join(DATA_DIR, "settings.json"), "w", encoding="utf-8") as fh:
-        json.dump(cur, fh, ensure_ascii=False, indent=1)
+    write_json(data_path("settings.json"), cur)
+
+
+CALL_RE = re.compile(r"[A-Z0-9/]{3,}")
+
+
+def my_call():
+    """The callsign in use (設定 → コールサイン), or "" before one is saved."""
+    s = load_settings()
+    for c in [s.get("call")] + list(s.get("calls") or []):
+        c = (c or "").strip().upper()
+        if CALL_RE.fullmatch(c):
+            return c
+    return ""
 
 
 def fetch_json(path, timeout=20):
@@ -128,6 +159,29 @@ def band_from_khz(khz):
         return band_from_mhz(float(khz) / 1000.0)
     except (TypeError, ValueError):
         return ""
+
+
+def adif_mode(mode):
+    """A logger's mode word -> ADIF MODE (+SUBMODE): USB/LSB are SSB submodes, FT4 an MFSK one."""
+    m = (mode or "").upper().strip()
+    if m in ("USB", "LSB"):
+        return {"MODE": "SSB", "SUBMODE": m}
+    if m == "FT4":
+        return {"MODE": "MFSK", "SUBMODE": "FT4"}
+    return {"MODE": m} if m else {}
+
+
+def mode_of(rec):
+    """The mode pota.app tells QSOs apart by: the SUBMODE of a data mode (FT4 under MFSK), else MODE.
+    An SSB sideband is not a different mode there."""
+    mode = (rec.get("MODE") or "").upper()
+    sub = (rec.get("SUBMODE") or "").upper()
+    return mode if mode == "SSB" or not sub else sub
+
+
+def pota_key(rec):
+    """What pota.app keeps once per park file: CALL + BAND + MODE + their park (SIG_INFO)."""
+    return ((rec.get("CALL") or "").upper(), (rec.get("BAND") or "").lower(), mode_of(rec), rec.get("SIG_INFO") or "")
 
 
 def mode_group(mode):
@@ -195,15 +249,33 @@ def write_adif(path, recs, order, program="Potaroo"):
         fh.writelines(lines)
 
 
-def minutes(date_yyyymmdd, hhmm):
-    """Minutes since epoch-ish (good enough for differences) from ADIF date/time."""
-    import datetime as dt
-    t = dt.datetime.strptime(date_yyyymmdd + hhmm[:4], "%Y%m%d%H%M")
+# ---------- time: minutes since the epoch (UTC) make differences easy ----------
+def utc_minutes(t):
     return int(t.replace(tzinfo=dt.timezone.utc).timestamp() // 60)
+
+
+def minutes(date_yyyymmdd, hhmm):
+    """From ADIF QSO_DATE + TIME_ON (ValueError when they are not a time)."""
+    return utc_minutes(dt.datetime.strptime(date_yyyymmdd + hhmm[:4], "%Y%m%d%H%M"))
+
+
+def rec_minutes(rec):
+    """A record's QSO_DATE + TIME_ON in minutes, or None."""
+    try:
+        return minutes(rec.get("QSO_DATE") or "", rec.get("TIME_ON") or "0000")
+    except ValueError:
+        return None
 
 
 def iso_minutes(iso):
-    import datetime as dt
-    iso = iso.replace("Z", "")[:16]
-    t = dt.datetime.strptime(iso, "%Y-%m-%dT%H:%M")
-    return int(t.replace(tzinfo=dt.timezone.utc).timestamp() // 60)
+    return utc_minutes(dt.datetime.strptime(iso.replace("Z", "")[:16], "%Y-%m-%dT%H:%M"))
+
+
+def iso_date(iso):
+    """"2026-10-21T06:37:22" -> "20261021" (the ADIF QSO_DATE)."""
+    return iso[:10].replace("-", "")
+
+
+def utc_stamp(t=None):
+    """"2026-10-21T06:37:22" - the session and spot timestamps."""
+    return (t or dt.datetime.now(dt.timezone.utc)).strftime("%Y-%m-%dT%H:%M:%S")

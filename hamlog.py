@@ -11,7 +11,7 @@ import datetime as dt
 import os
 import re
 
-from potacommon import band_from_mhz
+from potacommon import adif_mode, band_from_mhz
 
 CMD_COUNT, CMD_RECORD = 116, 119
 WM_COPYDATA = 0x004A
@@ -43,13 +43,7 @@ def parse_record(text, jst_offset=9):
             rec["FREQ"] = "%.6f" % mhz
     except ValueError:
         pass
-    mode = f["mode"].upper()
-    if mode == "FT4":
-        rec.update(MODE="MFSK", SUBMODE="FT4")
-    elif mode in ("LSB", "USB"):
-        rec.update(MODE="SSB", SUBMODE=mode)
-    elif mode:
-        rec["MODE"] = mode
+    rec.update(adif_mode(f["mode"]))
     for k, a in (("his", "RST_SENT"), ("my", "RST_RCVD"), ("name", "NAME"), ("qth", "QTH"), ("grid", "GRIDSQUARE")):
         if f[k]:
             rec[a] = f[k]

@@ -9,12 +9,13 @@ If the other station was a 2fer the QSO is repeated once per park; if you were i
 file is written for each of them (pota.app does not accept multi-value references).
 What a spot means (parks, 2fer, time windows) is spots.py's business; this module only asks it.
 """
-import json
 import os
 from collections import defaultdict
 
 from i18n import t as tr
-from potacommon import DATA_DIR, DEFAULT_OUT, base_call, fetch_json, iso_minutes, minutes, read_adif, split_parks, write_adif
+from potacommon import (DEFAULT_OUT, base_call, data_path, fetch_json, iso_minutes, mode_of, pota_key, read_adif,
+                        read_json, rec_minutes, split_parks, write_adif, write_json)
+from qsolog import decided_parks
 from spots import load_sessions, load_spots, their_parks_at
 
 ORDER = ["STATION_CALLSIGN", "OPERATOR", "CALL", "QSO_DATE", "TIME_ON", "BAND", "FREQ", "MODE", "SUBMODE",
@@ -29,16 +30,16 @@ def band_norm(b):
     return (b or "").lower()
 
 
+def hhmm(rec):
+    return (rec.get("TIME_ON") or "")[:4]
+
+
 # ---------- data sources ----------
 def load_hunter(call, offline=False, log=print):
     """pota.app's public profile shows your last 25 hunter QSOs. Every run (and
     the spot logger) merges them into hunter.json so the history keeps growing."""
-    os.makedirs(DATA_DIR, exist_ok=True)
-    path = os.path.join(DATA_DIR, "hunter.json")
-    try:
-        have = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else []
-    except ValueError:
-        have = []
+    path = data_path("hunter.json")
+    have = read_json(path, [])
     if not offline:
         try:
             prof = fetch_json("profile/%s" % base_call(call))
@@ -50,8 +51,7 @@ def load_hunter(call, offline=False, log=print):
         k = (h.get("date"), base_call(h.get("callsign")), h.get("band"), h.get("reference"))
         uniq[k] = h
     have = sorted(uniq.values(), key=lambda h: h.get("date", ""))
-    with open(path, "w", encoding="utf-8") as fh:
-        json.dump(have, fh, ensure_ascii=False, indent=1)
+    write_json(path, have)
     out = defaultdict(list)
     for h in have:
         try:
@@ -67,12 +67,10 @@ def find_activation_qsos(recs, dates=None, my_parks=None, sessions=None):
     sessions = sessions if sessions is not None else load_sessions()
     activ = []
     for r in recs:
-        d = r.get("QSO_DATE", "")
-        if dates and d not in dates:
+        if dates and r.get("QSO_DATE", "") not in dates:
             continue
-        try:
-            t = minutes(d, r.get("TIME_ON", "0000"))
-        except ValueError:
+        t = rec_minutes(r)
+        if t is None:
             continue
         mp = override
         if not mp and (r.get("MY_SIG", "POTA").upper() in ("POTA", "")):
@@ -87,41 +85,32 @@ def find_activation_qsos(recs, dates=None, my_parks=None, sessions=None):
 
 
 def list_activations(adif_path=None, recs=None):
-    """[(date, 'JP-1281,JP-1285', qso_count, {park: its qso_count})] newest first, for the GUI.
-    The parks of a day are listed, not joined as one 2fer: a day may hold several sessions."""
+    """[(date, 'JP-1281,JP-1285', qso_count, {park: its qso_count}, {park: lines pota.app keeps})]
+    newest first, for the GUI. The parks of a day are listed, not joined as one 2fer: a day may hold
+    several sessions."""
     recs = recs if recs is not None else read_adif(adif_path)
     agg = defaultdict(lambda: [defaultdict(int), 0, defaultdict(set)])
     for r, t, mp in find_activation_qsos(recs):
         a = agg[r["QSO_DATE"]]
         _, theirs = decided_parks(r)
-        mode = (r.get("SUBMODE") or r.get("MODE") or "").upper()
         for p in mp:
             a[0][p] += 1
-            for tp in (theirs or [""]):        # what pota.app keeps: CALL+BAND+MODE+SIG_INFO per line
-                a[2][p].add((r["CALL"].upper(), band_norm(r.get("BAND")), mode, tp))
+            for tp in (theirs or [""]):        # their 2fer is one line per park
+                a[2][p].add(pota_key(dict(r, SIG_INFO=tp)))
         a[1] += 1
     return sorted(((d, ",".join(sorted(v[0])), v[1], dict(v[0]), {p: len(k) for p, k in v[2].items()})
                    for d, v in agg.items()), reverse=True)
 
 
 # ---------- main entry ----------
-def decided_parks(rec):
-    """-> (decided, parks): the operator's live decision for this QSO (or the logger's own
-    SIG_INFO, decision 'log'). decided=False when nobody has said anything yet."""
-    dec = rec.get("P2P_DECISION")
-    if not dec:
-        return False, []
-    if dec == "no":
-        return True, []
-    return True, split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO"))
-
-
-def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None, offline=False, log=print,
+def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offline=False, log=print,
           recs=None, confirmed_only=False):
     """confirmed_only: the records come from the app's own log, where the operator confirms
     P2P during the activation. Then spots are never used as a guess - only what was
     confirmed (or typed), plus the pota.app hunter log, which is the other side's upload."""
-    call = call.upper().strip()
+    call = (call or "").upper().strip()
+    if not call:
+        raise ValueError(tr("api.noCall"))
     out_dir = out_dir or DEFAULT_OUT
     recs = recs if recs is not None else read_adif(adif_path)
     hunter = load_hunter(call, offline, log)
@@ -151,7 +140,7 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
             s_parks, s_sure, log_parks = [], True, []
             cand = split_parks(r.get("P2P_CANDIDATE"))
             if cand:
-                notes.append(tr("b.note.unconfirmed", date=r["QSO_DATE"], time=r["TIME_ON"][:4], call=r["CALL"], parks=",".join(cand)))
+                notes.append(tr("b.note.unconfirmed", date=r["QSO_DATE"], time=hhmm(r), call=r["CALL"], parks=",".join(cand)))
         else:
             s_parks, s_sure = their_parks_at(spots.get(b, []), t)
             log_parks = split_parks(r.get("POTA_REF") or r.get("SIG_INFO")) if r.get("SIG", "POTA").upper() in ("POTA", "") else []
@@ -159,27 +148,27 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
             theirs, src = h_parks, "hunter"        # src codes: hunter | confirmed | manual | log | spot | logspot
             extra = [p for p in log_parks + s_parks if p not in h_parks]
             if extra:
-                notes.append(tr("b.note.hunterWins", date=r["QSO_DATE"], time=r["TIME_ON"][:4], call=r["CALL"],
+                notes.append(tr("b.note.hunterWins", date=r["QSO_DATE"], time=hhmm(r), call=r["CALL"],
                                hunter=",".join(h_parks), extra=",".join(extra)))
             elif decided and not d_parks:
-                notes.append(tr("b.note.hunterOverridesNo", date=r["QSO_DATE"], time=r["TIME_ON"][:4], call=r["CALL"],
+                notes.append(tr("b.note.hunterOverridesNo", date=r["QSO_DATE"], time=hhmm(r), call=r["CALL"],
                                hunter=",".join(h_parks)))
         else:
             theirs = sorted(set(log_parks) | set(s_parks))
             src = ("confirmed" if r.get("P2P_DECISION") == "yes" else "manual" if r.get("P2P_DECISION") == "manual"
                    else "logspot" if log_parks and s_parks else "spot" if s_parks else "log")
             if not s_sure and not set(s_parks) <= set(log_parks):
-                notes.append(tr("b.note.twofer", date=r["QSO_DATE"], time=r["TIME_ON"][:4], call=r["CALL"], parks=",".join(s_parks)))
+                notes.append(tr("b.note.twofer", date=r["QSO_DATE"], time=hhmm(r), call=r["CALL"], parks=",".join(s_parks)))
         for mp in mp_list:
             loc = (r.get("MY_POTA_LOCS") or {}).get(mp, "")      # "JP-TK" when the park spans several
             key = (mp, r["QSO_DATE"], loc)
             rep = report[key]
-            rep["qsos"].add((b, r["QSO_DATE"], r.get("TIME_ON", "")[:4], band, r.get("MODE")))
+            rep["qsos"].add((b, r["QSO_DATE"], hhmm(r), band, r.get("MODE")))
             rep["calls"].add(b)
             if theirs:
-                rep["p2p"].append((r.get("TIME_ON", "")[:4], r["CALL"], ",".join(theirs), src))
-            rep["rows"].append({"time": r.get("TIME_ON", "")[:4], "call": r["CALL"], "band": band or "",
-                                "mode": r.get("SUBMODE") or r.get("MODE", ""), "parks": list(theirs), "source": src if theirs else ""})
+                rep["p2p"].append((hhmm(r), r["CALL"], ",".join(theirs), src))
+            rep["rows"].append({"time": hhmm(r), "call": r["CALL"], "band": band or "",
+                                "mode": mode_of(r), "parks": list(theirs), "source": src if theirs else ""})
             for tp in (theirs or [None]):
                 o = {k: r.get(k) for k in KEEP}
                 o.update({"STATION_CALLSIGN": call, "OPERATOR": r.get("OPERATOR") or call,
@@ -209,8 +198,7 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
         summary.append({"park": mp, "date": d, "loc": loc, "file": fn, "qsos": n, "stations": len(rep["calls"]),
                         "records": len(files[(mp, d, loc)]), "rows": rep["rows"],
                         # what pota.app will keep: its duplicate key is CALL+MODE+date+BAND+MY_SIG_INFO+SIG_INFO
-                        "unique": len({(o["CALL"].upper(), (o.get("BAND") or "").lower(), (o.get("SUBMODE") or o.get("MODE") or "").upper(),
-                                        o.get("SIG_INFO") or "") for o in files[(mp, d, loc)]}),
+                        "unique": len({pota_key(o) for o in files[(mp, d, loc)]}),
                         "p2p": [{"time": tm, "call": c, "parks": ps.split(","), "source": src}
                                 for tm, c, ps, src in rep["p2p"]]})
         lines.append(tr("b.line.file", date=d, park=mp, n=n, stations=len(rep["calls"]), short="" if n >= 10 else tr("b.short"), file=fn))
