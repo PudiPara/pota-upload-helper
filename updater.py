@@ -27,6 +27,9 @@ DOWNLOAD_PREFIX = "https://github.com/%s/releases/download/" % REPO
 DOWNLOAD_PREFIXES = (DOWNLOAD_PREFIX, "https://github.com/PudiPara/pota-upload-helper/releases/download/")
 # 1.x looks for POTA-Upload-Helper-*.zip; CI publishes those names too until nobody is on 1.x
 ASSETS = {"darwin": "Potaroo-macOS.zip", "win32": "Potaroo-Windows.zip"}
+UNINSTALL_KEY = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\{7E2D4C3A-5B6F-4F0E-9B8A-2C1D0E9F7A51}_is1"   # windows.iss AppId
+LSREGISTER = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+OLD_NAMES = ("POTA Upload Helper.app", "POTA Upload Helper.exe")   # 1.x; updates up to 2.0.33 kept it
 
 
 def parse_version(tag):
@@ -118,6 +121,55 @@ def install(url, installed=None):
     raise RuntimeError(t("updater.unsupportedOs"))
 
 
+def new_path(installed, new_name):
+    """Where a copy renamed to new_name goes: next to the installed one. Unless a file of that name is
+    already there (a copy from the DMG next to it): then nowhere new, the installed path."""
+    dest = os.path.join(os.path.dirname(installed), new_name)
+    if os.path.normcase(dest) != os.path.normcase(installed) and os.path.exists(dest):
+        return installed
+    return dest
+
+
+def adopt_name():
+    """A copy still named "POTA Upload Helper" (1.x; updates up to 2.0.33 kept the installed file name, so
+    Finder, the Start menu and the OS's icon cache went on showing the old name and icon) renames itself to
+    Potaroo, points its shortcuts at the new name (Windows), makes the OS read the new icon, and starts again
+    from there. Call first thing (before the single-instance lock). -> True: this process should quit now."""
+    cur = app_path()
+    if not cur or os.path.basename(cur) not in OLD_NAMES or translocated(cur):
+        return False
+    dest = new_path(cur, "Potaroo" + os.path.splitext(cur)[1])
+    if dest == cur:
+        return False
+    try:
+        os.rename(cur, dest)             # a running exe / bundle can be renamed (not deleted)
+    except OSError:
+        return False
+    if sys.platform == "darwin":
+        for cmd in (["touch", dest], [LSREGISTER, "-f", dest]):
+            try:
+                subprocess.run(cmd, check=False, timeout=20)
+            except Exception:
+                pass
+        relaunch(dest)
+        return True
+    work = tempfile.mkdtemp(prefix="potaroo-rename-")
+    fix = os.path.join(work, "shortcuts.ps1")
+    with open(fix, "w", encoding="utf-8-sig") as fh:       # BOM: Windows PowerShell 5.1 reads it as UTF-8
+        fh.write(SHORTCUTS_PS1)
+    script = os.path.join(work, "rename.cmd")
+    with open(script, "w", encoding="cp932", errors="replace") as fh:
+        fh.write("@echo off\r\n:wait\r\n"
+                 'tasklist /FI "PID eq %d" 2>nul | find "%d" >nul\r\n' % (os.getpid(), os.getpid()) +
+                 "if not errorlevel 1 (timeout /t 1 /nobreak >nul & goto wait)\r\n"
+                 'powershell -NoProfile -ExecutionPolicy Bypass -File "%s" "%s" "%s"\r\n' % (fix, cur, dest) +
+                 "ie4uinit.exe -show >nul 2>&1\r\n" +          # Explorer forgets the icon it kept for the old file
+                 "timeout /t 2 /nobreak >nul\r\n" +
+                 'explorer.exe "%s"\r\n' % dest)
+    subprocess.Popen(["cmd.exe", "/c", script], creationflags=0x08000000, close_fds=True, env=child_env())
+    return True
+
+
 def _install_mac(zip_path, work, app):
     subprocess.run(["ditto", "-x", "-k", zip_path, work], check=True)      # keeps the bundle intact
     apps = [d for d in os.listdir(work) if d.endswith(".app")]
@@ -170,6 +222,53 @@ def _install_win(zip_path, work, exe):
     # tasklist | find wait loop never ends (verified on Windows 11), so the exe was never swapped.
     subprocess.Popen(["cmd.exe", "/c", script], creationflags=0x08000000, close_fds=True, env=child_env())
     return {"relaunch": exe}
+
+
+def relaunch(path):
+    """macOS: start the new bundle once this process is gone (the helper script does it on Windows)."""
+    if sys.platform == "darwin":
+        subprocess.Popen(["/bin/sh", "-c", 'sleep 2; open -n "%s"' % path.replace('"', '\\"')], env=child_env())
+
+
+def cleanup():
+    """Remove the previous copy left behind by install(). Call at startup."""
+    p = app_path()
+    if not p:
+        return
+    old = p + ".old"
+    try:
+        if os.path.isdir(old):
+            shutil.rmtree(old, ignore_errors=True)
+        elif os.path.isfile(old):
+            os.remove(old)
+    except OSError:
+        pass
+
+
+# adopt_name renamed the exe: point the shortcuts that started the old one at it (Start menu, desktop, the
+# taskbar's pinned ones), rename the "POTA Upload Helper" ones to Potaroo (not the pinned: renaming unpins),
+# and show the new name and icon in Settings > Apps.   shortcuts.ps1 <old exe> <new exe> [folder ...]
+SHORTCUTS_PS1 = r"""param([string]$Old, [string]$New, [Parameter(ValueFromRemainingArguments = $true)][string[]]$Dirs)
+$real = -not $Dirs                 # folders given = a test: leave the registry alone
+if ($real) { $Dirs = @([Environment]::GetFolderPath('StartMenu'), [Environment]::GetFolderPath('Desktop'),
+                            (Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch')) }
+$sh = New-Object -ComObject WScript.Shell
+foreach ($d in $Dirs) {
+  if (-not (Test-Path -LiteralPath $d)) { continue }
+  Get-ChildItem -LiteralPath $d -Recurse -Filter *.lnk -ErrorAction SilentlyContinue | ForEach-Object {
+    try {
+      $l = $sh.CreateShortcut($_.FullName)
+      if ($l.TargetPath -ieq $Old) {
+        $l.TargetPath = $New; $l.IconLocation = "$New,0"; $l.Save()
+        if ($_.BaseName -eq 'POTA Upload Helper' -and $_.FullName -notlike '*User Pinned*') {
+          Rename-Item -LiteralPath $_.FullName -NewName 'Potaroo.lnk' -ErrorAction SilentlyContinue }
+      }
+    } catch {}
+  }
+}
+$k = 'HKCU:\UNINSTALL_KEY'
+if ($real -and (Test-Path $k)) { Set-ItemProperty $k DisplayName 'Potaroo'; Set-ItemProperty $k DisplayIcon $New }
+""".replace("UNINSTALL_KEY", UNINSTALL_KEY)
 
 
 def relaunch(path):

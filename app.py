@@ -624,6 +624,8 @@ FOLDER_DIALOG = _FD.FOLDER if _FD else webview.FOLDER_DIALOG
 
 
 def main():
+    if updater.adopt_name():           # still named "POTA Upload Helper": renamed to Potaroo, starts again from there
+        return
     if not lock_instance():            # already running: show that window, don't start a second one
         from window import focus_running
         focus_running(APP_NAME)
