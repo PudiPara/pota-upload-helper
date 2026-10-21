@@ -50,7 +50,7 @@
   };
   function plate(ref) {
     const i = ref.indexOf("-");
-    return `<span class="plate"><b>${esc(ref.slice(0, i + 1))}</b>${esc(ref.slice(i + 1))}</span>`;
+    return `<span class="plate" data-ref="${esc(ref)}"><b>${esc(ref.slice(0, i + 1))}</b>${esc(ref.slice(i + 1))}</span>`;
   }
   const plates = (refs) => (refs || []).map(plate).join('<span class="plate-join" aria-hidden="true">+</span>');
   // Country = the park prefix (ISO 3166 alpha-2, sent by Python): flag from regional indicators, name in the UI language.
@@ -709,6 +709,59 @@
   });
   $("#liveCall").addEventListener("change", (e) => saveCalls(st.calls, e.target.value));
   $("#p2pAuto").addEventListener("change", (e) => api.save({ p2p_auto: e.target.checked }));
+
+  // ---------- click a park plate or a callsign: copy, or open it on the web ----------
+  const LOOKUP = {         // where 設定 → コールサインの検索先 sends a callsign
+    qrz: ["QRZ.com", (c) => `https://www.qrz.com/db/${encodeURIComponent(c)}`],
+    hamqth: ["HamQTH", (c) => `https://www.hamqth.com/${encodeURIComponent(c)}`],
+    qrzcq: ["QRZCQ", (c) => `https://www.qrzcq.com/call/${encodeURIComponent(c)}`],
+    hamcall: ["HamCall.net", (c) => `https://hamcall.net/call?callsign=${encodeURIComponent(c)}`],
+    soumu: ["総務省 無線局等情報検索", (c) => `https://www.tele.soumu.go.jp/musen/list?ST=1&OF=2&DA=0&SC=0&DC=1&OW=AT&MA=${encodeURIComponent(baseCall(c))}`],
+  };
+  function renderLookup() {           // several sites can be on; the click menu lists each
+    $("#lookupSel").innerHTML = Object.entries(LOOKUP).map(([k, v]) =>
+      `<label class="switch switch-sm"><input type="checkbox" value="${k}"${(st.lookup || []).includes(k) ? " checked" : ""}><span class="switch-ui"></span><span>${esc(v[0])}</span></label>`).join("");
+  }
+  $("#lookupSel").addEventListener("change", () => {
+    st.lookup = $$("#lookupSel input:checked").map((i) => i.value);
+    api.save({ lookup: st.lookup });
+  });
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); }
+    catch (e) { const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
+    toast(t("pop.copied", { text }));
+  }
+  function showPop(x, y, items) {
+    const pop = $("#pop");
+    pop.innerHTML = items.map((it, i) => `<button type="button" data-i="${i}">${esc(it[0])}</button>`).join("");
+    pop.hidden = false;
+    const w = pop.offsetWidth, h = pop.offsetHeight;
+    pop.style.left = Math.min(x, window.innerWidth - w - 8) + "px";
+    pop.style.top = (y + h + 8 > window.innerHeight ? y - h - 4 : y + 4) + "px";
+    $$("#pop button").forEach((b) => b.addEventListener("click", () => { pop.hidden = true; items[+b.dataset.i][1](); }));
+  }
+  const CALL_SEL = ".spot-call, .qso-call, .p2p-call, .qrow-call";
+  document.addEventListener("click", (e) => {
+    const pop = $("#pop");
+    if (pop.contains(e.target)) return;
+    const plateEl = e.target.closest(".plate[data-ref]");
+    const callEl = !plateEl && e.target.closest(CALL_SEL);
+    if (!plateEl && !callEl) { pop.hidden = true; return; }
+    if (e.target.closest("label")) e.preventDefault();          // don't tick the row's checkbox
+    e.stopPropagation();
+    if (plateEl) {
+      const ref = plateEl.dataset.ref;
+      showPop(e.clientX, e.clientY, [[t("pop.copy", { text: ref }), () => copyText(ref)],
+                                     [t("pop.park"), () => api.open_url(`https://pota.app/#/park/${encodeURIComponent(ref)}`)]]);
+    } else {
+      const call = (callEl.firstChild ? callEl.firstChild.textContent : callEl.textContent).trim();
+      const sites = (st.lookup || []).filter((k) => LOOKUP[k]).map((k) => LOOKUP[k]);
+      showPop(e.clientX, e.clientY, [[t("pop.copy", { text: call }), () => copyText(call)],
+                                     ...sites.map((site) => [t("pop.call", { site: site[0] }), () => api.open_url(site[1](call))]),
+                                     [t("pop.profile"), () => api.open_url(`https://pota.app/#/profile/${encodeURIComponent(baseCall(call))}`)]]);
+    }
+  }, true);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("#pop").hidden = true; });
   $("#openData").addEventListener("click", () => api.open_data());
   $("#lang").addEventListener("change", async (e) => {
     await api.save({ lang: e.target.value }); await loadLang(e.target.value); rerender();
@@ -726,6 +779,7 @@
     await loadLang(lang);
     $("#version").textContent = `v${s.version}`;
     renderCalls(); $("#p2pAuto").checked = !!s.p2p_auto;
+    st.lookup = s.lookup || ["qrz"]; renderLookup();
     setParks(s.parks);
     $("#outPath").textContent = s.out;
     $("#logCount").textContent = s.log_count ? " " + t("build.count", { n: s.log_count }) : "";

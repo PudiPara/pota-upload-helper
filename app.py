@@ -32,7 +32,7 @@ from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import SpotLogger, candidate_info, history_parks, says_no_overlap, summarize
 from window import BarMode
 
-SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted", "p2p_auto")   # "live" is set by start_live/finish_live only
+SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted", "p2p_auto", "lookup")   # "live" is set by start_live/finish_live only
 CALL_RE = re.compile(r"[A-Z0-9/]{3,}")
 
 
@@ -113,7 +113,7 @@ class Api:
                 "prefix": s.get("prefix", "JP"), "adif": s.get("adif", ""), "out": s.get("out", DEFAULT_OUT),
                 "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
                 "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
-                "terms_accepted": s.get("terms_accepted") or "", "p2p_auto": bool(s.get("p2p_auto")),
+                "terms_accepted": s.get("terms_accepted") or "", "p2p_auto": bool(s.get("p2p_auto")), "lookup": (lambda v: v if isinstance(v, list) else [v])(s.get("lookup") or ["qrz"]),
                 "log_count": qsolog.count(), "receiver": self._receiver_texts()}
 
     def save(self, data):
