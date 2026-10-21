@@ -242,6 +242,11 @@
           <p class="error" id="callsError" hidden></p>
         </section>
         <section class="cfg-block">
+          <h2 data-i18n="cfg.lookup.h">コールサインの検索先</h2>
+          <p class="cfg-help" data-i18n="cfg.lookup.p">コールサインをクリックしたときに開くサイトです。</p>
+          <div class="lookup-list" id="lookupSel"></div>
+        </section>
+        <section class="cfg-block">
           <h2 data-i18n="cfg.p2p.h">P2P</h2>
           <label class="switch"><input type="checkbox" id="p2pAuto"><span class="switch-ui"></span><span data-i18n="cfg.p2p.auto">スポットで相手の公園が分かるときは、確認せずに P2P として記録する</span></label>
           <p class="cfg-help cfg-help-after" data-i18n="cfg.p2p.p"></p>
@@ -285,6 +290,7 @@
   </main>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
+<div class="pop" id="pop" hidden role="menu"></div>
 <div class="cheer" id="cheer" hidden role="status"><strong>10 QSO</strong><span data-i18n="cheer.sub">アクティベーション成立</span></div>
 <div class="modal" id="editor" hidden role="dialog" aria-modal="true">
   <div class="modal-card modal-wide">

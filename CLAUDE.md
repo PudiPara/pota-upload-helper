@@ -123,6 +123,9 @@ macOS `~/Library/Application Support/POTA Upload Helper/`, Windows `%APPDATA%\PO
 
 ## Working on it
 - `scripts/dev.sh [--debug]` runs from source with `POTA_HELPER_DATA=./data`; tests are offline.
+- `scripts/dev_web.py` serves ui/ at http://127.0.0.1:8765/ and forwards `pywebview.api` calls to a real
+  `Api` over HTTP (no listeners, no window): check UI changes there in a browser. Computer use only for
+  sending QSOs from loggers and for freezes. Keep the dev desktop app (./data, port 22237) running.
 - CI (`.github/workflows/build.yml`): every push to `main` builds both OSes (PyInstaller, icon, macOS
   Info.plist with `NSLocalNetworkUsageDescription` + ad-hoc re-sign, DMG, Inno Setup) and updates the
   GitHub Release `v<VERSION>`.
