@@ -140,7 +140,7 @@ class Api:
         calls = clean_calls(s.get("calls"), s.get("call"))
         lookup = s.get("lookup") or ["qrz"]
         return {"version": VERSION, "call": calls[0] if calls else "", "calls": calls, "parks": s.get("parks", ""),
-                "prefix": s.get("prefix", "JP"), "adif": s.get("adif", ""), "out": s.get("out", DEFAULT_OUT),
+                "prefix": "home" if s.get("prefix", "home") else "", "adif": s.get("adif", ""), "out": s.get("out", DEFAULT_OUT),
                 "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
                 "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
                 "terms_accepted": s.get("terms_accepted") or "", "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")),

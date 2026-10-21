@@ -50,7 +50,7 @@
   "live.working": "Zapisuję…",
   "live.qsoNote.done": "Aktywacja zaliczona ({n} kombinacji stacja/pasmo/emisja)", "live.qsoNote.left": "Jeszcze {n} QSO do zaliczenia aktywacji",
   "live.p2pCount": "{n} P2P", "live.pendingCount": "{n} do potwierdzenia",
-  "live.qsos": "QSO", "live.spots": "Nadają z parków", "live.seg.jp": "Japonia", "live.seg.world": "Świat",
+  "live.qsos": "QSO", "live.spots": "Nadają z parków", "live.seg.world": "Świat",
   "live.qsosEmpty1": "Czekam na QSO z logu.", "live.qsosEmpty2": "Jeśli nic nie przychodzi, sprawdź „Połączenie z logiem”.",
   "live.spotsEmpty1": "Jeszcze nic nie spotowano.", "live.spotsEmpty2": "Spoty są sprawdzane co minutę.",
   "live.count": "{n} stacji", "live.count2fer": " · {n} z 2fer lub więcej",

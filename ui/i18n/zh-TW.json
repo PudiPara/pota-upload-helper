@@ -50,7 +50,7 @@
   "live.working": "正在產生…",
   "live.qsoNote.done": "啟用成功（{n} 個電台·波段·模式組合）", "live.qsoNote.left": "再 {n} 個 QSO 即可啟用",
   "live.p2pCount": "P2P {n} 筆", "live.pendingCount": "待確認 {n} 筆",
-  "live.qsos": "通聯", "live.spots": "正在公園發射的電台", "live.seg.jp": "日本", "live.seg.world": "全球",
+  "live.qsos": "通聯", "live.spots": "正在公園發射的電台", "live.seg.world": "全球",
   "live.qsosEmpty1": "等待日誌軟體送來的 QSO。", "live.qsosEmpty2": "若收不到，請檢查「連接日誌軟體」。",
   "live.spotsEmpty1": "還沒有找到。", "live.spotsEmpty2": "每分鐘檢查一次 spot。",
   "live.count": "{n} 個電台", "live.count2fer": "·2fer 以上 {n} 個",

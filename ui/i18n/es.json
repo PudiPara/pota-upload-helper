@@ -50,7 +50,7 @@
   "live.working": "Escribiendo…",
   "live.qsoNote.done": "Activación completada ({n} combinaciones estación/banda/modo)", "live.qsoNote.left": "Faltan {n} QSO para completar la activación",
   "live.p2pCount": "{n} P2P", "live.pendingCount": "{n} por confirmar",
-  "live.qsos": "QSO", "live.spots": "En el aire desde parques", "live.seg.jp": "Japón", "live.seg.world": "Mundo",
+  "live.qsos": "QSO", "live.spots": "En el aire desde parques", "live.seg.world": "Mundo",
   "live.qsosEmpty1": "Esperando QSO del programa de log.", "live.qsosEmpty2": "Si no llega nada, revisa «Enlace con el log».",
   "live.spotsEmpty1": "Nada spoteado todavía.", "live.spotsEmpty2": "Los spots se revisan cada minuto.",
   "live.count": "{n} estaciones", "live.count2fer": " · {n} con 2fer o más",

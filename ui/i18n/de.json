@@ -50,7 +50,7 @@
   "live.working": "Schreibe…",
   "live.qsoNote.done": "Aktivierung geschafft ({n} Kombinationen Station/Band/Mode)", "live.qsoNote.left": "Noch {n} QSOs bis zur Aktivierung",
   "live.p2pCount": "{n} P2P", "live.pendingCount": "{n} zu bestätigen",
-  "live.qsos": "QSOs", "live.spots": "Aktiv aus Parks", "live.seg.jp": "Japan", "live.seg.world": "Welt",
+  "live.qsos": "QSOs", "live.spots": "Aktiv aus Parks", "live.seg.world": "Welt",
   "live.qsosEmpty1": "Warte auf QSOs vom Logger.", "live.qsosEmpty2": "Kommt nichts an, prüfe „Logger-Anbindung“.",
   "live.spotsEmpty1": "Noch nichts gespottet.", "live.spotsEmpty2": "Spots werden jede Minute geprüft.",
   "live.count": "{n} Stationen", "live.count2fer": " · {n} mit 2fer oder mehr",

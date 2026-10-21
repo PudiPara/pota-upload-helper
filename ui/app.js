@@ -4,7 +4,7 @@
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   let api = null;
   const st = {
-    call: "", calls: [], prefix: "JP", spots: new Map(), qsos: new Map(), lastAt: 0, lastQ: 0,
+    call: "", calls: [], prefix: "home", spots: new Map(), qsos: new Map(), lastAt: 0, lastQ: 0,
     start: null, timer: null, poll: null, source: "app", adif: "", out: "", outDir: "",
     acts: [], selected: new Set(), listeners: [], receiver: {}, editing: null, bar: false, cheered: false,
     lang: "ja", langs: [], termsAccepted: "", mypota: {}, huntedShown: new Set(),
@@ -57,6 +57,8 @@
   // Country = the park prefix (ISO 3166 alpha-2, sent by Python): flag from regional indicators, name in the UI language.
   const flagOf = (cc) => /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map((c) => 0x1F1E6 + c.charCodeAt(0) - 65)) : "";
   const countryName = (cc) => { try { return new Intl.DisplayNames([st.lang], { type: "region" }).of(cc) || cc; } catch (e) { return cc; } };
+  // the operator's country = the country of the (first) park being activated; "" before any park
+  const homeOf = (parks) => (splitParks(parks)[0] || "").split("-")[0];
   const fmtDate = (d) => {
     try {
       return new Date(Date.UTC(+d.slice(0, 4), +d.slice(4, 6) - 1, +d.slice(6, 8)))
@@ -253,8 +255,9 @@
       </li>`;
   }
   function renderSpots(fresh) {
-    const worked = workedCalls();
-    const list = [...st.spots.values()].filter((e) => !st.prefix || e.parks.some((p) => p.startsWith(st.prefix)))
+    const worked = workedCalls(), home = homeOf(st.parks);
+    $("#segHome").innerHTML = `<span class="flag">${flagOf(home)}</span> ${esc(countryName(home))}`;
+    const list = [...st.spots.values()].filter((e) => !st.prefix || e.parks.some((p) => p.startsWith(home + "-")))
       .sort((a, b) => b.at - a.at);
     $("#spots").innerHTML = list.map((e) => spotRow(e, worked.has(baseCall(e.call)), fresh && fresh.has(e.call), false)).join("");
     $("#spotsEmpty").hidden = list.length > 0; $("#spots").hidden = list.length === 0;
@@ -455,7 +458,7 @@
 
   // ================================================================ spots page (like pota.app's list)
   // band and mode group come computed from Python (spots.summarize); the page only filters.
-  const sp = { items: [], worked: new Set(), region: "", country: "JP", group: "", band: "", q: "", twofer: false, newOnly: false, timer: null };
+  const sp = { items: [], worked: new Set(), region: "", country: "", group: "", band: "", q: "", twofer: false, newOnly: false, timer: null };
   const REGIONS = ["as", "eu", "na", "sa", "af", "oc"];      // continent codes from spots.continent_of
   async function loadSpotsPage() {
     const r = await api.spots_now();
@@ -875,7 +878,7 @@
     setParks(s.parks);
     $("#outPath").textContent = s.out;
     setLogCount(s.log_count);
-    segSet("#liveRun .seg", "prefix", st.prefix); sp.country = st.prefix || "";
+    segSet("#liveRun .seg", "prefix", st.prefix); sp.country = homeOf(s.live ? s.live.parks : s.parks);
     renderListeners(); updateReceiver(s.receiver);
     setSource(st.source);
     if (s.live) enterRunning(s.live.parks, s.live.start);
