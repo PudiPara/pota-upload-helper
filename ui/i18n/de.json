@@ -50,7 +50,7 @@
   "live.working": "Schreibe…",
   "live.qsoNote.done": "Aktivierung geschafft ({n} Kombinationen Station/Band/Mode)", "live.qsoNote.left": "Noch {n} QSOs bis zur Aktivierung",
   "live.stat.pending": "Offen", "live.stat.rate": "Rate", "live.stat.perHour": "/h", "live.stat.last": "Letztes QSO", "live.stat.ago": "vor {n} Min.", "live.stat.now": "gerade eben",
-  "live.qsos": "QSOs", "live.spots": "Aktiv aus Parks", "live.seg.world": "Welt",
+  "live.tab.list": "Liste", "live.tab.map": "Karte", "live.qsos": "QSOs", "live.spots": "Aktiv aus Parks", "live.seg.world": "Welt",
   "live.qsosEmpty1": "Warte auf QSOs vom Logger.", "live.qsosEmpty2": "Kommt nichts an, prüfe „Logger-Anbindung“.",
   "live.spotsEmpty1": "Noch nichts gespottet.", "live.spotsEmpty2": "Spots werden jede Minute geprüft.",
   "live.count": "{n} Stationen", "live.count2fer": " · {n} mit 2fer oder mehr",

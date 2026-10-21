@@ -363,6 +363,51 @@
         <span class="qso-p2p">${ctl}</span>
       </li>`;
   }
+  // 運用中 → 一覧 / 地図. The map centres on my parks and joins each P2P's parks to them, with the call and
+  // the distance; the points come from Python (Api.map_points: the same middles as the distances).
+  const lmap = { tab: "list", map: null, layer: null, framed: "" };
+  function liveTab(tab) {
+    lmap.tab = tab; segSet("#liveTabs", "tab", tab);
+    $(".live-grid").hidden = tab !== "list"; $("#liveMap").hidden = tab !== "map";
+    if (tab === "map") drawLiveMap();
+  }
+  async function drawLiveMap() {
+    const Lf = window.L;                      // Leaflet (L in this file is the dictionary)
+    if (!Lf || BAR || lmap.tab !== "map") return;
+    const p2p = [...st.qsos.values()].filter((q) => q.decision && q.decision !== "no" && q.parks.length);
+    const r = await api.map_points(st.parks || [], p2p.map((q) => q.parks));
+    if (!lmap.map) {
+      lmap.map = Lf.map("liveMap", { worldCopyJump: true, zoomSnap: 0.25 }).setView([20, 0], 2);
+      Lf.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(lmap.map);
+      lmap.layer = Lf.layerGroup().addTo(lmap.map);
+    }
+    lmap.map.invalidateSize(); lmap.layer.clearLayers();
+    if (!r.me) return;
+    const pts = [r.me], side = { left: 0, right: 0 };            // the widest label on each side
+    p2p.forEach((q, i) => {
+      const g = r.groups[i];
+      if (!g) return;
+      const at = [g[0], g[1] + Math.round((r.me[1] - g[1]) / 360) * 360];    // the short way, not across the whole map
+      pts.push(at);
+      Lf.polyline([r.me, at], { color: "#E9B457", weight: 2, opacity: .9 }).addTo(lmap.layer);
+      const dir = at[1] < r.me[1] ? "left" : "right";
+      const dot = Lf.circleMarker(at, { radius: 6, weight: 1.5, color: "#fff", fillColor: "#C98A1E", fillOpacity: 1 })
+        .bindTooltip(`${esc(q.call)} · ${esc(q.parks.join(" + "))}${q.km != null ? " · " + esc(fmtDist(q.km)) : ""}`,
+                     // beside the dot, away from me: labels of stations east and west don't pile up on the line
+                     { permanent: true, direction: dir, offset: [dir === "left" ? -6 : 6, 0], className: "map-tag" }).addTo(lmap.layer);
+      const el = dot.getTooltip() && dot.getTooltip().getElement();
+      if (el) side[dir] = Math.max(side[dir], el.offsetWidth + 16);
+    });
+    Lf.circleMarker(r.me, { radius: 8, weight: 2, color: "#fff", fillColor: "#2A6A50", fillOpacity: 1 })
+      .bindTooltip(esc((st.parks || []).join(" + ")), { permanent: true, direction: "bottom", offset: [0, 8], className: "map-tag" }).addTo(lmap.layer);
+    // frame when a P2P is added or the parks change, not on every redraw
+    const key = (st.parks || []).join() + "|" + pts.length;
+    if (key !== lmap.framed) { lmap.framed = key; pts.length > 1   // room at each side for the widest label there
+      ? lmap.map.fitBounds(pts, { paddingTopLeft: [side.left + 12, 40], paddingBottomRight: [side.right + 12, 40], maxZoom: 9 })
+      : lmap.map.setView(r.me, 9); }
+  }
+  $$("#liveTabs button").forEach((b) => b.addEventListener("click", () => liveTab(b.dataset.tab)));
   function renderQsos(fresh) {
     const key = (q) => q.ts || q.date + q.time;           // to the second when the logger sent seconds
     const list = [...st.qsos.values()].sort((a, b) => key(b).localeCompare(key(a)) || (b.seq || 0) - (a.seq || 0));   // newest first
@@ -392,6 +437,7 @@
     if (st.editing) { const el = $(`[data-in="${CSS.escape(st.editing)}"]`); if (el) el.focus(); }
     // a celebration at every 10 QSOs; the ones already passed when the list (re)opens are not repeated
     const tens = Math.floor(n / 10);
+    if (lmap.tab === "map") drawLiveMap();
     if (st.cheered === null) st.cheered = tens;
     else if (tens > st.cheered) { st.cheered = tens; cheer(tens * 10); }
   }
@@ -530,8 +576,8 @@
   // the main window may have been in the background (timers slowed down): catch up when it comes back
   document.addEventListener("visibilitychange", () => { if (!document.hidden && st.start && !BAR) poll(); });
 
-  $$("#liveRun .seg button").forEach((b) => b.addEventListener("click", () => {
-    st.prefix = b.dataset.prefix; segSet("#liveRun .seg", "prefix", st.prefix); api.save({ prefix: st.prefix }); renderSpots();
+  $$("#liveRun .live-grid .seg button").forEach((b) => b.addEventListener("click", () => {   // the home / world switch, not the tabs
+    st.prefix = b.dataset.prefix; segSet("#liveRun .live-grid .seg", "prefix", st.prefix); api.save({ prefix: st.prefix }); renderSpots();
   }));
 
   // ---- finish: stop, write this park's upload file(s), back to the start
@@ -1167,7 +1213,7 @@
     setParks(s.parks);
     $("#outPath").textContent = s.out;
     setLogCount(s.log_count);
-    segSet("#liveRun .seg", "prefix", st.prefix);
+    segSet("#liveRun .live-grid .seg", "prefix", st.prefix);
     renderListeners(); updateReceiver(s.receiver);
     setSource(st.source);
     if (BAR) {                                      // the bar window: the running activation only

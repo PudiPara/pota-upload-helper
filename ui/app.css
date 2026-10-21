@@ -234,8 +234,8 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 /* 実績 page */
 .rec-map { height: 340px; border: 1px solid var(--line); border-radius: var(--r-md); margin-bottom: 12px; overflow: hidden; z-index: 0; background: var(--surface); }
 .rec-map .leaflet-container { font: inherit; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .rec-map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9); } }
-:root[data-theme="dark"] .rec-map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .rec-map .leaflet-tile-pane, :root:not([data-theme="light"]) .live-map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9); } }
+:root[data-theme="dark"] .rec-map .leaflet-tile-pane, :root[data-theme="dark"] .live-map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9); }
 .rec-note { display: flex; gap: 14px; align-items: center; background: var(--amber-bg); border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: var(--r-md); padding: 10px 14px; margin-bottom: 14px; }
 .rec-note p { margin: 0; font-size: 12.5px; text-wrap: pretty; }
 .rec-note .btn { flex: none; padding: 6px 12px; font-size: 12.5px; }
@@ -307,6 +307,12 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .stat.is-alert { background: var(--amber-bg); border-color: var(--amber); }
 .stat.is-alert strong { color: var(--amber-ink); }
 
+/* 運用中 → 一覧 / 地図 */
+.live-tabs { margin-top: 16px; }
+.live-tabs + .live-map, .live-tabs ~ .live-grid { margin-top: 10px; }
+.live-map { height: max(360px, calc(100vh - 470px)); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; z-index: 0; background: var(--surface); }
+.live-map .leaflet-container { font: inherit; }
+.map-tag { font-size: 12px; font-weight: 600; padding: 2px 7px; }
 .live-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; margin-top: 16px; align-items: start; }
 .live-grid .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
 .live-grid .panel-head { margin: 0; min-height: 48px; padding: 6px 10px 6px 14px; border-bottom: 1px solid var(--line); }
@@ -512,7 +518,7 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .upload-hours.is-now { color: var(--amber-ink); background: var(--amber-bg); border-radius: var(--r-md); padding: 8px 12px; }
 
 /* ---------- bar mode: a strip that sits above the logger ---------- */
-body.is-bar .rail, body.is-bar .dash, body.is-bar .stats, body.is-bar .live-grid, body.is-bar .toast { display: none !important; }
+body.is-bar .rail, body.is-bar .dash, body.is-bar .stats, body.is-bar .live-tabs, body.is-bar .live-map, body.is-bar .live-grid, body.is-bar .toast { display: none !important; }
 body.is-bar .shell { grid-template-columns: 1fr; height: 100vh; }
 body.is-bar .main { overflow: hidden; }
 body.is-bar .view { max-width: none; padding: 0; height: 100vh; }

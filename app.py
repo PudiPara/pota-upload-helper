@@ -36,7 +36,7 @@ from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, base_call, data
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import (SESSION_MARGIN, SpotLogger, clear_records, common_locations, countries, example_parks, history_parks,
-                   distance_km, park_info, park_status, shipped_parks, summarize, tag_candidate)
+                   distance_km, middle, park_at, park_info, park_status, shipped_parks, summarize, tag_candidate)
 from window import BarMode, set_zoom
 
 SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "p2p_auto", "lookup", "on_top", "font_scale", "theme", "dist_unit")   # "live" is set by start_live/finish_live only
@@ -358,6 +358,14 @@ class Api:
         """Stop recording without writing files (kept for the CLI-like flow; the UI uses finish_live)."""
         sess = self._stop_logger()
         return {"ok": True, "start": sess["start"], "end": sess["end"]} if sess else {"ok": True}
+
+    def map_points(self, mine, groups):
+        """運用中 → 地図: [lat, lon] of the middle of my parks and of each P2P's parks (the same points as the
+        distances: spots.middle of spots.park_at), None where no position is known."""
+        def at(refs):
+            m = middle([p for p in map(park_at, split_parks(",".join(refs or []))) if p])
+            return list(m) if m else None
+        return {"me": at(mine), "groups": [at(g) for g in groups or []]}
 
     def set_bar(self, on):
         """Open or close the bar window."""
