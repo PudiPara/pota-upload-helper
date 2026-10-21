@@ -60,6 +60,9 @@ class BuilderTest(unittest.TestCase):
         self.assertEqual((rows["JS6UHQ"]["country"], rows["JS6UHQ"]["region"]), ("JP", "as"))   # prefix and its continent
         spots[0]["locationDesc"] = "JP-13"
         self.assertEqual(summarize_spots(spots, now)[0]["location"], "JP-13")
+        self.assertFalse(rows["JS6UHQ"]["qrt"])
+        spots[0]["comments"] = "QRT tnx"
+        self.assertTrue(summarize_spots(spots, now)[0]["qrt"])                    # the newest spot says QRT
 
     def test_bands_and_modes(self):
         from potacommon import band_from_khz, band_from_mhz, mode_group

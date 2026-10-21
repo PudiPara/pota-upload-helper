@@ -360,7 +360,7 @@ def continent_of(country):
 def summarize(spots, now=None, history=None, new_of=None):
     """One row per station from api.pota.app/spot/activator, newest first: the parks of its spots
     of the last TWOFER_GAP minutes merged (more than one = 2fer), band and mode group computed here
-    so the UI only displays. history(activator, reference) -> parks or None adds what the station's
+    so the UI only displays; "qrt" when the newest spot's comment says QRT. history(activator, reference) -> parks or None adds what the station's
     spot history says; None marks the row pending (the page asks again shortly). new_of(parks) -> the
     parks the operator has not hunted yet (mypota), shown as "New"."""
     now = now or now_utc()
@@ -391,6 +391,7 @@ def summarize(spots, now=None, history=None, new_of=None):
                     "mode": newest.get("mode") or "", "group": mode_group(newest.get("mode")),
                     "time": t0.strftime("%H:%M"), "ago": max(0, int((now - t0).total_seconds() // 60)),
                     "comments": newest.get("comments") or "", "spots": len(items), "pending": pending,
+                    "qrt": bool(QRT.search(newest.get("comments") or "")),   # the latest spot says they are done
                     "new": new_of(parks) if new_of else []})
     out.sort(key=lambda e: (e["ago"], e["base"]))
     return out

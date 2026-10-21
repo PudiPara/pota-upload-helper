@@ -252,7 +252,7 @@
       <li class="spot${e.twofer ? " is-twofer" : ""}${worked ? " is-worked" : ""}${fresh ? " is-new" : ""}${page && e.ago >= 30 ? " is-stale" : ""}">
         <span class="spot-time">${esc(e.time)}Z</span>
         <span class="spot-call">${esc(e.call)}${worked ? `<span class="worked-tag">${t("spots.worked")}</span>` : ""}</span>
-        <span class="plates">${e.country ? `<span class="flag" title="${esc(countryName(e.country))}">${flagOf(e.country)}</span>` : ""}${plates(e.parks, e.new)}${e.twofer ? `<span class="twofer-tag">${e.parks.length}fer</span>` : ""}${newTag(e.new)}</span>
+        <span class="plates">${e.country ? `<span class="flag" title="${esc(countryName(e.country))}">${flagOf(e.country)}</span>` : ""}${plates(e.parks, e.new)}${e.twofer ? `<span class="twofer-tag">${e.parks.length}fer</span>` : ""}${newTag(e.new)}${e.qrt ? `<span class="qrt-tag">QRT</span>` : ""}</span>
         <span class="spot-meta"><span class="spot-freq">${fmtFreq(e.freq)}</span>${e.mode ? `<span class="spot-mode">${esc(e.mode)}</span>` : ""}</span>
         ${page ? `<span class="spot-ago">${e.ago ? t("spots.ago", { n: e.ago }) : t("spots.now")}</span>
         <span class="spot-note" title="${esc(e.comments)}">${esc(e.comments)}</span>` : ""}
@@ -462,7 +462,7 @@
 
   // ================================================================ spots page (like pota.app's list)
   // band and mode group come computed from Python (spots.summarize); the page only filters.
-  const sp = { items: [], worked: new Set(), region: "", country: "", group: "", band: "", q: "", twofer: false, newOnly: false, timer: null };
+  const sp = { items: [], worked: new Set(), region: "", country: "", group: "", band: "", q: "", twofer: false, newOnly: false, hideQrt: false, timer: null };
   const REGIONS = ["as", "eu", "na", "sa", "af", "oc"];      // continent codes from spots.continent_of
   async function loadSpotsPage() {
     const r = await api.spots_now();
@@ -501,7 +501,7 @@
       (!sp.group || e.group === sp.group) &&
       (!sp.band || e.band === sp.band) &&
       (!sp.twofer || e.twofer) &&
-      (!sp.newOnly || (e.new || []).length) &&
+      (!sp.newOnly || (e.new || []).length) && (!sp.hideQrt || !e.qrt) &&
       (!q || e.call.toUpperCase().includes(q) || e.parks.some((p) => p.includes(q))));
     $("#spotsPage").innerHTML = list.map((e) => spotRow(e, sp.worked.has(e.base), false, true)).join("");
     $("#spotsPageEmpty").hidden = list.length > 0; $("#spotsPage").hidden = list.length === 0;
@@ -514,6 +514,7 @@
   $("#spotsSearch").addEventListener("input", (e) => { sp.q = e.target.value.trim(); renderSpotsPage(); });
   $("#spotsTwofer").addEventListener("change", (e) => { sp.twofer = e.target.checked; renderSpotsPage(); });
   $("#spotsNew").addEventListener("change", (e) => { sp.newOnly = e.target.checked; renderSpotsPage(); });
+  $("#spotsHideQrt").addEventListener("change", (e) => { sp.hideQrt = e.target.checked; renderSpotsPage(); });
   $("#spotsRefresh").addEventListener("click", loadSpotsPage);
 
   // ================================================================ build
@@ -861,6 +862,13 @@
   }, true);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") { $("#pop").hidden = true; hideCelebrations(); } });
   $("#openData").addEventListener("click", () => api.open_data());
+  // 設定 tabs: one group of blocks at a time
+  function cfgTab(tab) {
+    segSet(".cfg-tabs", "tab", tab);
+    $$(".cfg-block").forEach((el) => (el.hidden = el.dataset.tab !== tab));
+  }
+  $$(".cfg-tabs button").forEach((b) => b.addEventListener("click", () => cfgTab(b.dataset.tab)));
+  cfgTab("general");
   $("#lang").addEventListener("change", async (e) => {
     await api.save({ lang: e.target.value }); await loadLang(e.target.value); rerender();
   });

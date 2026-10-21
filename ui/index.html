@@ -173,6 +173,7 @@
         <input id="spotsSearch" placeholder="コール・公園番号で絞る" data-i18n-ph="spots.search.ph" spellcheck="false" autocomplete="off">
         <label class="switch switch-sm"><input type="checkbox" id="spotsTwofer"><span class="switch-ui"></span><span data-i18n="spots.twofer">2fer 以上のみ</span></label>
         <label class="switch switch-sm" id="spotsNewBox" hidden><input type="checkbox" id="spotsNew"><span class="switch-ui"></span><span data-i18n="spots.newOnly">未ハントのみ</span></label>
+        <label class="switch switch-sm"><input type="checkbox" id="spotsHideQrt"><span class="switch-ui"></span><span data-i18n="spots.hideQrt">QRT を隠す</span></label>
       </div>
       </div>
       <ol class="spots spots-page" id="spotsPage"></ol>
@@ -245,8 +246,15 @@
     <!-- ======================= config (設定) ======================= -->
     <section class="view" id="view-config" hidden>
       <h1 class="view-title" data-i18n="cfg.title">設定</h1>
+      <div class="seg cfg-tabs" role="tablist">
+        <button role="tab" data-tab="general" class="is-on" data-i18n="cfg.tab.general">基本</button>
+        <button role="tab" data-tab="qso" data-i18n="cfg.tab.qso">交信</button>
+        <button role="tab" data-tab="loggers" data-i18n="set.title">ロガーとの接続</button>
+        <button role="tab" data-tab="record" data-i18n="cfg.mypota.h">POTA の実績</button>
+        <button role="tab" data-tab="app" data-i18n="cfg.app.h">アプリ</button>
+      </div>
       <div class="cfg">
-        <section class="cfg-block">
+        <section class="cfg-block" data-tab="general">
           <h2 data-i18n="cfg.calls.h">コールサイン</h2>
           <p class="cfg-help" data-i18n="cfg.calls.p">複数保存できます。記録を始めるときに使うコールを選びます。</p>
           <ul class="calls" id="calls"></ul>
@@ -256,27 +264,27 @@
           </form>
           <p class="error" id="callsError" hidden></p>
         </section>
-        <section class="cfg-block">
+        <section class="cfg-block" data-tab="qso">
           <h2 data-i18n="cfg.lookup.h">コールサインの検索先</h2>
           <p class="cfg-help" data-i18n="cfg.lookup.p">コールサインをクリックしたときに開くサイトです。</p>
           <div class="lookup-list" id="lookupSel"></div>
         </section>
-        <section class="cfg-block">
+        <section class="cfg-block" data-tab="general">
           <h2 data-i18n="cfg.window.h">ウインドウ</h2>
           <label class="switch"><input type="checkbox" id="onTop"><span class="switch-ui"></span><span data-i18n="cfg.window.ontop">常にほかのウインドウより手前に表示する</span></label>
           <p class="cfg-help cfg-help-after" data-i18n="cfg.window.p">バー表示のときは、この設定に関係なく手前に表示します。</p>
         </section>
-        <section class="cfg-block">
+        <section class="cfg-block" data-tab="record">
           <h2 data-i18n="cfg.mypota.h">POTA の実績</h2>
           <p class="cfg-help" data-i18n="cfg.mypota.p"></p>
           <div class="mypota"><button class="btn" id="mypotaPick" data-i18n="cfg.mypota.pick">CSV を読み込む</button><span class="muted" id="mypotaStatus"></span></div>
         </section>
-        <section class="cfg-block">
+        <section class="cfg-block" data-tab="qso">
           <h2 data-i18n="cfg.p2p.h">P2P</h2>
           <label class="switch"><input type="checkbox" id="p2pAuto"><span class="switch-ui"></span><span data-i18n="cfg.p2p.auto">スポットで相手の公園が分かるときは、確認せずに P2P として記録する</span></label>
           <p class="cfg-help cfg-help-after" data-i18n="cfg.p2p.p"></p>
         </section>
-        <section class="cfg-block cfg-listeners">
+        <section class="cfg-block cfg-listeners" data-tab="loggers">
           <h2 data-i18n="set.title">ロガーとの接続</h2>
               <p class="cfg-help" data-i18n="set.lede">ロガーが記録した QSO を UDP で受け取ります。</p>
           <div class="listeners" id="listeners"></div>
@@ -294,15 +302,15 @@
             <p data-i18n-html="set.howto.dup.p"></p>
           </aside>
         </section>
-        <section class="cfg-block">
+        <section class="cfg-block" data-tab="general">
           <h2 data-i18n="cfg.lang.h">言語</h2>
           <select id="lang" class="cfg-select"></select>
         </section>
-        <section class="cfg-block">
+        <section class="cfg-block" data-tab="general">
           <h2 data-i18n="cfg.country.h">所在国</h2>
           <select id="country" class="cfg-select"></select>
         </section>
-        <section class="cfg-block">
+        <section class="cfg-block" data-tab="app">
           <h2 data-i18n="cfg.app.h">アプリ</h2>
           <div class="update" id="update" hidden>
             <div class="update-text" id="updateText"></div>
