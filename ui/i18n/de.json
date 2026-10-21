@@ -28,7 +28,7 @@
   "rail.openData": "Datenordner öffnen", "rail.checkUpdate": "Nach Updates suchen",   "live.title": "Welcher Park heute?",
   "live.lede": "Starte die Aufzeichnung, wenn du anfängst. Stationen, die aus Parks gespottet werden, werden jede Minute notiert – P2P und 2fer lassen sich so auch nach deren QRT noch bestimmen.",
   "live.parks.ph": "JP-1266", "live.start": "Aufzeichnung starten",
-  "live.hint": "2fer / 3fer mit Kommas trennen (JP-1266,JP-1206)",
+  "live.addPark": "+ Park hinzufügen (2fer / 3fer)",
   "live.err.park": "Parkreferenz in der Form JP-1266 eingeben.",
   "live.loc": "Standort",
   "live.loc.pick": "Präfektur / Bundesstaat wählen",

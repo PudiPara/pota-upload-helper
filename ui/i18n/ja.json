@@ -34,7 +34,7 @@
  "live.lede": "運用を始めたら記録を開始してください。公園から出ている局を 1 分ごとに控えておくので、相手が QRT しても P2P や 2fer を後から判定できます。",
  "live.parks.ph": "JP-1266",
  "live.start": "記録を始める",
- "live.hint": "2fer・3fer はカンマで区切ります（JP-1266,JP-1206）",
+ "live.addPark": "＋ 公園を追加（2fer・3fer）",
  "live.err.park": "公園番号を JP-1266 の形で入力してください。",
  "live.loc": "所在地",
  "live.loc.pick": "都道府県・州を選んでください",

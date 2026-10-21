@@ -28,7 +28,7 @@
   "rail.openData": "開啟資料夾", "rail.checkUpdate": "檢查更新",   "live.title": "今天在哪個公園？",
   "live.lede": "開始運用時請開始記錄。每分鐘記下從公園發射的電台，即使對方 QRT 也能事後判斷 P2P 與 2fer。",
   "live.parks.ph": "JP-1266", "live.start": "開始記錄",
-  "live.hint": "2fer / 3fer 以逗號分隔（JP-1266,JP-1206）",
+  "live.addPark": "＋ 新增公園（2fer / 3fer）",
   "live.err.park": "請以 JP-1266 的格式輸入公園編號。",
   "live.loc": "所在地",
   "live.loc.pick": "請選擇都道府縣/州",

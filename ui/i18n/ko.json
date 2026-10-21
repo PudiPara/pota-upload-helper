@@ -28,7 +28,7 @@
   "rail.openData": "데이터 폴더 열기", "rail.checkUpdate": "업데이트 확인",   "live.title": "오늘은 어느 공원?",
   "live.lede": "운용을 시작하면 기록을 시작하세요. 공원에서 나오는 국을 1분마다 적어 두므로 상대가 QRT해도 P2P와 2fer를 나중에 판정할 수 있습니다.",
   "live.parks.ph": "JP-1266", "live.start": "기록 시작",
-  "live.hint": "2fer / 3fer는 쉼표로 구분합니다 (JP-1266,JP-1206)",
+  "live.addPark": "+ 공원 추가 (2fer / 3fer)",
   "live.err.park": "공원 번호를 JP-1266 형식으로 입력하세요.",
   "live.loc": "소재지",
   "live.loc.pick": "현·주를 선택하세요",
