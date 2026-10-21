@@ -30,8 +30,9 @@
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, "PingFang SC", "PingFang TC", "Microsoft YaHei", "Microsoft JhengHei", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK JP", sans-serif;
   color-scheme: light;
 }
+/* dark: by the OS unless 設定 → 表示 says light, or always when it says dark (applyLook in app.js) */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --pine: #245843;
     --pine-2: #2F7A5B;
     --moss: #87A392;
@@ -57,6 +58,32 @@
     --focus: rgba(47, 122, 91, .45);
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+    --pine: #245843;
+    --pine-2: #2F7A5B;
+    --moss: #87A392;
+    --paper: #111614;
+    --surface: #181E1B;
+    --surface-2: #1F2622;
+    --ink: #E9EEEA;
+    --ink-2: #A2B0A7;
+    --ink-3: #74837A;
+    --line: #28312C;
+    --amber: #E9B457;
+    --amber-ink: #E9B457;
+    --amber-bg: rgba(233, 180, 87, .09);
+    --ok: #6CC08E;
+    --warn: #E39A62;
+    --plate-bg: #2B6B4E;
+    --plate-ink: #F4F7F1;
+    --plate-rule: rgba(244, 247, 241, .5);
+    --rail-bg: #0D1511;
+    --rail-ink: #E6EDE7;
+    --rail-dim: #8EA396;
+    --sign-bg: linear-gradient(160deg, #2A6A50, #1E4D3A);
+    --focus: rgba(47, 122, 91, .45);
+    color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -152,7 +179,8 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .btn-finish:hover { filter: brightness(1.08); border-color: var(--amber); }
 .btn-finish:disabled { opacity: .6; cursor: progress; }
 .link { border: 0; background: none; padding: 0; color: var(--pine-2); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-size: 12.5px; }
-@media (prefers-color-scheme: dark) { .link { color: var(--moss); } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .link { color: var(--moss); } }
+:root[data-theme="dark"] .link { color: var(--moss); }
 .hint { font-size: 12.5px; color: var(--ink-2); margin: 8px 0 0; text-wrap: pretty; }
 .error { color: var(--warn); font-weight: 600; }
 
@@ -204,7 +232,8 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 /* 実績 page */
 .rec-map { height: 340px; border: 1px solid var(--line); border-radius: var(--r-md); margin-bottom: 12px; overflow: hidden; z-index: 0; background: var(--surface); }
 .rec-map .leaflet-container { font: inherit; }
-@media (prefers-color-scheme: dark) { .rec-map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9); } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .rec-map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9); } }
+:root[data-theme="dark"] .rec-map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9); }
 .rec-note { display: flex; gap: 14px; align-items: center; background: var(--amber-bg); border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: var(--r-md); padding: 10px 14px; margin-bottom: 14px; }
 .rec-note p { margin: 0; font-size: 12.5px; text-wrap: pretty; }
 .rec-note .btn { flex: none; padding: 6px 12px; font-size: 12.5px; }
@@ -303,7 +332,8 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .qso.is-p2p::before { background: var(--pine-2); }
 .qso.is-p2p.is-twofer::before { background: var(--amber); }
 .p2p-tag { font-size: 11px; font-weight: 800; color: var(--pine-2); letter-spacing: .04em; margin-right: 2px; }
-@media (prefers-color-scheme: dark) { .p2p-tag { color: var(--moss); } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .p2p-tag { color: var(--moss); } }
+:root[data-theme="dark"] .p2p-tag { color: var(--moss); }
 .qso.is-new, .spot.is-new { animation: arrive 1.6s ease-out; }
 @keyframes arrive { from { background: rgba(126, 226, 160, .22); } }
 
@@ -316,7 +346,8 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .chip:hover { border-color: var(--moss); }
 .chip-yes { border-color: var(--pine-2); color: var(--pine-2); }               /* a question, not a pressed button */
 .chip-yes:hover { background: var(--pine-2); color: #F4F7F1; }
-@media (prefers-color-scheme: dark) { .chip-yes { border-color: var(--moss); color: var(--moss); } .chip-yes:hover { background: var(--moss); color: #10201A; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chip-yes { border-color: var(--moss); color: var(--moss); } :root:not([data-theme="light"]) .chip-yes:hover { background: var(--moss); color: #10201A; } }
+:root[data-theme="dark"] .chip-yes { border-color: var(--moss); color: var(--moss); } :root[data-theme="dark"] .chip-yes:hover { background: var(--moss); color: #10201A; }
 .p2p-in { display: inline-flex; align-items: center; gap: 6px; }
 .p2p-in input { width: 150px; padding: 3px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 12.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .p2p-in input::placeholder { text-transform: none; font-weight: 500; letter-spacing: 0; color: var(--ink-3); }
@@ -362,6 +393,9 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .seg button { border: 0; background: transparent; padding: 5px 12px; border-radius: 999px; cursor: pointer; color: var(--ink-2); font-weight: 600; font-size: 12.5px; }
 .seg button.is-on { background: var(--pine-2); color: #F4F7F1; }
 .seg-src { margin-bottom: 10px; }
+.look-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.look-row + .look-row { margin-top: 10px; }
+.look-row > span { min-width: 7em; font-size: 13.5px; }
 .seg-src button span { margin-left: 6px; opacity: .8; font-weight: 500; }
 
 /* ---------- settings ---------- */

@@ -35,10 +35,12 @@ from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import (SESSION_MARGIN, SpotLogger, clear_records, common_locations, countries, example_parks, history_parks,
                    park_info, park_status, shipped_parks, summarize, tag_candidate)
-from window import BarMode
+from window import BarMode, set_zoom
 
-SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "p2p_auto", "lookup", "on_top")   # "live" is set by start_live/finish_live only
+SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "p2p_auto", "lookup", "on_top", "font_scale", "theme")   # "live" is set by start_live/finish_live only
 DATE_RE = re.compile(r"\d{8}")
+LOOK_SCALES = (1, 1.15, 1.3)            # 設定 → 表示 → 文字の大きさ
+LOOK_THEMES = ("", "light", "dark")     # 設定 → 表示 → 配色 ("" = the OS)
 SPOT_INTERVAL = 60       # seconds between pota.app spot polls while recording
 
 
@@ -146,7 +148,7 @@ class Api:
                 "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
                 "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
                 "country": s.get("country") or "", "countries": countries(),
-                "terms_accepted": s.get("terms_accepted") or "", "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")), "bar_on_top": s.get("bar_on_top", True) is not False,
+                "terms_accepted": s.get("terms_accepted") or "", "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")), **self._look(s), "bar_on_top": s.get("bar_on_top", True) is not False,
                 "lookup": lookup if isinstance(lookup, list) else [lookup],
                 "log_count": qsolog.count(), "receiver": self._receiver_texts(), "mypota": mypota.status()}
 
@@ -161,6 +163,12 @@ class Api:
             keep["lang"] = i18n.set_lang(keep["lang"])
         if "p2p_auto" in keep:
             keep["p2p_auto"] = bool(keep["p2p_auto"])
+        if "font_scale" in keep and keep["font_scale"] not in LOOK_SCALES:
+            keep.pop("font_scale")
+        if "font_scale" in keep and self._bar:
+            self._bar.set_zoom(keep["font_scale"])            # both windows, now
+        if "theme" in keep and keep["theme"] not in LOOK_THEMES:
+            keep.pop("theme")
         if "calls" in keep or "call" in keep:
             s = load_settings()
             calls = clean_calls(keep.get("calls", s.get("calls")), keep.get("call", s.get("call")))
@@ -282,7 +290,12 @@ class Api:
             return {"events": [e for e in self._events if e["at"] > since],
                     "qsos": [e for e in self._qso_events if e["at"] > qsince],
                     "status": self._status, "receiver": self._receiver_texts(),
-                    "running": self._recording()}
+                    "running": self._recording(), "look": self._look()}
+
+    def _look(self, s=None):
+        """設定 → 表示 for both windows: {font_scale, theme}."""
+        s = s or load_settings()
+        return {"font_scale": s.get("font_scale", 1), "theme": s.get("theme", "")}
 
     def session_qsos(self, start_iso, parks=""):
         """The live list when a session starts or the window reopens: today's QSOs at any of these
@@ -341,14 +354,15 @@ class Api:
         """Open or close the bar window."""
         return self._bar.set(on) if self._bar else False
 
-    def fit_bar(self, width):
-        """The bar measured its content: make the window that wide (no line wraps, nothing to spare)."""
+    def fit_bar(self, width, height=100):
+        """The bar measured its content: make the window that size (no line wraps, nothing to spare;
+        taller with a bigger text size)."""
         try:
-            width = max(360, min(1600, int(width)))
+            width, height = max(360, min(2000, int(width))), max(80, min(300, int(height)))
         except (TypeError, ValueError):
             return False
         if self._bar:
-            self._bar.fit(width)
+            self._bar.fit(width, height)
         return True
 
     def set_on_top(self, on):
@@ -628,6 +642,8 @@ def main():
         api.shutdown()
         api._bar.set(False)            # the bar never outlives the main window
     win.events.closing += closing
+    api._bar.zoom = load_settings().get("font_scale", 1)
+    win.events.loaded += lambda: set_zoom(win, api._bar.zoom)
     webview.start(debug=bool(os.environ.get("POTAROO_DEBUG")))
     # The windows are gone. Exit now: pywebview answers each JS call on a non-daemon thread that waits
     # for the run loop, and one still waiting when it stopped (poll_live every second) kept the process

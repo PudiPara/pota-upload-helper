@@ -15,7 +15,7 @@
   "cfg.calls.last": "마지막 호출부호는 삭제할 수 없습니다.",
   "cfg.lang.h": "언어", "cfg.tab.general": "일반", "cfg.tab.qso": "교신", "cfg.country.h": "국가",
   "cfg.app.h": "앱",
-  "cfg.window.h": "창",
+  "cfg.look.h": "표시", "cfg.look.size": "글자 크기", "cfg.look.s1": "표준", "cfg.look.s2": "크게", "cfg.look.s3": "아주 크게", "cfg.look.theme": "배색", "cfg.look.auto": "OS 설정 따르기", "cfg.look.light": "라이트", "cfg.look.dark": "다크", "cfg.look.p": "글자 크기와 배색은 바에도 적용됩니다.", "cfg.window.h": "창",
   "cfg.window.ontop": "본체 창을 항상 다른 창 위에 표시", "cfg.window.barTop": "바를 항상 다른 창 위에 표시",
   "cfg.window.p": "바는 운용 중에 열리는 작은 창으로, 로거 위에 겹쳐 사용합니다.",
   "pop.copy": "{text} 복사",

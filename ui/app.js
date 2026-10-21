@@ -112,6 +112,17 @@
     btn._arm = setTimeout(() => { btn.classList.remove("is-armed"); if (typeof label === "function") label(); else btn.textContent = label; }, ms);
     return false;
   }
+  // 設定 → 表示: the text size (the web view's own zoom, set by Python: window.py set_zoom) and light / dark
+  // (data-theme; "" = follow the OS). Both windows: the bar picks a change up in poll_live and grows with the text.
+  const LOOK = { font_scale: 1, theme: "" };
+  function applyLook(s) {
+    const z = [1, 1.15, 1.3].includes(+s.font_scale) ? +s.font_scale : 1, th = ["light", "dark"].includes(s.theme) ? s.theme : "";
+    if (z === LOOK.font_scale && th === LOOK.theme) return false;
+    Object.assign(LOOK, { font_scale: z, theme: th });
+    if (th) document.documentElement.dataset.theme = th; else delete document.documentElement.dataset.theme;
+    segSet("#fontScale", "scale", String(z)); segSet("#themeSel", "theme", th);
+    return true;
+  }
   function segSet(group, attr, val) {
     $$(group + " button").forEach((x) => { const on = x.dataset[attr] === val; x.classList.toggle("is-on", on); x.setAttribute("aria-checked", on); });
   }
@@ -250,6 +261,7 @@
   async function poll() {
     const r = await api.poll_live(st.lastAt, st.lastQ);
     if (BAR && !r.running) { api.set_bar(false); return; }             // finished in the main window
+    if (BAR && r.look && applyLook(r.look)) { st.barW = 0; fitBar(); }  // 設定 → 表示 changed in the main window
     if (r.status) $("#liveStatus").textContent = r.status;
     updateReceiver(r.receiver);
     const freshS = new Set(), freshQ = new Set();
@@ -445,8 +457,10 @@
     let w = Math.ceil(bar.getBoundingClientRect().width);
     bar.classList.remove("is-measure");
     if (!$("#ask").hidden) w = Math.max(w, Math.ceil($(".ask-q").getBoundingClientRect().width) + 32);   // its 16 px sides
-    w = Math.max(360, w);                          // Api.fit_bar's floor: the P2P question's buttons
-    if (Math.abs(w - window.innerWidth) > 2 && w !== st.barW) { st.barW = w; api.fit_bar(w); }
+    w = Math.max(360, Math.round(w * LOOK.font_scale));   // window px (CSS px x zoom); 360: the P2P question's buttons
+    const h = Math.round(100 * LOOK.font_scale);
+    const z = LOOK.font_scale;                     // innerWidth / innerHeight are CSS px: compare in window px
+    if ((Math.abs(w - innerWidth * z) > 2 || Math.abs(h - innerHeight * z) > 2) && w + "x" + h !== st.barW) { st.barW = w + "x" + h; api.fit_bar(w, h); }
   }
   function blinkAsk() { const b = $("#ask"); b.classList.remove("is-blink"); void b.offsetWidth; b.classList.add("is-blink"); }
   $$("#ask [data-ask]").forEach((b) => b.addEventListener("click", async () => {
@@ -991,6 +1005,8 @@
   });
   $("#onTop").addEventListener("change", (e) => api.set_on_top(e.target.checked));
   $("#barOnTop").addEventListener("change", (e) => api.set_bar_on_top(e.target.checked));
+  $$("#fontScale button").forEach((b) => b.addEventListener("click", () => { applyLook({ ...LOOK, font_scale: +b.dataset.scale }); api.save({ font_scale: LOOK.font_scale }); }));
+  $$("#themeSel button").forEach((b) => b.addEventListener("click", () => { applyLook({ ...LOOK, theme: b.dataset.theme }); api.save({ theme: LOOK.theme }); }));
 
   // ---------- click a park plate or a callsign: copy, or open it on the web ----------
   const LOOKUP = {         // where 設定 → コールサインの検索先 sends a callsign
@@ -1072,6 +1088,7 @@
   async function boot() {
     api = window.pywebview.api;
     const s = await api.get_state();
+    applyLook(s); segSet("#fontScale", "scale", String(LOOK.font_scale)); segSet("#themeSel", "theme", LOOK.theme);
     Object.assign(st, { call: s.call || "", calls: s.calls || [], prefix: s.prefix, out: s.out, adif: s.adif, source: s.source || "app", listeners: s.listeners,
                         langs: s.langs || [["ja", "日本語"]], termsAccepted: s.terms_accepted || "", countries: s.countries || [] });
     $("#lang").innerHTML = st.langs.map(([c, name]) => `<option value="${esc(c)}">${esc(name)}</option>`).join("");

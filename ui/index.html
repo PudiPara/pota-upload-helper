@@ -324,6 +324,22 @@
           <div class="lookup-list" id="lookupSel"></div>
         </section>
         <section class="cfg-block" data-tab="general">
+          <h2 data-i18n="cfg.look.h">表示</h2>
+          <div class="look-row"><span data-i18n="cfg.look.size">文字の大きさ</span>
+            <div class="seg" id="fontScale" role="radiogroup">
+              <button role="radio" data-scale="1" data-i18n="cfg.look.s1">標準</button>
+              <button role="radio" data-scale="1.15" data-i18n="cfg.look.s2">大きめ</button>
+              <button role="radio" data-scale="1.3" data-i18n="cfg.look.s3">特大</button>
+            </div></div>
+          <div class="look-row"><span data-i18n="cfg.look.theme">配色</span>
+            <div class="seg" id="themeSel" role="radiogroup">
+              <button role="radio" data-theme="" data-i18n="cfg.look.auto">OS に合わせる</button>
+              <button role="radio" data-theme="light" data-i18n="cfg.look.light">ライト</button>
+              <button role="radio" data-theme="dark" data-i18n="cfg.look.dark">ダーク</button>
+            </div></div>
+          <p class="cfg-help cfg-help-after" data-i18n="cfg.look.p"></p>
+        </section>
+        <section class="cfg-block" data-tab="general">
           <h2 data-i18n="cfg.window.h">ウインドウ</h2>
           <label class="switch"><input type="checkbox" id="onTop"><span class="switch-ui"></span><span data-i18n="cfg.window.ontop"></span></label>
           <label class="switch"><input type="checkbox" id="barOnTop"><span class="switch-ui"></span><span data-i18n="cfg.window.barTop"></span></label>
