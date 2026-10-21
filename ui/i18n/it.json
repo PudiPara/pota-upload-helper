@@ -45,7 +45,7 @@
   "live.loc.pick": "Scegli la prefettura / lo stato",
   "live.err.loc": "Questo parco si estende su più prefetture / stati. Scegli dove sei.",
   "live.err.noLoc": "Questi parchi non hanno una prefettura / uno stato in comune.",
-  "live.warn.apart": "Secondo pota.app, {a} e {b} non si sovrappongono. Verifica che questo 2fer sia possibile.", "live.note.spread": "I punti di riferimento dei parchi distano {d} (qui ogni parco è un solo punto). Vale come 2fer / 3fer solo se sei dentro tutti i parchi contemporaneamente.",
+  "live.warn.apart": "Secondo le informazioni di pota.app, {a} e {b} non si sovrappongono: non possono essere registrati come 2fer.", "live.note.spread": "I punti di riferimento dei parchi distano {d} (qui ogni parco è un solo punto). Vale come 2fer / 3fer solo se sei dentro tutti i parchi contemporaneamente.",
   "live.toBar": "Modalità barra", "live.finish": "Termina l'attivazione in questo parco", "live.finishArmed": "Termina con {n} non confermati",
   "live.working": "Generazione…",
   "live.qsoNote.done": "Attivazione completata ({n} combinazioni stazione/banda/modo)", "live.qsoNote.left": "Mancano {n} QSO per completare l’attivazione",

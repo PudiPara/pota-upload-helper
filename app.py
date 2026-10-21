@@ -262,8 +262,13 @@ class Api:
         call = (call or "").strip().upper()
         if not CALL_RE.fullmatch(call):
             return {"ok": False, "error": t("api.noCall")}
-        if len(parks) > 1 and common_locations(parks)["none"]:   # no prefecture/state in common: no 2fer
-            return {"ok": False, "error": t("live.err.noLoc")}
+        if len(parks) > 1:
+            cl = common_locations(parks)
+            if cl["none"]:                     # no prefecture/state in common: no 2fer
+                return {"ok": False, "error": t("live.err.noLoc")}
+            if cl["apart"]:                    # pota.app's park comment says they don't overlap
+                a, b = cl["apart"][0]
+                return {"ok": False, "error": t("live.warn.apart", a=a, b=b)}
         locs = self._locs_for(parks, loc)
         self._stop_logger()
         with self._lock:
