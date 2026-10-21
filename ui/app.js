@@ -77,7 +77,7 @@
   async function fillParkNames(sel, parks) {
     try {
       const info = await api.park_info(parks.join(","));
-      $$(sel + " [data-ref].park-name, " + sel + " .name[data-ref]").forEach((el) => { const i = info[el.dataset.ref] || {}; el.textContent = i.local || i.name || ""; });
+      $$(sel + " [data-ref].park-name, " + sel + " .name[data-ref]").forEach((el) => { const i = info[el.dataset.ref] || {}; el.textContent = i.name || ""; });
     } catch (e) { /* optional */ }
   }
   // A destructive button needs a second press (window.confirm is unavailable in the web view): the first

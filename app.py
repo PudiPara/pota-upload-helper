@@ -338,7 +338,7 @@ class Api:
                 "pending": sum(1 for r in items if r.get("pending"))}
 
     def park_info(self, refs):
-        """{ref: spots.park_info(ref)} - name, Japanese name, grid, comments, locations."""
+        """{ref: spots.park_info(ref)} - name, grid, comments, locations."""
         return {ref: park_info(ref) for ref in split_parks(refs)}
 
     def park_locations(self, refs):

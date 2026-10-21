@@ -46,6 +46,18 @@ class ReceiverTest(unittest.TestCase):
         self.assertEqual(len(qsolog.records(["20261021"])), 0)
 
 
+class LocationNames(unittest.TestCase):
+    def test_codes_get_their_own_names(self):
+        from unittest import mock
+        import spots
+        park = {"name": "North Country Trail", "locationDesc": "US-MI,US-ND,US-NY",
+                "locationName": "Michigan,New York,North Dakota"}       # pota.app: codes and names sorted apart
+        with mock.patch.object(spots, "fetch_json", return_value=park), mock.patch.dict(spots._parks, clear=True):
+            locs = spots.park_info("US-4239")["locations"]
+        self.assertEqual({l["code"]: l["name"] for l in locs},
+                         {"US-MI": "Michigan", "US-ND": "North Dakota", "US-NY": "New York"})
+
+
 if __name__ == "__main__":
     unittest.main()
 

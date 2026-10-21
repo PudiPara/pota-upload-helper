@@ -25,6 +25,7 @@ from collections import defaultdict
 from urllib.parse import quote
 
 from i18n import t
+from locations import NAMES as LOCATION_NAMES
 from potacommon import (band_from_khz, base_call, data_path, fetch_json, iso_minutes, mode_group, parks_in,
                         read_json, rec_minutes, split_parks, utc_minutes, utc_stamp, write_json)
 
@@ -261,21 +262,19 @@ _parks = {}                # reference -> park_info, for the run of the app
 
 
 def park_info(ref):
-    """{name, local, grid, comments, locations: [{code, name}]} - local is the Japanese name when the
-    park's pota.app comment is one; locations are the prefectures / states it lies in."""
+    """{name, grid, comments, locations: [{code, name}]} - name is pota.app's (English) park name, the same
+    for every user; locations are the prefectures / states it lies in."""
     if ref not in _parks:
         try:
             p = fetch_json("park/%s" % ref, timeout=8) or {}
         except Exception:
-            return {"name": "", "local": "", "grid": "", "comments": "", "locations": []}     # asked again next time
-        local = (p.get("parkComments") or "").strip()
-        if not re.search(r"[぀-ヿ一-鿿]", local) or len(local) > 40:
-            local = ""
+            return {"name": "", "grid": "", "comments": "", "locations": []}     # asked again next time
+        # names from the shipped table: pota.app sorts locationDesc by code and locationName by name,
+        # so pairing them by position mixes them up (US-4239: US-ND would be "New York")
         codes = [c.strip() for c in (p.get("locationDesc") or "").split(",") if c.strip()]
-        names = [n.strip() for n in (p.get("locationName") or "").split(",")]
-        _parks[ref] = {"name": p.get("name") or "", "local": local, "grid": p.get("grid6") or "",
+        _parks[ref] = {"name": p.get("name") or "", "grid": p.get("grid6") or "",
                        "comments": p.get("parkComments") or "",
-                       "locations": [{"code": c, "name": names[i] if i < len(names) else ""} for i, c in enumerate(codes)]}
+                       "locations": [{"code": c, "name": LOCATION_NAMES.get(c, "")} for c in codes]}
     return _parks[ref]
 
 
