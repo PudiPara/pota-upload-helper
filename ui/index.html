@@ -104,7 +104,7 @@
 
       <div id="liveRun" hidden>
         <div class="bar" id="bar" hidden>
-          <div class="bar-tile pywebview-drag-region"><div class="bar-ring" id="barRing"><strong id="barCount">0</strong><span>/10</span></div></div>
+          <div class="bar-tile pywebview-drag-region"><div class="bar-ring" id="barRing"><strong id="barCount">0</strong><span id="barGoal">/10</span></div></div>
           <div class="bar-body">
             <div class="bar-top pywebview-drag-region"><i class="bar-live"></i><span class="bar-parks" id="barParks"></span><small class="bar-per" id="barPer"></small><span class="bar-clock" id="barElapsed">00:00:00</span></div>
             <ol class="qsos qsos-bar" id="barQsos"></ol>
@@ -115,7 +115,7 @@
 
         <header class="dash">
           <div class="dash-tile" aria-live="polite">
-            <div class="dash-ring" id="dashRing"><strong id="qsoCount">0</strong><span>/10 QSO</span></div>
+            <div class="dash-ring" id="dashRing"><strong id="qsoCount">0</strong><span id="qsoGoal">/10 QSO</span></div>
             <div class="dash-note" id="qsoNote"></div>
           </div>
           <div class="dash-main">
@@ -127,7 +127,7 @@
             <div class="dash-foot">
               <div class="clock" id="elapsed">00:00:00</div>
               <div class="dash-actions">
-                <button class="btn" id="toBar" data-i18n="live.toBar">バー表示にする</button>
+                <button class="btn bar-toggle" id="toBar" role="switch" aria-checked="false"><span class="switch-ui"></span><span data-i18n="live.toBar">バー表示</span></button>
                 <button class="btn btn-finish" id="finishLive" data-i18n="live.finish">この公園での運用を終了</button>
               </div>
             </div>
@@ -405,7 +405,7 @@
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
 <div class="pop" id="pop" hidden role="menu"></div>
-<div class="cheer" id="cheer" hidden role="status"><strong>10 QSO</strong><span data-i18n="cheer.sub">アクティベーション成立</span></div>
+<div class="cheer" id="cheer" hidden role="status"><strong id="cheerN">10 QSO</strong><span id="cheerSub"></span></div>
 <div class="ask" id="ask" hidden role="dialog">
   <div class="ask-q"><span data-i18n="row.ask"></span><strong id="askCall"></strong><span class="plates" id="askParks"></span></div>
   <div class="ask-btns"><button class="chip" data-ask="yes" data-i18n="row.yes"></button><button class="chip" data-ask="no" data-i18n="row.no"></button><button class="chip" data-ask="skip" data-i18n="ask.skip"></button></div>

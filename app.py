@@ -290,7 +290,7 @@ class Api:
             return {"events": [e for e in self._events if e["at"] > since],
                     "qsos": [e for e in self._qso_events if e["at"] > qsince],
                     "status": self._status, "receiver": self._receiver_texts(),
-                    "running": self._recording(), "look": self._look()}
+                    "running": self._recording(), "look": self._look(), "bar": bool(self._bar and self._bar.active)}
 
     def _look(self, s=None):
         """設定 → 表示 for both windows: {font_scale, theme}."""

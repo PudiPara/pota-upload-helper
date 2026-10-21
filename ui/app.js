@@ -7,7 +7,7 @@
   const st = {
     call: "", calls: [], prefix: "home", country: "", countries: [], ex: {}, spots: new Map(), qsos: new Map(), lastAt: 0, lastQ: 0,
     start: null, timer: null, poll: null, source: "app", adif: "", out: "", outDir: "",
-    acts: [], selected: new Set(), listeners: [], receiver: {}, editing: null, bar: false, cheered: false,
+    acts: [], selected: new Set(), listeners: [], receiver: {}, editing: null, bar: false, cheered: null,
     lang: "ja", langs: [], termsAccepted: "", mypota: {}, huntedShown: new Set(),
   };
   const TERMS_VERSION = "2026-10-20";
@@ -225,7 +225,7 @@
 
   const refHtml = (p) => `<span class="ref">${refInner(p)}</span>`;
   async function enterRunning(parks, start) {
-    st.spots.clear(); st.qsos.clear(); st.lastAt = 0; st.start = utcMs(start); st.cheered = false; st.parks = parks; st.seq = 0;
+    st.spots.clear(); st.qsos.clear(); st.lastAt = 0; st.start = utcMs(start); st.cheered = null; st.parks = parks; st.seq = 0;
     $("#liveIdle").hidden = true; $("#liveRun").hidden = false; $("#liveDot").hidden = false;
     $("#signParks").innerHTML = parks.map((p) =>
       `<div class="sign-park">${plate(p)}<span class="name" data-ref="${esc(p)}"></span></div>`).join("");
@@ -233,7 +233,6 @@
     $("#liveStatus").textContent = t("live.status.first");
     for (const q of await api.session_qsos(start, parks.join(","))) { q.seq = ++st.seq; st.qsos.set(q.uid, q); huntedNow(q).forEach((p) => st.huntedShown.add(p)); }
     st.lastQ = Date.now() / 1000 - 1;
-    st.cheered = st.qsos.size >= 10;            // re-opened mid-activation: don't celebrate twice
     renderSpots(); renderQsos();
     clearTimeout(st.timer); tick();
     poll(); clearInterval(st.poll); st.poll = setInterval(poll, 2500);
@@ -263,6 +262,7 @@
     if (BAR && !r.running) { api.set_bar(false); return; }             // finished in the main window
     if (BAR && r.look && applyLook(r.look)) { st.barW = 0; fitBar(); }  // 設定 → 表示 changed in the main window
     if (r.status) $("#liveStatus").textContent = r.status;
+    if (!BAR && "bar" in r && Date.now() - (st.barSetAt || 0) > 3000) showBarOn(r.bar);   // not an answer older than our own switch
     updateReceiver(r.receiver);
     const freshS = new Set(), freshQ = new Set();
     let removed = false;
@@ -364,14 +364,19 @@
     const p2p = list.filter((q) => q.decision && q.decision !== "no" && q.parks.length).length;
     const pending = list.filter((q) => !q.decision && q.candidate.length).length;
     $("#qsoCount").textContent = n; $("#barCount").textContent = n; $("#barPer").textContent = breakdown;
-    const pct = Math.min(100, (n / 10) * 100);
+    // the goal grows by 10 once reached: /10, then /20, /30 ...; the ring shows the current ten
+    const goal = Math.max(10, Math.ceil(n / 10) * 10), pct = ((n - (goal - 10)) / 10) * 100;
+    $("#qsoGoal").textContent = "/" + goal + " QSO"; $("#barGoal").textContent = "/" + goal;
     for (const id of ["#dashRing", "#barRing"]) { $(id).style.setProperty("--p", pct); $(id).classList.toggle("is-done", n >= 10); }
     $("#qsoNote").textContent = (breakdown ? breakdown + " — " : "") + (n >= 10 ? t("live.qsoNote.done", { n: uniq }) : t("live.qsoNote.left", { n: 10 - n }));
     $("#statP2p").textContent = p2p; $("#statPending").textContent = pending;
     $("#statPendingBox").classList.toggle("is-alert", pending > 0);
     renderStats();
     if (st.editing) { const el = $(`[data-in="${CSS.escape(st.editing)}"]`); if (el) el.focus(); }
-    if (n >= 10 && !st.cheered) { st.cheered = true; cheer(); }
+    // a celebration at every 10 QSOs; the ones already passed when the list (re)opens are not repeated
+    const tens = Math.floor(n / 10);
+    if (st.cheered === null) st.cheered = tens;
+    else if (tens > st.cheered) { st.cheered = tens; cheer(tens * 10); }
   }
   // Party poppers over a celebration: two, at the bottom corners, each firing a cloud of paper confetti up
   // toward the middle; the pieces flip and flutter side to side down to the bottom of the window. It plays
@@ -433,7 +438,9 @@
   }
   function hideCelebrations() { $("#hunted").hidden = true; $("#cheer").hidden = true; }
   $("#hunted").addEventListener("click", hideCelebrations);
-  function cheer() {
+  function cheer(n) {
+    $("#cheerN").textContent = n + " QSO";
+    $("#cheerSub").textContent = n === 10 ? t("cheer.sub") : t("cheer.next", { n: n + 10 });
     celebrate("#cheer", burst(48));
   }
   $("#cheer").addEventListener("click", () => ($("#cheer").hidden = true));
@@ -496,9 +503,12 @@
 
   // ---- the bar: a second small window (this page with #bar) kept above the logger; the main window stays
   async function setBar(on) {
-    try { await api.set_bar(on); } catch (e) { /* window control is best effort */ }
+    st.barSetAt = Date.now();
+    try { showBarOn(await api.set_bar(on)); } catch (e) { /* window control is best effort */ }
   }
-  $("#toBar").addEventListener("click", () => setBar(true));
+  // バー表示 ON / OFF: also follows the bar's own × (poll_live "bar")
+  function showBarOn(on) { st.bar = !!on; $("#toBar").setAttribute("aria-checked", String(st.bar)); }
+  $("#toBar").addEventListener("click", () => setBar(!st.bar));
   $("#barClose").addEventListener("click", () => setBar(false));
   // the main window may have been in the background (timers slowed down): catch up when it comes back
   document.addEventListener("visibilitychange", () => { if (!document.hidden && st.start && !BAR) poll(); });
