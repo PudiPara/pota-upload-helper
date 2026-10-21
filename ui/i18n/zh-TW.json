@@ -66,7 +66,7 @@
   "row.note.stale": "spot 已非最新",
   "row.note.unsure": "2fer 為推測", "row.yes": "是，P2P", "row.no": "否", "row.manual": "手動輸入", "row.change": "變更",
   "row.record": "記錄", "row.cancel": "取消", "row.none": "不是 P2P", "row.ph": "對方公園 {cc}-0000",
-  "cheer.sub": "啟用成功", "cheer.next": "下一個目標：{n} QSO",
+  "cheer.sub": "啟用成功", "cheer.next": "下一個目標：{n} QSO", "close.title": "要關閉程式嗎？", "close.live": "正在運作中。關閉不會結束運作，下次啟動時會繼續記錄。", "close.edit": "QSO 編輯畫面已開啟。", "close.go": "關閉", "close.cancel": "取消",
   "done.title.files": "{parks} 的運用已結束。已產生 {n} 個檔案", "done.title.nofiles": "{parks} 的運用已結束",
   "done.fail.title": "記錄已停止，但無法產生檔案", "done.fail.body": "可在「產生上傳檔案」頁重新產生。",
   "done.close": "關閉", "done.open": "開啟儲存位置", "done.pota": "開啟 pota.app",

@@ -87,7 +87,7 @@
  "row.cancel": "Cancel",
  "row.none": "Not P2P",
  "row.ph": "Their park, e.g. {cc}-0000",
- "cheer.sub": "Activation complete", "cheer.next": "Next: {n} QSOs",
+ "cheer.sub": "Activation complete", "cheer.next": "Next: {n} QSOs", "close.title": "Close the app?", "close.live": "An activation is running. Closing does not finish it: recording resumes the next time you start the app.", "close.edit": "The QSO editor is open.", "close.go": "Close", "close.cancel": "Cancel",
  "done.title.files": "Finished {parks}. {n} file(s) written",
  "done.title.nofiles": "Finished {parks}",
  "done.fail.title": "Recording stopped, but the file could not be written",
