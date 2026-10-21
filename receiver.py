@@ -225,7 +225,6 @@ class Receiver:
         """Turbo HAMLOG sends nothing out: ask it for its record count every HAMLOG_POLL seconds and
         fetch the new records (hamlog.py). Old records are not imported, except the last HAMLOG_BACK
         minutes when we first find HAMLOG (the app may have been started after the first QSOs)."""
-        import datetime as dt
         import hamlog
         name = cfg["name"]
         base = {"port": "", "multicast": "", "where": "HAMLOG"}
@@ -241,7 +240,15 @@ class Receiver:
         except OSError as e:
             status("error", err=str(e))
             return
+        try:
+            self._poll_hamlog(client, name, status)
+        finally:
+            client.close()
+
+    def _poll_hamlog(self, client, name, status):
+        import datetime as dt
         last = None
+        back_to = 0              # records up to here were read back on (re)contact, not logged just now
         seen = []                # the QSOs taken from HAMLOG this run, to notice deletions
         while not self._stop.is_set():
             n = client.count()
@@ -257,6 +264,7 @@ class Receiver:
                         if not rec or rec["QSO_DATE"] + rec["TIME_ON"] < cut:
                             break
                         last -= 1
+                    back_to = n
                     status("listening")
                 if n < last:                           # records deleted in HAMLOG: delete them here too
                     self._hamlog_deleted(client, seen, n, name)
@@ -268,7 +276,9 @@ class Receiver:
                         seen.append(rec)
                         # no ext_id: HAMLOG renumbers records when one is deleted, so the number
                         # would later point at another QSO; the record itself is the identity
-                        self.on_qso("upsert", rec, None, name)
+                        # read back after HAMLOG (or this listener) restarted: the app may have it
+                        # already, with the parks of the session it was logged in - keep that
+                        self.on_qso("backfill" if i <= back_to else "upsert", rec, None, name)
                 last = n
             self._stop.wait(self.HAMLOG_POLL)
 

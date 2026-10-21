@@ -60,8 +60,12 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
   manual every time, so the owner dropped the feature. Decisions live only in the app log and files.
 - **Turbo HAMLOG** has no UDP output and locks HAMLOG.HDB while running, so a listener of kind
   "hamlog" polls it every 2 s (`Receiver._run_hamlog`); on first contact it also takes the records of the
-  last 12 h. API terms (Th527API Readme): only for tools for Turbo HAMLOG - this is one; tell the author
-  (JG1MOU) once it ships.
+  last 12 h. Those read-back records (HAMLOG or the listener restarted) arrive as "backfill": `app._on_qso`
+  skips any the log already knows (`qsolog.known`, deleted ones too), so a restart never re-stamps an
+  earlier session's QSOs with the current parks or revives a delete. `hamlog.Client` registers its window
+  class once with one module procedure (`_dispatch` -> `_CLIENTS[hwnd]`); a per-client procedure left a
+  second client (保存して受信し直す) answering the first, and it never saw HAMLOG again. API terms (Th527API
+  Readme): only for tools for Turbo HAMLOG - this is one; tell the author (JG1MOU) once it ships.
 - **Listeners bind to 127.0.0.1** (`receiver.bind_address`): only loggers on the same computer can feed QSOs in (CodeQL alert "binding a socket to all network interfaces"). Multicast listeners bind the group with membership on the default interface (macOS/Linux, verified with WSJT-X); on Windows they bind 127.0.0.1 and join on loopback, so WSJT-X must list loopback under Outgoing interfaces (verified on Windows 11 with a multicast sender on loopback; sending on the default NIC does not arrive). Nothing binds every interface. A logger on another PC is not supported; if that is ever wanted, make it an explicit per-listener option, not the default.
 - **`Api` state is private** (`self._window`, `self._logger`, …): pywebview exposes every public attribute
   of the js_api object and (6.x) walks them recursively; on Windows that walk entered the WinForms window

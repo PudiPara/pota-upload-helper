@@ -59,23 +59,30 @@ def parse_record(text, jst_offset=9):
     return rec
 
 
+_CLASS = "PotaUploadHelperHamlog"
+_PROC = None          # one window procedure for the process, kept alive for good
+_CLIENTS = {}         # hwnd -> Client: the class is registered once, so the procedure finds its client here
+
+
 class Client:
-    """A message-only window on the calling thread; ask() must run on that same thread."""
+    """A message-only window on the calling thread; ask() must run on that same thread.
+    close() it when done: a listener restart makes a new Client."""
 
     def __init__(self):
+        global _PROC
         if os.name != "nt":
             raise OSError("Windows only")
         import ctypes.wintypes as W
         self.u = u = ctypes.windll.user32
         k = ctypes.windll.kernel32
         LRESULT = ctypes.c_ssize_t
-        self.WNDPROC = ctypes.WINFUNCTYPE(LRESULT, W.HWND, W.UINT, W.WPARAM, W.LPARAM)
+        WNDPROC = ctypes.WINFUNCTYPE(LRESULT, W.HWND, W.UINT, W.WPARAM, W.LPARAM)
 
         class COPYDATASTRUCT(ctypes.Structure):
             _fields_ = [("dwData", ctypes.c_size_t), ("cbData", W.DWORD), ("lpData", ctypes.c_void_p)]
 
         class WNDCLASSW(ctypes.Structure):
-            _fields_ = [("style", W.UINT), ("lpfnWndProc", self.WNDPROC), ("cbClsExtra", ctypes.c_int),
+            _fields_ = [("style", W.UINT), ("lpfnWndProc", WNDPROC), ("cbClsExtra", ctypes.c_int),
                         ("cbWndExtra", ctypes.c_int), ("hInstance", W.HINSTANCE), ("hIcon", W.HICON),
                         ("hCursor", W.HANDLE), ("hbrBackground", W.HBRUSH), ("lpszMenuName", W.LPCWSTR),
                         ("lpszClassName", W.LPCWSTR)]
@@ -85,26 +92,33 @@ class Client:
         u.DefWindowProcW.restype = LRESULT
         u.SendMessageTimeoutW.argtypes = [W.HWND, W.UINT, W.WPARAM, W.LPARAM, W.UINT, W.UINT, ctypes.POINTER(ctypes.c_size_t)]
         u.FindWindowW.restype = W.HWND
+        u.DestroyWindow.argtypes = [W.HWND]
         u.CreateWindowExW.restype = W.HWND
         u.CreateWindowExW.argtypes = [W.DWORD, W.LPCWSTR, W.LPCWSTR, W.DWORD, ctypes.c_int, ctypes.c_int, ctypes.c_int,
                                       ctypes.c_int, W.HWND, W.HMENU, W.HINSTANCE, W.LPVOID]
         self._reply = None
-        self._proc = self.WNDPROC(self._wndproc)              # keep a reference: Windows calls it
         hinst = k.GetModuleHandleW(None)
-        cls = "PotaUploadHelperHamlog"
-        wc = WNDCLASSW(lpfnWndProc=self._proc, hInstance=hinst, lpszClassName=cls)
-        u.RegisterClassW(ctypes.byref(wc))                    # fails harmlessly if already registered
-        self.hwnd = u.CreateWindowExW(0, cls, "POTA Upload Helper HAMLOG", 0, 0, 0, 0, 0, W.HWND(-3), None, hinst, None)
+        if _PROC is None:
+            # Registered once: a class keeps the procedure it was registered with, so a per-client
+            # procedure would leave a second client (after 保存して受信し直す) answering the first one.
+            _PROC = WNDPROC(_dispatch)
+            u.RegisterClassW(ctypes.byref(WNDCLASSW(lpfnWndProc=_PROC, hInstance=hinst, lpszClassName=_CLASS)))
+        self.hwnd = u.CreateWindowExW(0, _CLASS, "POTA Upload Helper HAMLOG", 0, 0, 0, 0, 0, W.HWND(-3), None, hinst, None)
         if not self.hwnd:
             raise OSError("cannot create the message window")
+        _CLIENTS[self.hwnd] = self
 
-    def _wndproc(self, hwnd, msg, wp, lp):
-        if msg == WM_COPYDATA:
-            cds = ctypes.cast(lp, ctypes.POINTER(self.CDS)).contents
-            data = ctypes.string_at(cds.lpData, cds.cbData) if cds.lpData and cds.cbData else b""
-            self._reply = data.split(b"\0", 1)[0].decode("cp932", "replace")
-            return 1
-        return self.u.DefWindowProcW(hwnd, msg, wp, lp)
+    def close(self):
+        if self.hwnd:
+            _CLIENTS.pop(self.hwnd, None)
+            self.u.DestroyWindow(self.hwnd)
+            self.hwnd = None
+
+    def _copydata(self, lp):
+        cds = ctypes.cast(lp, ctypes.POINTER(self.CDS)).contents
+        data = ctypes.string_at(cds.lpData, cds.cbData) if cds.lpData and cds.cbData else b""
+        self._reply = data.split(b"\0", 1)[0].decode("cp932", "replace")
+        return 1
 
     def running(self):
         return bool(self.u.FindWindowW("TThwin", None))
@@ -130,3 +144,10 @@ class Client:
     def record(self, n):
         r = self.ask(CMD_RECORD, str(n))
         return parse_record(r) if r else None
+
+
+def _dispatch(hwnd, msg, wp, lp):
+    c = _CLIENTS.get(hwnd)
+    if c and msg == WM_COPYDATA:
+        return c._copydata(lp)
+    return ctypes.windll.user32.DefWindowProcW(hwnd, msg, wp, lp)
