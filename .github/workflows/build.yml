@@ -15,6 +15,13 @@ on:
 permissions:
   contents: write
 
+# One build at a time, in push order: two at once let the older version finish last and take
+# "Latest" (2.0.41 over 2.0.42), and the updater only reads releases/latest. Only one run waits;
+# a third push skips the middle version, never the newest.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   build:
     strategy:
