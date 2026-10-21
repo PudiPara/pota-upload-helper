@@ -712,6 +712,7 @@
   });
   $("#liveCall").addEventListener("change", (e) => saveCalls(st.calls, e.target.value));
   $("#p2pAuto").addEventListener("change", (e) => api.save({ p2p_auto: e.target.checked }));
+  $("#onTop").addEventListener("change", (e) => api.set_on_top(e.target.checked));
 
   // ---------- click a park plate or a callsign: copy, or open it on the web ----------
   const LOOKUP = {         // where 設定 → コールサインの検索先 sends a callsign
@@ -782,7 +783,7 @@
     if (!s.lang) api.save({ lang });
     await loadLang(lang);
     $("#version").textContent = `v${s.version}`;
-    renderCalls(); $("#p2pAuto").checked = !!s.p2p_auto;
+    renderCalls(); $("#p2pAuto").checked = !!s.p2p_auto; $("#onTop").checked = !!s.on_top;
     st.lookup = s.lookup || ["qrz"]; renderLookup();
     setParks(s.parks);
     $("#outPath").textContent = s.out;

@@ -49,9 +49,18 @@ def focus_running(title):
 
 
 class BarMode:
-    def __init__(self, window):
+    def __init__(self, window, keep_on_top=False):
         self.window = window
         self._full = None          # (x, y, w, h) before the window became a bar
+        self.keep_on_top = keep_on_top   # 設定 → 常に最前面: also outside bar mode
+
+    def set_on_top(self, on):
+        """設定 → 常に最前面. Bar mode is always on top; this decides the full window."""
+        self.keep_on_top = bool(on)
+        w = self.window
+        if w and self._full is None:
+            _run_steps(w, [("on_top", lambda: setattr(w, "on_top", self.keep_on_top))])
+        return self.keep_on_top
 
     @property
     def active(self):
@@ -69,7 +78,7 @@ class BarMode:
         elif not on and self._full is not None:
             x, y, width, height = self._full
             self._full = None
-            _run_steps(w, [("on_top", lambda: setattr(w, "on_top", False)),
+            _run_steps(w, [("on_top", lambda: setattr(w, "on_top", self.keep_on_top)),
                            ("resize", lambda: w.resize(width, height)),
                            ("move", lambda: w.move(x, y))])
         return self._full is not None

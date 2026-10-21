@@ -32,7 +32,7 @@ from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import SpotLogger, candidate_info, history_parks, says_no_overlap, summarize
 from window import BarMode
 
-SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted", "p2p_auto", "lookup")   # "live" is set by start_live/finish_live only
+SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted", "p2p_auto", "lookup", "on_top")   # "live" is set by start_live/finish_live only
 CALL_RE = re.compile(r"[A-Z0-9/]{3,}")
 
 
@@ -113,7 +113,7 @@ class Api:
                 "prefix": s.get("prefix", "JP"), "adif": s.get("adif", ""), "out": s.get("out", DEFAULT_OUT),
                 "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
                 "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
-                "terms_accepted": s.get("terms_accepted") or "", "p2p_auto": bool(s.get("p2p_auto")), "lookup": (lambda v: v if isinstance(v, list) else [v])(s.get("lookup") or ["qrz"]),
+                "terms_accepted": s.get("terms_accepted") or "", "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")), "lookup": (lambda v: v if isinstance(v, list) else [v])(s.get("lookup") or ["qrz"]),
                 "log_count": qsolog.count(), "receiver": self._receiver_texts()}
 
     def save(self, data):
@@ -300,6 +300,11 @@ class Api:
 
     def set_bar(self, on):
         return self._bar.set(on) if self._bar else False
+
+    def set_on_top(self, on):
+        """設定 → 常に最前面 (saved; bar mode is on top either way)."""
+        save_settings({"on_top": bool(on)})
+        return self._bar.set_on_top(on) if self._bar else bool(on)
 
     # ================================================================ who is activating now
     def spots_now(self, max_age=45):
@@ -528,9 +533,9 @@ def main():
     api = Api()
     from window import BAR_W
     win = webview.create_window(APP_NAME, resource("ui", "index.html"), js_api=api,
-                                width=1180, height=800, min_size=(BAR_W, 160))
+                                width=1180, height=800, min_size=(BAR_W, 160), on_top=bool(load_settings().get("on_top")))
     api._window = win
-    api._bar = BarMode(win)
+    api._bar = BarMode(win, keep_on_top=bool(load_settings().get("on_top")))
     win.events.closing += api.shutdown
     webview.start(debug=bool(os.environ.get("POTA_HELPER_DEBUG")))
 
