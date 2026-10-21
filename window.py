@@ -5,7 +5,7 @@ import sys
 
 import webview
 
-BAR_W, BAR_H = 640, 236
+BAR_W, BAR_H = 640, 190
 
 
 def _top_right():
@@ -51,12 +51,13 @@ def focus_running(title):
 
 
 class BarMode:
-    def __init__(self, window, url, js_api, title, keep_on_top=False):
+    def __init__(self, window, url, js_api, title, keep_on_top=False, bar_on_top=True):
         self.window = window             # the main window
         self._url, self._api, self._title = url, js_api, title
         self._bar = None                 # the bar window while it is open
         self._on = False
-        self.keep_on_top = keep_on_top   # 設定 → 常に最前面 (the main window; the bar is always on top)
+        self.keep_on_top = keep_on_top   # 設定 → ウインドウ: the main window on top
+        self.bar_on_top = bar_on_top     # 設定 → ウインドウ: the bar on top
 
     def set_on_top(self, on):
         """設定 → 常に最前面 for the main window."""
@@ -65,6 +66,13 @@ class BarMode:
         if w:
             _run_steps(w, [("on_top", lambda: setattr(w, "on_top", self.keep_on_top))])
         return self.keep_on_top
+
+    def set_bar_on_top(self, on):
+        self.bar_on_top = bool(on)
+        bar = self._bar
+        if bar:
+            _run_steps(self.window, [("bar on_top", lambda: setattr(bar, "on_top", self.bar_on_top))])
+        return self.bar_on_top
 
     @property
     def active(self):
@@ -76,7 +84,7 @@ class BarMode:
     def _open(self):
         x, y = _top_right()
         bar = webview.create_window(self._title, self._url + "#bar", js_api=self._api, width=BAR_W, height=BAR_H,
-                                    x=x, y=y, min_size=(BAR_W // 2, 120), on_top=True)
+                                    x=x, y=y, min_size=(BAR_W // 2, 120), on_top=self.bar_on_top)
         bar.events.closed += self._closed
         self._bar = bar
 

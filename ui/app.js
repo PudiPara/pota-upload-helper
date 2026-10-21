@@ -237,7 +237,6 @@
   }
   async function poll() {
     const r = await api.poll_live(st.lastAt, st.lastQ);
-    if (r.action === "finish" && !BAR) { finishLive(null); return; }   // the bar's 運用を終了
     if (BAR && !r.running) { api.set_bar(false); return; }             // finished in the main window
     if (r.status) $("#liveStatus").textContent = r.status;
     updateReceiver(r.receiver);
@@ -267,8 +266,10 @@
       q.seq = (st.qsos.get(q.uid) || {}).seq || ++st.seq;   // arrival order breaks ties in the sort
       st.qsos.set(q.uid, q); freshQ.add(q.uid);
       hunted(q);                                   // decided as it arrived (設定 → P2P, or typed in the logger)
+      if (BAR) { if (!$("#ask").hidden) blinkAsk(); if (!q.decision && q.candidate.length) ask.q.push(q.uid); }
     }
     if (freshS.size || freshQ.size || removed) { renderSpots(freshS); renderQsos(freshQ); }
+    if (BAR) askNext();
   }
   function workedCalls() { return new Set([...st.qsos.values()].map((q) => baseCall(q.call))); }
   function spotRow(e, worked, fresh, page) {
@@ -325,7 +326,7 @@
     const key = (q) => q.ts || q.date + q.time;           // to the second when the logger sent seconds
     const list = [...st.qsos.values()].sort((a, b) => key(b).localeCompare(key(a)) || (b.seq || 0) - (a.seq || 0));   // newest first
     $("#qsos").innerHTML = list.map((q) => qsoRow(q, fresh)).join("");
-    $("#barQsos").innerHTML = list.slice(0, 8).map((q) => qsoRow(q, fresh)).join("");
+    $("#barQsos").innerHTML = list.slice(0, 1).map((q) => qsoRow(q, fresh)).join("");   // the bar: the latest QSO
     $("#qsosEmpty").hidden = list.length > 0; $("#qsos").hidden = list.length === 0;
     $("#barEmpty").hidden = list.length > 0; $("#barQsos").hidden = list.length === 0;
     const uniq = new Set(list.map((q) => `${baseCall(q.call)}|${q.band}|${q.mode}`)).size;
@@ -412,6 +413,26 @@
   }
   $("#cheer").addEventListener("click", () => ($("#cheer").hidden = true));
 
+  // ---- the bar asks about a P2P candidate over the whole bar: はい / いいえ / スキップ; a skipped one stays
+  // unanswered in the main window's list to decide there. Only QSOs that arrive while the bar is open ask.
+  const ask = { q: [], skipped: new Set() };
+  const asking = (u) => { const q = st.qsos.get(u); return q && !q.decision && q.candidate.length && !ask.skipped.has(u); };
+  function askNext() {
+    ask.q = ask.q.filter(asking);
+    const box = $("#ask"), q = st.qsos.get(ask.q[0]);
+    if (!q) { box.hidden = true; return; }
+    if (!box.hidden && box.dataset.uid === q.uid) return;
+    box.dataset.uid = q.uid; box.hidden = false;
+    $("#askCall").textContent = q.call; $("#askParks").innerHTML = plates(q.candidate, q.new);
+  }
+  function blinkAsk() { const b = $("#ask"); b.classList.remove("is-blink"); void b.offsetWidth; b.classList.add("is-blink"); }
+  $$("#ask [data-ask]").forEach((b) => b.addEventListener("click", async () => {
+    const uid = $("#ask").dataset.uid, q = st.qsos.get(uid), act = b.dataset.ask;
+    if (act === "skip") ask.skipped.add(uid);
+    else if (q) await decide(uid, act, act === "yes" ? q.candidate.join(",") : "");
+    $("#ask").hidden = true; askNext();
+  }));
+
   async function decide(uid, decision, parks) {
     const r = await api.set_p2p(uid, decision, parks || "");
     if (!r.ok) { toast(r.error); return; }
@@ -441,7 +462,7 @@
     try { await api.set_bar(on); } catch (e) { /* window control is best effort */ }
   }
   $("#toBar").addEventListener("click", () => setBar(true));
-  $("#barExpand").addEventListener("click", () => setBar(false));     // close the bar, the main window comes up
+  $("#barClose").addEventListener("click", () => setBar(false));
   // the main window may have been in the background (timers slowed down): catch up when it comes back
   document.addEventListener("visibilitychange", () => { if (!document.hidden && st.start && !BAR) poll(); });
 
@@ -450,11 +471,11 @@
   }));
 
   // ---- finish: stop, write this park's upload file(s), back to the start
-  const finishLabels = () => [$("#finishLive"), $("#barFinish")].forEach((b, i) => (b.textContent = i ? t("bar.finish") : t("live.finish")));
+  const finishLabels = () => ($("#finishLive").textContent = t("live.finish"));
   async function finishLive(e) {
     const pending = [...st.qsos.values()].filter((q) => !q.decision && q.candidate.length).length;
-    const btns = [$("#finishLive"), $("#barFinish")];
-    if (pending && e && !secondPress(e.currentTarget, t("live.finishArmed", { n: pending }), finishLabels, 6000)) {
+    const btns = [$("#finishLive")];
+    if (pending && !secondPress(e.currentTarget, t("live.finishArmed", { n: pending }), finishLabels, 6000)) {
       toast(t("live.finishPending", { n: pending }));
       return;
     }
@@ -480,15 +501,6 @@
     $("#parks").focus();
   }
   $("#finishLive").addEventListener("click", finishLive);
-  // the bar hands 運用を終了 to the main window (the results are shown there)
-  $("#barFinish").addEventListener("click", (e) => {
-    const pending = [...st.qsos.values()].filter((q) => !q.decision && q.candidate.length).length;
-    if (pending && !secondPress(e.currentTarget, t("live.finishArmed", { n: pending }), finishLabels, 6000)) {
-      toast(t("live.finishPending", { n: pending }));
-      return;
-    }
-    api.set_bar(false, "finish");
-  });
   $("#doneClose").addEventListener("click", () => ($("#doneCard").hidden = true));
   $("#doneOpen").addEventListener("click", () => api.open_out(st.outDir || st.out));
   $("#donePota").addEventListener("click", () => api.open_url("https://pota.app/"));
@@ -955,6 +967,7 @@
     setLogCount(r.log_count); toast(t("cfg.data.done", { n: r.n }));
   });
   $("#onTop").addEventListener("change", (e) => api.set_on_top(e.target.checked));
+  $("#barOnTop").addEventListener("change", (e) => api.set_bar_on_top(e.target.checked));
 
   // ---------- click a park plate or a callsign: copy, or open it on the web ----------
   const LOOKUP = {         // where 設定 → コールサインの検索先 sends a callsign
@@ -1048,7 +1061,7 @@
     $("#version").textContent = `v${s.version}`;
     st.dataVersion = s.data_version || "";
     $("#dataVersion").textContent = st.dataVersion ? t("ver.data", { v: st.dataVersion }) : "";
-    renderCalls(); $("#p2pAuto").checked = !!s.p2p_auto; $("#onTop").checked = !!s.on_top;
+    renderCalls(); $("#p2pAuto").checked = !!s.p2p_auto; $("#onTop").checked = !!s.on_top; $("#barOnTop").checked = s.bar_on_top !== false;
     st.lookup = s.lookup || ["qrz"]; renderLookup();
     st.mypota = s.mypota || {}; renderMypota();
     setParks(s.parks);

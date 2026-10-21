@@ -108,8 +108,7 @@
             <div class="bar-parks" id="barParks"></div>
             <div class="bar-tally"><strong id="barCount">0</strong><span>/10</span><i class="bar-meter"><b id="barMeter"></b></i><small class="bar-per" id="barPer"></small></div>
             <div class="bar-clock" id="barElapsed">00:00:00</div>
-            <button class="bar-btn" id="barExpand" data-i18n="bar.expand">広げる</button>
-            <button class="bar-btn bar-btn-finish" id="barFinish" data-i18n="bar.finish">運用を終了</button>
+            <button class="bar-btn" id="barClose" data-i18n="bar.close">閉じる</button>
           </div>
           <ol class="qsos qsos-bar" id="barQsos"></ol>
           <div class="bar-empty" id="barEmpty" data-i18n="bar.empty">ロガーからの QSO を待っています。</div>
@@ -318,8 +317,9 @@
         </section>
         <section class="cfg-block" data-tab="general">
           <h2 data-i18n="cfg.window.h">ウインドウ</h2>
-          <label class="switch"><input type="checkbox" id="onTop"><span class="switch-ui"></span><span data-i18n="cfg.window.ontop">常にほかのウインドウより手前に表示する</span></label>
-          <p class="cfg-help cfg-help-after" data-i18n="cfg.window.p">バー表示のときは、この設定に関係なく手前に表示します。</p>
+          <label class="switch"><input type="checkbox" id="onTop"><span class="switch-ui"></span><span data-i18n="cfg.window.ontop"></span></label>
+          <label class="switch"><input type="checkbox" id="barOnTop"><span class="switch-ui"></span><span data-i18n="cfg.window.barTop"></span></label>
+          <p class="cfg-help cfg-help-after" data-i18n="cfg.window.p"></p>
         </section>
         <section class="cfg-block" data-tab="record">
           <h2 data-i18n="cfg.mypota.h">POTA の実績</h2>
@@ -382,6 +382,11 @@
 <div class="toast" id="toast" role="status" hidden></div>
 <div class="pop" id="pop" hidden role="menu"></div>
 <div class="cheer" id="cheer" hidden role="status"><strong>10 QSO</strong><span data-i18n="cheer.sub">アクティベーション成立</span></div>
+<div class="ask" id="ask" hidden role="dialog">
+  <div class="ask-q"><span data-i18n="row.ask"></span><strong id="askCall"></strong><span class="plates" id="askParks"></span></div>
+  <div class="ask-btns"><button class="chip" data-ask="yes" data-i18n="row.yes"></button><button class="chip" data-ask="no" data-i18n="row.no"></button><button class="chip" data-ask="skip" data-i18n="ask.skip"></button></div>
+  <p class="ask-help" data-i18n="ask.later"></p>
+</div>
 <div class="cheer cheer-hunt" id="hunted" hidden role="status"><strong>Hunted!</strong><span class="plates" id="huntedParks"></span><span data-i18n="hunted.sub">新しい公園をハント</span></div>
 <div class="modal" id="editor" hidden role="dialog" aria-modal="true">
   <div class="modal-card modal-wide">

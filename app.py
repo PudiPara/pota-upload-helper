@@ -87,7 +87,6 @@ class Api:
     def __init__(self):
         self._window = None
         self._bar = None               # BarMode, once the window exists
-        self._bar_action = ""          # "finish": the bar asked the main window to finish (poll_live hands it over)
         self._logger = None            # SpotLogger while an activation is being recorded
         self._receiver = None
         self._events = []              # spots seen while recording, for the live view
@@ -147,7 +146,7 @@ class Api:
                 "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
                 "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
                 "country": s.get("country") or "", "countries": countries(),
-                "terms_accepted": s.get("terms_accepted") or "", "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")),
+                "terms_accepted": s.get("terms_accepted") or "", "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")), "bar_on_top": s.get("bar_on_top", True) is not False,
                 "lookup": lookup if isinstance(lookup, list) else [lookup],
                 "log_count": qsolog.count(), "receiver": self._receiver_texts(), "mypota": mypota.status()}
 
@@ -280,11 +279,10 @@ class Api:
 
     def poll_live(self, since, qsince):
         with self._lock:
-            action, self._bar_action = self._bar_action, ""
             return {"events": [e for e in self._events if e["at"] > since],
                     "qsos": [e for e in self._qso_events if e["at"] > qsince],
                     "status": self._status, "receiver": self._receiver_texts(),
-                    "running": self._recording(), "action": action}
+                    "running": self._recording()}
 
     def session_qsos(self, start_iso, parks=""):
         """The live list when a session starts or the window reopens: today's QSOs at any of these
@@ -339,21 +337,19 @@ class Api:
         sess = self._stop_logger()
         return {"ok": True, "start": sess["start"], "end": sess["end"]} if sess else {"ok": True}
 
-    def set_bar(self, on, action=""):
-        """Open or close the bar window. Closing it from the bar brings the main window to the front;
-        action "finish" (the bar's 運用を終了) is done by the main window, which shows the results."""
-        if not on:
-            if action == "finish":
-                with self._lock:
-                    self._bar_action = action
-            from window import focus_running
-            focus_running(APP_NAME)
+    def set_bar(self, on):
+        """Open or close the bar window."""
         return self._bar.set(on) if self._bar else False
 
     def set_on_top(self, on):
-        """設定 → 常に最前面 (saved; bar mode is on top either way)."""
+        """設定 → ウインドウ: the main window on top (saved)."""
         save_settings({"on_top": bool(on)})
         return self._bar.set_on_top(on) if self._bar else bool(on)
+
+    def set_bar_on_top(self, on):
+        """設定 → ウインドウ: the bar on top (saved; on unless turned off)."""
+        save_settings({"bar_on_top": bool(on)})
+        return self._bar.set_bar_on_top(on) if self._bar else bool(on)
 
     # ================================================================ who is activating now
     def spots_now(self, max_age=45):
@@ -617,7 +613,7 @@ def main():
                                 width=1180, height=800, min_size=(BAR_W, 160), on_top=bool(load_settings().get("on_top")))
     api._window = win
     api._bar = BarMode(win, resource("ui", "index.html"), api, APP_NAME + " - " + t("bar.title"),
-                       keep_on_top=bool(load_settings().get("on_top")))
+                       keep_on_top=bool(load_settings().get("on_top")), bar_on_top=load_settings().get("bar_on_top", True) is not False)
     win.events.closing += api.shutdown
     webview.start(debug=bool(os.environ.get("POTAROO_DEBUG")))
 
