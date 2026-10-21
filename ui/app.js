@@ -219,7 +219,7 @@
     const freshS = new Set(), freshQ = new Set();
     let removed = false;
     for (const e of r.events) { st.lastAt = Math.max(st.lastAt, e.at); st.spots.set(e.call, e); freshS.add(e.call); }
-    // a celebration stays up until the next QSO (FT4 or a CW 599 BK one leaves several seconds), a click or Esc
+    // the next QSO closes a celebration still up (FT4 or a CW 599 BK one leaves several seconds)
     if (r.qsos.some((q) => q.action !== "delete" && q.live)) hideCelebrations();
     for (const q of r.qsos) {
       st.lastQ = Math.max(st.lastQ, q.at);
@@ -322,8 +322,9 @@
   const STREAMERS = ["#F2C46B", "#F4F1E4", "#7FC79F", "#E9A9A0", "#8EC5FF", "#C9A0F0"];
   // a paper ribbon with one lazy wave (curled tighter at the end), and small square bits of paper
   const RIBBON = "M15 4 C 26 34, 4 62, 15 92 C 22 112, 26 128, 16 146";
+  // -> a promise that settles when the last piece is gone
   function burst(perPopper = 8, bits = 10) {
-    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches, done = [];
     const W = innerWidth, H = innerHeight;
     [[W * .06, H * .98, 1], [W * .94, H * .98, -1]].forEach(([x0, y0, dir]) => {
       for (let i = 0; i < perPopper + bits; i++) {
@@ -348,10 +349,19 @@
              at(tx + sw, ty + fall * .75, r1 + 60, 1, .76, "ease-in-out"),
              at(tx - sw * .5, ty + fall * .93, r1, 1, .92),
              at(tx, ty + fall, r1 + 30, 0)];                                         // gone at the bottom
-        el.animate(frames, { duration: still ? 1500 : 3300 + Math.random() * 700, delay: still ? 0 : Math.random() * 90,
-                             fill: "forwards" }).onfinish = () => el.remove();
+        const anim = el.animate(frames, { duration: still ? 1500 : 3300 + Math.random() * 700, delay: still ? 0 : Math.random() * 90,
+                                           fill: "forwards" });
+        done.push(anim.finished.then(() => el.remove(), () => el.remove()));
       }
     });
+    return Promise.all(done);
+  }
+  // A celebration closes when its poppers are done (at least 3 s, for the still version), on a click or
+  // Esc, or when the next QSO arrives; a newer celebration is not closed by an older one's end.
+  function celebrate(sel, poppers) {
+    const id = (celebrate.id = (celebrate.id || 0) + 1);
+    $(sel).hidden = false;
+    Promise.all([poppers, new Promise((r) => setTimeout(r, 3000))]).then(() => { if (celebrate.id === id) $(sel).hidden = true; });
   }
 
   // Hunted!: a P2P that hunts a park the operator had never hunted (Python's mypota marks it "new"),
@@ -362,12 +372,12 @@
     if (!parks.length) return;
     parks.forEach((p) => st.huntedShown.add(p));
     $("#huntedParks").innerHTML = plates(parks);
-    $("#cheer").hidden = true; $("#hunted").hidden = false; burst();
+    $("#cheer").hidden = true; celebrate("#hunted", burst());
   }
   function hideCelebrations() { $("#hunted").hidden = true; $("#cheer").hidden = true; }
   $("#hunted").addEventListener("click", hideCelebrations);
   function cheer() {
-    $("#cheer").hidden = false; burst(11, 14);
+    celebrate("#cheer", burst(11, 14));
   }
   $("#cheer").addEventListener("click", () => ($("#cheer").hidden = true));
 
