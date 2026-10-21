@@ -59,7 +59,7 @@
  "live.qsoNote.done": "Activation complete ({n} station/band/mode combinations)",
  "live.qsoNote.left": "{n} more QSOs to complete the activation",
  "live.stat.pending": "Unanswered", "live.stat.rate": "Rate", "live.stat.perHour": "/h", "live.stat.last": "Last QSO", "live.stat.ago": "{n} min ago", "live.stat.now": "just now",
- "live.qsos": "QSOs",
+ "live.tab.list": "List", "live.tab.map": "Map", "live.qsos": "QSOs",
  "live.spots": "On the air from parks",
  "live.seg.world": "World",
  "live.qsosEmpty1": "Waiting for QSOs from the logger.",

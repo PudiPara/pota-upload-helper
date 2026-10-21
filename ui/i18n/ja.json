@@ -59,7 +59,7 @@
  "live.qsoNote.done": "アクティベーション成立（{n} 局・バンド・モード）",
  "live.qsoNote.left": "あと {n} QSO でアクティベーション成立",
  "live.stat.pending": "確認待ち", "live.stat.rate": "ペース", "live.stat.perHour": "/時", "live.stat.last": "最後の交信", "live.stat.ago": "{n} 分前", "live.stat.now": "たった今",
- "live.qsos": "交信",
+ "live.tab.list": "一覧", "live.tab.map": "地図", "live.qsos": "交信",
  "live.spots": "公園から出ている局",
  "live.seg.world": "全世界",
  "live.qsosEmpty1": "ロガーからの QSO を待っています。",

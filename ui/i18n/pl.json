@@ -50,7 +50,7 @@
   "live.working": "Zapisuję…",
   "live.qsoNote.done": "Aktywacja zaliczona ({n} kombinacji stacja/pasmo/emisja)", "live.qsoNote.left": "Jeszcze {n} QSO do zaliczenia aktywacji",
   "live.stat.pending": "Oczekujące", "live.stat.rate": "Tempo", "live.stat.perHour": "/h", "live.stat.last": "Ostatnie QSO", "live.stat.ago": "{n} min temu", "live.stat.now": "przed chwilą",
-  "live.qsos": "QSO", "live.spots": "Nadają z parków", "live.seg.world": "Świat",
+  "live.tab.list": "Lista", "live.tab.map": "Mapa", "live.qsos": "QSO", "live.spots": "Nadają z parków", "live.seg.world": "Świat",
   "live.qsosEmpty1": "Czekam na QSO z logu.", "live.qsosEmpty2": "Jeśli nic nie przychodzi, sprawdź „Połączenie z logiem”.",
   "live.spotsEmpty1": "Jeszcze nic nie spotowano.", "live.spotsEmpty2": "Spoty są sprawdzane co minutę.",
   "live.count": "{n} stacji", "live.count2fer": " · {n} z 2fer lub więcej",

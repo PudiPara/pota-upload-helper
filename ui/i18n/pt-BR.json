@@ -50,7 +50,7 @@
   "live.working": "Gravando…",
   "live.qsoNote.done": "Ativação concluída ({n} combinações estação/banda/modo)", "live.qsoNote.left": "Faltam {n} QSOs para concluir a ativação",
   "live.stat.pending": "Pendentes", "live.stat.rate": "Ritmo", "live.stat.perHour": "/h", "live.stat.last": "Último QSO", "live.stat.ago": "há {n} min", "live.stat.now": "agora mesmo",
-  "live.qsos": "QSOs", "live.spots": "No ar de parques", "live.seg.world": "Mundo",
+  "live.tab.list": "Lista", "live.tab.map": "Mapa", "live.qsos": "QSOs", "live.spots": "No ar de parques", "live.seg.world": "Mundo",
   "live.qsosEmpty1": "Aguardando QSOs do programa de log.", "live.qsosEmpty2": "Se nada chegar, confira «Conexão com o log».",
   "live.spotsEmpty1": "Nada spotado ainda.", "live.spotsEmpty2": "Os spots são verificados a cada minuto.",
   "live.count": "{n} estações", "live.count2fer": " · {n} com 2fer ou mais",
