@@ -16,6 +16,7 @@ Time rules live here and nowhere else:
 """
 import datetime as dt
 import glob
+import gzip
 import json
 import os
 import re
@@ -27,7 +28,7 @@ from urllib.parse import quote
 from i18n import t
 from locations import NAMES as LOCATION_NAMES
 from potacommon import (band_from_khz, base_call, data_path, fetch_json, iso_minutes, mode_group, parks_in,
-                        read_json, rec_minutes, split_parks, utc_minutes, utc_stamp, write_json)
+                        read_json, rec_minutes, resource, split_parks, utc_minutes, utc_stamp, write_json)
 
 SPOT_BEFORE = 30       # minutes
 SPOT_AFTER = 10        # minutes
@@ -258,24 +259,55 @@ def load_sessions():
 
 
 # ---------------------------------------------------------------- a park as pota.app describes it
-_parks = {}                # reference -> park_info, for the run of the app
+# Every active park ships with the app (assets/parks.tsv.gz, scripts/update_pota_data.py), so a park
+# number shows its name and locations at once and offline. pota.app is asked only for a park newer than
+# that list, and for a park's comment when two parks are entered (the "does not overlap" note).
+PARKS_FILE = ("assets", "parks.tsv.gz")
+_shipped = None            # reference -> (name, "US-MI,US-ND", grid)
+_fetched = {}              # reference -> pota.app's park record, for the run of the app
+
+
+def shipped_parks():
+    global _shipped
+    if _shipped is None:
+        try:
+            with gzip.open(resource(*PARKS_FILE), "rt", encoding="utf-8") as fh:
+                _shipped = {ref: (name, locs, grid) for ref, name, locs, grid in
+                            (line.rstrip("\n").split("\t") for line in fh)}
+        except (OSError, ValueError):
+            _shipped = {}
+    return _shipped
+
+
+def _park_record(ref):
+    """pota.app's park/{ref}, cached; {} when it can't be had (asked again next time)."""
+    if ref not in _fetched:
+        try:
+            _fetched[ref] = fetch_json("park/%s" % ref, timeout=8) or {}
+        except Exception:
+            return {}
+    return _fetched[ref]
+
+
+def _locations(codes):
+    # names from locations.py: pota.app sorts locationDesc by code and locationName by name, so pairing
+    # them by position mixes them up (US-4239: US-ND would be "New York")
+    return [{"code": c, "name": LOCATION_NAMES.get(c, "")} for c in (x.strip() for x in (codes or "").split(",")) if c]
 
 
 def park_info(ref):
-    """{name, grid, comments, locations: [{code, name}]} - name is pota.app's (English) park name, the same
-    for every user; locations are the prefectures / states it lies in."""
-    if ref not in _parks:
-        try:
-            p = fetch_json("park/%s" % ref, timeout=8) or {}
-        except Exception:
-            return {"name": "", "grid": "", "comments": "", "locations": []}     # asked again next time
-        # names from the shipped table: pota.app sorts locationDesc by code and locationName by name,
-        # so pairing them by position mixes them up (US-4239: US-ND would be "New York")
-        codes = [c.strip() for c in (p.get("locationDesc") or "").split(",") if c.strip()]
-        _parks[ref] = {"name": p.get("name") or "", "grid": p.get("grid6") or "",
-                       "comments": p.get("parkComments") or "",
-                       "locations": [{"code": c, "name": LOCATION_NAMES.get(c, "")} for c in codes]}
-    return _parks[ref]
+    """{name, grid, locations: [{code, name}]} - pota.app's (English) park name, the same for every user;
+    locations are the prefectures / states it lies in."""
+    hit = shipped_parks().get(ref)
+    if hit:
+        return {"name": hit[0], "grid": hit[2], "locations": _locations(hit[1])}
+    p = _park_record(ref)
+    return {"name": p.get("name") or "", "grid": p.get("grid6") or "", "locations": _locations(p.get("locationDesc"))}
+
+
+def park_comments(ref):
+    """The park's pota.app comment (where a park says which neighbours it does not overlap)."""
+    return _park_record(ref).get("parkComments") or ""
 
 
 def common_locations(refs):
@@ -290,8 +322,9 @@ def common_locations(refs):
         if codes:                          # unknown to pota.app: no constraint from it
             common = codes if common is None else [c for c in common if c in codes]
     names = {loc["code"]: loc["name"] for ref in parks for loc in info[ref]["locations"]}
+    notes = {ref: park_comments(ref) for ref in parks} if len(parks) > 1 else {}
     apart = [[a, b] for i, a in enumerate(parks) for b in parks[i + 1:]
-             if says_no_overlap(info[a]["comments"], b) or says_no_overlap(info[b]["comments"], a)]
+             if says_no_overlap(notes[a], b) or says_no_overlap(notes[b], a)]
     return {"options": [{"code": c, "name": names.get(c, "")} for c in (common or [])],
             "multi": [ref for ref in parks if len(info[ref]["locations"]) > 1], "apart": apart}
 

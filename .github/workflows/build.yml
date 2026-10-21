@@ -35,7 +35,7 @@ jobs:
           pyinstaller --noconfirm --windowed --name "Potaroo" \
             --osx-bundle-identifier com.jl1fva.pota-upload-helper \
             --icon assets/icon.icns \
-            --add-data "ui:ui" app.py
+            --add-data "ui:ui" --add-data "assets/parks.tsv.gz:assets" app.py
           # macOS 15+ asks for "Local Network" permission before an app may receive
           # multicast (WSJT-X on 224.0.0.1); the prompt needs this usage string.
           APP="dist/Potaroo.app"
@@ -55,7 +55,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          pyinstaller --noconfirm --onefile --windowed --name "Potaroo" --icon assets/icon.ico --add-data "ui;ui" app.py
+          pyinstaller --noconfirm --onefile --windowed --name "Potaroo" --icon assets/icon.ico --add-data "ui;ui" --add-data "assets/parks.tsv.gz;assets" app.py
           # zip: what the in-app updater downloads.  Setup.exe: what people install from (Inno Setup, per-user).
           Compress-Archive -Path "dist/Potaroo.exe" -DestinationPath "Potaroo-Windows.zip"
           Copy-Item "Potaroo-Windows.zip" "POTA-Upload-Helper-Windows.zip"   # what 1.x's updater looks for

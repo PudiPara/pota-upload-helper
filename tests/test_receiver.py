@@ -46,14 +46,26 @@ class ReceiverTest(unittest.TestCase):
         self.assertEqual(len(qsolog.records(["20261021"])), 0)
 
 
-class LocationNames(unittest.TestCase):
-    def test_codes_get_their_own_names(self):
+class ParkInfo(unittest.TestCase):
+    def test_shipped_list_answers_without_pota_app(self):
         from unittest import mock
         import spots
-        park = {"name": "North Country Trail", "locationDesc": "US-MI,US-ND,US-NY",
+        with mock.patch.object(spots, "fetch_json", side_effect=AssertionError("no network")):
+            p = spots.park_info("JP-1206")
+            self.assertTrue(p["name"].startswith("Tama Kyuryo"))
+            self.assertEqual(p["locations"], [{"code": "JP-TK", "name": "Tokyo"}])
+            self.assertEqual(spots.common_locations("JP-1206")["options"], [{"code": "JP-TK", "name": "Tokyo"}])
+
+    def test_a_park_newer_than_the_list_asks_pota_app(self):
+        from unittest import mock
+        import spots
+        park = {"name": "New Park", "locationDesc": "US-MI,US-ND,US-NY", "grid6": "EN00",
                 "locationName": "Michigan,New York,North Dakota"}       # pota.app: codes and names sorted apart
-        with mock.patch.object(spots, "fetch_json", return_value=park), mock.patch.dict(spots._parks, clear=True):
-            locs = spots.park_info("US-4239")["locations"]
+        with mock.patch.object(spots, "fetch_json", return_value=park), mock.patch.dict(spots._fetched, clear=True), \
+                mock.patch.object(spots, "_shipped", {}):
+            info = spots.park_info("US-99999")
+            locs = info["locations"]
+        self.assertEqual(info["name"], "New Park")
         self.assertEqual({l["code"]: l["name"] for l in locs},
                          {"US-MI": "Michigan", "US-ND": "North Dakota", "US-NY": "New York"})
 

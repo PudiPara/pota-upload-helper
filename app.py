@@ -27,8 +27,8 @@ import updater
 from builder import build, find_activation_qsos, list_activations
 from i18n import t
 from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, base_call, data_path, fetch_json, iso_date,
-                        iso_minutes, load_settings, lock_instance, mode_of, my_call, read_adif, rec_minutes, save_settings,
-                        split_parks)
+                        iso_minutes, load_settings, lock_instance, mode_of, my_call, read_adif, rec_minutes, resource,
+                        save_settings, split_parks)
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import SESSION_MARGIN, SpotLogger, common_locations, history_parks, park_info, summarize, tag_candidate
@@ -52,11 +52,6 @@ def clean_calls(calls, call):
 def session_since(start_iso):
     """The minute a session's QSOs may start (its start, less the margin spots.py allows)."""
     return iso_minutes(start_iso) - SESSION_MARGIN
-
-
-def resource(*parts):
-    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(base, *parts)
 
 
 def open_path(path):
