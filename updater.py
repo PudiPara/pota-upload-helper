@@ -19,12 +19,12 @@ import zipfile
 from i18n import t
 from potacommon import APP_NAME, USER_AGENT, VERSION, fetch_json
 
-REPO = "PudiPara/pota-upload-helper"
+REPO = "PudiPara/potaroo"
 LATEST = "https://api.github.com/repos/%s/releases/latest" % REPO
 PAGE = "https://github.com/%s/releases/latest" % REPO
 DOWNLOAD_PREFIX = "https://github.com/%s/releases/download/" % REPO
-# the repo is being renamed to PudiPara/potaroo; GitHub then answers with the new name's URLs
-DOWNLOAD_PREFIXES = (DOWNLOAD_PREFIX, "https://github.com/PudiPara/potaroo/releases/download/")
+# the repo was PudiPara/pota-upload-helper until 2.0.2; GitHub redirects that name to this one
+DOWNLOAD_PREFIXES = (DOWNLOAD_PREFIX, "https://github.com/PudiPara/pota-upload-helper/releases/download/")
 # 1.x looks for POTA-Upload-Helper-*.zip; CI publishes those names too until nobody is on 1.x
 ASSETS = {"darwin": "Potaroo-macOS.zip", "win32": "Potaroo-Windows.zip"}
 
