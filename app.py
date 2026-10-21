@@ -614,8 +614,16 @@ def main():
     api._window = win
     api._bar = BarMode(win, resource("ui", "index.html"), api, APP_NAME + " - " + t("bar.title"),
                        keep_on_top=bool(load_settings().get("on_top")), bar_on_top=load_settings().get("bar_on_top", True) is not False)
-    win.events.closing += api.shutdown
+    def closing():                     # returns None: a closing handler returning False cancels the close
+        api.shutdown()
+        api._bar.set(False)            # the bar never outlives the main window
+    win.events.closing += closing
     webview.start(debug=bool(os.environ.get("POTAROO_DEBUG")))
+    # The windows are gone. Exit now: pywebview answers each JS call on a non-daemon thread that waits
+    # for the run loop, and one still waiting when it stopped (poll_live every second) kept the process
+    # alive with its windows frozen on screen (macOS, "固まる" on closing the window).
+    api.shutdown()
+    os._exit(0)
 
 
 if __name__ == "__main__":
