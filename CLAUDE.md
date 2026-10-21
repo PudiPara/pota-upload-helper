@@ -79,9 +79,11 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
 - **A QSO's own parks win.** `builder.find_activation_qsos`: override (手で上書き) → the record's
   MY_POTA_REF/MY_SIG_INFO (set while recording) → the sessions.json window it fell in. Windows carry a
   ±5 min margin and overlap when sessions follow each other quickly, so they are a fallback only.
-- **The live list is the day's QSOs at the current parks** (`Api.session_qsos(start, parks)` + the poll
-  filter in app.js): a park shared by several sessions keeps its count; the header shows the smallest
-  park count with a per-park breakdown when they differ. Rows sort by `ts`, ties by arrival (`seq`).
+- **The live list is the day's QSOs at the current parks** (`Api.session_qsos(start, parks)`; for each new
+  QSO Python sends `live` = `Api._in_session` and `twins` = `qsolog.twins`, a delete sends the `uids` it
+  removed - app.js only applies them): a park shared by several sessions keeps its count; the header
+  shows the smallest park count with a per-park breakdown when they differ. Rows sort by `ts`, ties by
+  arrival (`seq`). Destructive buttons share `secondPress` in app.js.
 - **Upload hours**: POTA asks for no log uploads 03-11 UTC; every results box (`uploadHoursHtml` in app.js, top of `resultsHtml`) says so in local time, amber while it is that time now.
 - **Results list every QSO** (`summary[].rows`, P2P rows with plates and source; a "P2P only" switch) and
   the pota.app line count (`records`) next to the QSO count when their 2fer doubled lines.

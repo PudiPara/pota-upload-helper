@@ -4,7 +4,7 @@
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   let api = null;
   const st = {
-    call: "JL1FVA", prefix: "JP", spots: new Map(), qsos: new Map(), lastAt: 0, lastQ: 0,
+    call: "", calls: [], prefix: "JP", spots: new Map(), qsos: new Map(), lastAt: 0, lastQ: 0,
     start: null, timer: null, poll: null, source: "app", adif: "", out: "", outDir: "",
     acts: [], selected: new Set(), listeners: [], receiver: {}, editing: null, bar: false, cheered: false,
     lang: "ja", langs: [], termsAccepted: "",
@@ -48,11 +48,10 @@
     const parts = String(c || "").toUpperCase().split("/").filter((p) => /\d/.test(p) && /[A-Z]/.test(p) && p.length >= 3);
     return parts.length ? parts.sort((a, b) => b.length - a.length)[0] : String(c || "").toUpperCase();
   };
-  function plate(ref) {
-    const i = ref.indexOf("-");
-    return `<span class="plate" data-ref="${esc(ref)}"><b>${esc(ref.slice(0, i + 1))}</b>${esc(ref.slice(i + 1))}</span>`;
-  }
-  const plates = (refs) => (refs || []).map(plate).join('<span class="plate-join" aria-hidden="true">+</span>');
+  const refInner = (ref) => { const i = ref.indexOf("-"); return `<b>${esc(ref.slice(0, i + 1))}</b>${esc(ref.slice(i + 1))}`; };
+  const plate = (ref) => `<span class="plate" data-ref="${esc(ref)}">${refInner(ref)}</span>`;
+  const JOIN = '<span class="plate-join" aria-hidden="true">+</span>';
+  const plates = (refs) => (refs || []).map(plate).join(JOIN);
   // Country = the park prefix (ISO 3166 alpha-2, sent by Python): flag from regional indicators, name in the UI language.
   const flagOf = (cc) => /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map((c) => 0x1F1E6 + c.charCodeAt(0) - 65)) : "";
   const countryName = (cc) => { try { return new Intl.DisplayNames([st.lang], { type: "region" }).of(cc) || cc; } catch (e) { return cc; } };
@@ -63,7 +62,6 @@
     } catch (e) { return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`; }
   };
   const hhmm = (tm) => `${esc(String(tm).slice(0, 2))}:${esc(String(tm).slice(2, 4))}`;
-  const mins = (tm) => +String(tm).slice(0, 2) * 60 + +String(tm).slice(2, 4);
   function fmtFreq(khz) {
     const k = parseFloat(khz);
     return k ? `${(k / 1000).toFixed(3)}<small>MHz</small>` : esc(khz || "");
@@ -73,6 +71,24 @@
     clearTimeout(toast.h); toast.h = setTimeout(() => (el.hidden = true), 2800);
   }
   const utcMs = (iso) => Date.parse(iso.length === 16 ? iso + ":00Z" : iso + "Z");
+  function showError(el, msg) { el.textContent = msg || ""; el.hidden = !msg; }
+  function setLogCount(n) { $("#logCount").textContent = n ? " " + t("build.count", { n }) : ""; }
+  // Park names from pota.app into the [data-ref] slots of a container (optional: a failure leaves them empty)
+  async function fillParkNames(sel, parks) {
+    try {
+      const info = await api.park_info(parks.join(","));
+      $$(sel + " [data-ref].park-name, " + sel + " .name[data-ref]").forEach((el) => { const i = info[el.dataset.ref] || {}; el.textContent = i.local || i.name || ""; });
+    } catch (e) { /* optional */ }
+  }
+  // A destructive button needs a second press (window.confirm is unavailable in the web view): the first
+  // press arms it for `ms` with `armedText`; then `label` (text, or a function that resets it) comes back.
+  // -> true on the second press.
+  function secondPress(btn, armedText, label, ms = 4000) {
+    if (btn.classList.contains("is-armed")) { btn.classList.remove("is-armed"); clearTimeout(btn._arm); return true; }
+    btn.classList.add("is-armed"); btn.textContent = armedText;
+    btn._arm = setTimeout(() => { btn.classList.remove("is-armed"); if (typeof label === "function") label(); else btn.textContent = label; }, ms);
+    return false;
+  }
   function segSet(group, attr, val) {
     $$(group + " button").forEach((x) => { const on = x.dataset[attr] === val; x.classList.toggle("is-on", on); x.setAttribute("aria-checked", on); });
   }
@@ -121,11 +137,8 @@
     $("#parksPreview").innerHTML = parks.map((p) => `${plate(p)}<span class="park-name" data-ref="${esc(p)}"></span>`).join("");
     clearTimeout(renderPreview.h);
     if (parks.length) renderPreview.h = setTimeout(async () => {
-      try {
-        const info = await api.park_info(parks.join(","));
-        $$("#parksPreview .park-name").forEach((el) => { const i = info[el.dataset.ref] || {}; el.textContent = i.local || i.name || ""; });
-        renderLoc(await api.park_locations(parks.join(",")));
-      } catch (e) { /* optional */ }
+      fillParkNames("#parksPreview", parks);
+      try { renderLoc(await api.park_locations(parks.join(","))); } catch (e) { /* optional */ }
     }, 500);
     if (!parks.length) renderLoc(null);
   }
@@ -156,22 +169,22 @@
   async function startLive() {
     const parks = splitParks(parkValue());
     const err = $("#liveError");
-    if (!parks.length) { err.textContent = t("live.err.park"); err.hidden = false; return; }
-    if ((st.locOptions || []).length > 1 && !st.loc) { err.textContent = t("live.err.loc"); err.hidden = false; return; }
-    err.hidden = true; $("#doneCard").hidden = true;
+    if (!parks.length) return showError(err, t("live.err.park"));
+    if ((st.locOptions || []).length > 1 && !st.loc) return showError(err, t("live.err.loc"));
+    showError(err, ""); $("#doneCard").hidden = true;
     const r = await api.start_live(parks.join(","), st.call, st.loc || "");
-    if (!r.ok) { err.textContent = r.error; err.hidden = false; return; }
+    if (!r.ok) return showError(err, r.error);
     enterRunning(r.parks, r.start);
   }
   $("#startLive").addEventListener("click", startLive);
 
-  const refHtml = (p) => { const i = p.indexOf("-"); return `<span class="ref"><b>${esc(p.slice(0, i + 1))}</b>${esc(p.slice(i + 1))}</span>`; };
+  const refHtml = (p) => `<span class="ref">${refInner(p)}</span>`;
   async function enterRunning(parks, start) {
     st.spots.clear(); st.qsos.clear(); st.lastAt = 0; st.start = utcMs(start); st.cheered = false; st.parks = parks; st.seq = 0;
     $("#liveIdle").hidden = true; $("#liveRun").hidden = false; $("#liveDot").hidden = false;
     $("#signParks").innerHTML = parks.map((p) =>
       `<div class="sign-park">${refHtml(p)}<span class="name" data-ref="${esc(p)}"></span></div>`).join("");
-    $("#barParks").innerHTML = parks.map(refHtml).join('<span class="plate-join" aria-hidden="true">+</span>');
+    $("#barParks").innerHTML = parks.map(refHtml).join(JOIN);
     $("#liveStatus").textContent = t("live.status.first");
     for (const q of await api.session_qsos(start, parks.join(","))) { q.seq = ++st.seq; st.qsos.set(q.uid, q); }
     st.lastQ = Date.now() / 1000 - 1;
@@ -180,10 +193,7 @@
     tick(); clearInterval(st.timer); st.timer = setInterval(tick, 1000);
     poll(); clearInterval(st.poll); st.poll = setInterval(poll, 2500);
     setBar(true);
-    try {
-      const info = await api.park_info(parks.join(","));
-      $$("#signParks .name").forEach((el) => { const i = info[el.dataset.ref] || {}; el.textContent = i.local || i.name || ""; });
-    } catch (e) { /* optional */ }
+    fillParkNames("#signParks", parks);
   }
   function tick() {
     const s = Math.max(0, Math.floor((Date.now() - st.start) / 1000));
@@ -196,29 +206,25 @@
     if (r.status) $("#liveStatus").textContent = r.status;
     updateReceiver(r.receiver);
     const freshS = new Set(), freshQ = new Set();
+    let removed = false;
     for (const e of r.events) { st.lastAt = Math.max(st.lastAt, e.at); st.spots.set(e.call, e); freshS.add(e.call); }
     for (const q of r.qsos) {
       st.lastQ = Math.max(st.lastQ, q.at);
-      if (q.action === "delete") {
-        for (const [k, v] of st.qsos) if (baseCall(v.call) === baseCall(q.call) && v.date === q.date &&
-          Math.abs(+v.time - +q.time) <= 3) st.qsos.delete(k);
+      if (q.action === "delete") {                 // Python sends every copy it deleted
+        (q.uids || []).forEach((u) => { removed = st.qsos.delete(u) || removed; });
         toast(t("live.deleted", { call: q.call }));
         continue;
       }
-      // keep today's QSOs at these parks (a shared park counts for the whole day) and anything since the start
-      const atMine = (q.my || []).some((p) => (st.parks || []).includes(p));
-      if (!atMine && q.date && st.start && Date.parse(`${q.date.slice(0, 4)}-${q.date.slice(4, 6)}-${q.date.slice(6, 8)}T${q.time.slice(0, 2)}:${q.time.slice(2, 4)}:00Z`) < st.start - 300000) continue;
-      // WSJT-X logs the start time, the logger the end time: show the same contact once
-      for (const [k, v] of st.qsos) {
-        if (k !== q.uid && v.date === q.date && v.band === q.band && baseCall(v.call) === baseCall(q.call) && Math.abs(mins(v.time) - mins(q.time)) <= 3) {
-          if (!q.decision && v.decision) Object.assign(q, { decision: v.decision, parks: v.parks });
-          st.qsos.delete(k);
-        }
+      if (!q.live) continue;                       // Python: not this session's (another park, before the start)
+      for (const k of q.twins || []) {             // the same contact already shown (WSJT-X start time vs logger end time)
+        const v = st.qsos.get(k); if (!v) continue;
+        if (!q.decision && v.decision) Object.assign(q, { decision: v.decision, parks: v.parks });
+        st.qsos.delete(k);
       }
       q.seq = (st.qsos.get(q.uid) || {}).seq || ++st.seq;   // arrival order breaks ties in the sort
       st.qsos.set(q.uid, q); freshQ.add(q.uid);
     }
-    if (freshS.size || freshQ.size) { renderSpots(freshS); renderQsos(freshQ); }
+    if (freshS.size || freshQ.size || removed) { renderSpots(freshS); renderQsos(freshQ); }
   }
   function workedCalls() { return new Set([...st.qsos.values()].map((q) => baseCall(q.call))); }
   function spotRow(e, worked, fresh, page) {
@@ -339,18 +345,13 @@
 
   // ---- finish: stop, write this park's upload file(s), back to the start
   const finishLabels = () => [$("#finishLive"), $("#barFinish")].forEach((b, i) => (b.textContent = i ? t("bar.finish") : t("live.finish")));
-  async function finishLive() {
+  async function finishLive(e) {
     const pending = [...st.qsos.values()].filter((q) => !q.decision && q.candidate.length).length;
     const btns = [$("#finishLive"), $("#barFinish")];
-    if (pending && !st.finishArmed) {           // window.confirm is not available in the embedded view
-      st.finishArmed = true;
-      btns.forEach((b) => (b.textContent = t("live.finishArmed", { n: pending })));
+    if (pending && !secondPress(e.currentTarget, t("live.finishArmed", { n: pending }), finishLabels, 6000)) {
       toast(t("live.finishPending", { n: pending }));
-      clearTimeout(finishLive.h);
-      finishLive.h = setTimeout(() => { st.finishArmed = false; finishLabels(); }, 6000);
       return;
     }
-    st.finishArmed = false; clearTimeout(finishLive.h);
     btns.forEach((b) => { b.disabled = true; b.textContent = t("live.working"); });
     const r = await api.finish_live(true);
     btns.forEach((b) => (b.disabled = false)); finishLabels();
@@ -384,9 +385,9 @@
   const REGIONS = ["as", "eu", "na", "sa", "af", "oc"];      // continent codes from spots.continent_of
   async function loadSpotsPage() {
     const r = await api.spots_now();
-    const err = $("#spotsError");
-    if (!r.ok) { err.textContent = r.error; err.hidden = false; return; }
-    err.hidden = true; sp.items = r.items; sp.worked = new Set(r.worked || []);
+    showError($("#spotsError"), r.ok ? "" : r.error);
+    if (!r.ok) return;
+    sp.items = r.items; sp.worked = new Set(r.worked || []);
     $("#spotsAt").textContent = t("spots.at", { at: r.at, n: r.items.length });
     const bands = [...new Set(sp.items.map((e) => e.band).filter(Boolean))]
       .sort((a, b) => parseFloat(b) * (b.endsWith("cm") ? .01 : 1) - parseFloat(a) * (a.endsWith("cm") ? .01 : 1));
@@ -466,15 +467,11 @@
     // Delete needs a second press (no window.confirm in the web view); the first press arms it for 4 s.
     $$("#acts .act-del").forEach((b) => b.addEventListener("click", async (e) => {
       e.preventDefault();
-      if (!b.classList.contains("is-armed")) {
-        b.classList.add("is-armed"); b.textContent = t("build.deleteArmed");
-        setTimeout(() => { b.classList.remove("is-armed"); b.textContent = t("build.delete"); }, 4000);
-        return;
-      }
+      if (!secondPress(b, t("build.deleteArmed"), t("build.delete"))) return;
       const r = await api.delete_activation(b.dataset.date);
       if (!r.ok) { toast(r.error); return; }
       toast(t("build.deleted", { n: r.n }));
-      $("#logCount").textContent = r.log_count ? " " + t("build.count", { n: r.log_count }) : "";
+      setLogCount(r.log_count);
       loadActs();
     }));
     $$("#acts input").forEach((i) => i.addEventListener("change", () => {
@@ -514,15 +511,11 @@
       loadEditor();
     }));
     $$("#editorRows .ed-del").forEach((b) => b.addEventListener("click", async () => {
-      if (!b.classList.contains("is-armed")) {
-        b.classList.add("is-armed"); b.textContent = t("build.deleteArmed");
-        setTimeout(() => { b.classList.remove("is-armed"); b.textContent = t("ed.delete"); }, 4000);
-        return;
-      }
+      if (!secondPress(b, t("build.deleteArmed"), t("ed.delete"))) return;
       const res = await api.delete_qso(b.closest("tr").dataset.uid);
       if (!res.ok) { toast(res.error); return; }
       toast(t("ed.deleted"));
-      $("#logCount").textContent = res.log_count ? " " + t("build.count", { n: res.log_count }) : "";
+      setLogCount(res.log_count);
       loadEditor();
     }));
   }
@@ -625,9 +618,9 @@
   });
   $("#saveListeners").addEventListener("click", async () => {
     const r = await api.save_listeners(st.listeners);
-    const err = $("#listenError");
-    if (!r.ok) { err.textContent = r.error; err.hidden = false; return; }
-    err.hidden = true; st.listeners = r.listeners; st.receiver = r.receiver || {}; renderListeners(); updateReceiver(st.receiver);
+    showError($("#listenError"), r.ok ? "" : r.error);
+    if (!r.ok) return;
+    st.listeners = r.listeners; st.receiver = r.receiver || {}; renderListeners(); updateReceiver(st.receiver);
     toast(t("set.saved"));
   });
   setInterval(async () => { if (api) updateReceiver((await api.poll_live(1e12, 1e12)).receiver); }, 4000);
@@ -641,11 +634,16 @@
     if (!r.ok) { if (!quiet) txt.textContent = r.error; return; }
     upd = r;
     if (!r.newer) { if (!quiet) { txt.textContent = t("upd.latest", { v: r.current }); go.hidden = true; } return; }
-    box.hidden = false; go.hidden = !r.can_install; go.disabled = false; go.textContent = t("upd.go");
-    txt.innerHTML = t("upd.available", { latest: esc(r.latest), current: esc(r.current) }) +
-      (r.can_install ? esc(t(r.translocated ? "upd.install.dl" : "upd.install.swap"))
-        : `<button class="link" id="updatePage">${esc(t("upd.page"))}</button>`);
-    const pg = $("#updatePage"); if (pg) pg.addEventListener("click", () => api.open_url(r.page));
+    box.hidden = false;
+    showUpdate(txt, go);
+  }
+  // "v2.0.4 is out (you have v2.0.3)" + how it installs, or a link to the release page when it can't
+  function showUpdate(txt, go) {
+    txt.innerHTML = t("upd.available", { latest: esc(upd.latest), current: esc(upd.current) }) + " " +
+      (upd.can_install ? esc(t(upd.translocated ? "upd.install.dl" : "upd.install.swap"))
+        : `<button class="link upd-page">${esc(t("upd.page"))}</button>`);
+    const pg = txt.querySelector(".upd-page"); if (pg) pg.addEventListener("click", () => api.open_url(upd.page));
+    go.hidden = !upd.can_install; go.disabled = false; go.textContent = t("upd.go");
   }
   $("#checkUpdate").addEventListener("click", () => checkUpdate(false));
   async function installUpdate(go, txt) {           // from the settings box or the startup modal
@@ -662,14 +660,7 @@
   async function promptUpdate() {
     await checkUpdate(true);
     if (!upd || !upd.newer) return;
-    const show = () => {
-      $("#updModalText").innerHTML = t("upd.available", { latest: esc(upd.latest), current: esc(upd.current) }) + " " +
-        (upd.can_install ? esc(t(upd.translocated ? "upd.install.dl" : "upd.install.swap"))
-          : `<button class="link" id="updModalPage">${esc(t("upd.page"))}</button>`);
-      const pg = $("#updModalPage"); if (pg) pg.addEventListener("click", () => api.open_url(upd.page));
-      $("#updModalGo").hidden = !upd.can_install; $("#updModalGo").disabled = false; $("#updModalGo").textContent = t("upd.go");
-      $("#updModal").hidden = false;
-    };
+    const show = () => { showUpdate($("#updModalText"), $("#updModalGo")); $("#updModal").hidden = false; };
     if ($("#terms").hidden) show(); else st.afterTerms = show;
   }
   $("#updModalLater").addEventListener("click", () => ($("#updModal").hidden = true));
@@ -705,15 +696,15 @@
   $("#callsAdd").addEventListener("submit", (e) => {
     e.preventDefault();
     const err = $("#callsError"), c = $("#callNew").value.trim().toUpperCase();
-    if (!/^[A-Z0-9/]{3,}$/.test(c)) { err.textContent = t("cfg.calls.err"); err.hidden = false; return; }
-    err.hidden = true; $("#callNew").value = "";
+    if (!/^[A-Z0-9/]{3,}$/.test(c)) return showError(err, t("cfg.calls.err"));       // = potacommon.CALL_RE
+    showError(err, ""); $("#callNew").value = "";
     saveCalls(st.calls.includes(c) ? st.calls : [...st.calls, c], st.calls.length ? st.call : c);
   });
   $("#calls").addEventListener("click", (e) => {
     const b = e.target.closest("[data-del]"); if (!b) return;
     const err = $("#callsError");
-    if (st.calls.length <= 1) { err.textContent = t("cfg.calls.last"); err.hidden = false; return; }
-    err.hidden = true;
+    if (st.calls.length <= 1) return showError(err, t("cfg.calls.last"));
+    showError(err, "");
     const calls = st.calls.filter((c) => c !== b.dataset.del);
     saveCalls(calls, calls.includes(st.call) ? st.call : calls[0]);
   });
@@ -783,7 +774,7 @@
   async function boot() {
     api = window.pywebview.api;
     const s = await api.get_state();
-    Object.assign(st, { call: s.call, calls: s.calls || [s.call], prefix: s.prefix, out: s.out, adif: s.adif, source: s.source || "app", listeners: s.listeners,
+    Object.assign(st, { call: s.call || "", calls: s.calls || [], prefix: s.prefix, out: s.out, adif: s.adif, source: s.source || "app", listeners: s.listeners,
                         langs: s.langs || [["ja", "日本語"]], termsAccepted: s.terms_accepted || "" });
     $("#lang").innerHTML = st.langs.map(([c, name]) => `<option value="${esc(c)}">${esc(name)}</option>`).join("");
     const lang = s.lang || pickLang(navigator.language);
@@ -794,7 +785,7 @@
     st.lookup = s.lookup || ["qrz"]; renderLookup();
     setParks(s.parks);
     $("#outPath").textContent = s.out;
-    $("#logCount").textContent = s.log_count ? " " + t("build.count", { n: s.log_count }) : "";
+    setLogCount(s.log_count);
     segSet("#liveRun .seg", "prefix", st.prefix); sp.country = st.prefix || "";
     renderListeners(); updateReceiver(s.receiver);
     setSource(st.source);
