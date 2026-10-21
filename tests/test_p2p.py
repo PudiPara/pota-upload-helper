@@ -130,6 +130,13 @@ class ReceivedFromALogger(unittest.TestCase):
         self.assertEqual((stored["P2P_DECISION"], stored["SIG_INFO"]), ("yes", "JP-0043"))
         self.assertEqual(r2["P2P_DECISION"], "yes")
 
+    def test_twins_and_delete_name_every_copy(self):
+        u1 = qsolog.upsert(rec("JA1TWN", "072000"), None, "WSJT-X")
+        u2 = qsolog.upsert(rec("JA1TWN", "072100", RST_SENT="-05"), "t-1", "logger")
+        self.assertEqual(qsolog.twins(u2), [u1])
+        self.assertEqual(sorted(qsolog.delete("t-1")), sorted([u1, u2]))
+        self.assertEqual(qsolog.twins(u2), [])
+
     def test_ssb_sidebands_are_one_mode(self):
         from potacommon import adif_mode, mode_of
         self.assertEqual(adif_mode("lsb"), {"MODE": "SSB", "SUBMODE": "LSB"})

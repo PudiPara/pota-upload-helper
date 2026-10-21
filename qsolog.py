@@ -158,10 +158,18 @@ def set_p2p(uid, decision, parks):
     return updated
 
 
+def twins(uid):
+    """uids of the other stored copies of this QSO (the live list shows a contact once)."""
+    with _conn() as con:
+        row = con.execute("SELECT call, qso_date, time_on, band, mode FROM qso WHERE uid=?", (uid,)).fetchone()
+        return [u for u in _twins(con, row[1], row[0], row[2], row[3], row[4]) if u != uid] if row else []
+
+
 # ---------------------------------------------------------------- edits and deletes
 def delete(ext_id=None, call=None, qso_date=None, time_on=None):
-    """Delete a QSO the logger deleted (by its id there, else call/date/time) and its copies. -> how many."""
-    n = 0
+    """Delete a QSO the logger deleted (by its id there, else call/date/time) and its copies.
+    -> the uids deleted."""
+    gone = []
     with _conn() as con:
         targets = []
         if ext_id:
@@ -171,8 +179,9 @@ def delete(ext_id=None, call=None, qso_date=None, time_on=None):
             targets = [(call.upper(), qso_date, time_on or "", None, None)]
         for c, d, t, band, mode in targets:
             for uid in _twins(con, d, c, t, band, mode):
-                n += con.execute("UPDATE qso SET deleted=1 WHERE uid=? AND deleted=0", (uid,)).rowcount
-    return n
+                if con.execute("UPDATE qso SET deleted=1 WHERE uid=? AND deleted=0", (uid,)).rowcount:
+                    gone.append(uid)
+    return gone
 
 
 def update(uid, fields):

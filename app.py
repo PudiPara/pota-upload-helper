@@ -27,7 +27,8 @@ import updater
 from builder import build, find_activation_qsos, list_activations
 from i18n import t
 from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, base_call, data_path, fetch_json, iso_date,
-                        iso_minutes, load_settings, lock_instance, mode_of, my_call, read_adif, save_settings, split_parks)
+                        iso_minutes, load_settings, lock_instance, mode_of, my_call, read_adif, rec_minutes, save_settings,
+                        split_parks)
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import SESSION_MARGIN, SpotLogger, common_locations, history_parks, park_info, summarize, tag_candidate
@@ -200,9 +201,8 @@ class Api:
                 return
             action = "upsert"
         if action == "delete":
-            n = qsolog.delete(ext_id, rec.get("CALL"), rec.get("QSO_DATE"), rec.get("TIME_ON"))
-            ev = {"action": "delete", "call": rec.get("CALL"), "date": rec.get("QSO_DATE"),
-                  "time": (rec.get("TIME_ON") or "")[:4], "n": n}
+            gone = qsolog.delete(ext_id, rec.get("CALL"), rec.get("QSO_DATE"), rec.get("TIME_ON"))
+            ev = {"action": "delete", "call": rec.get("CALL"), "uids": gone}
         else:
             if self._recording() and not rec.get("MY_SIG_INFO"):
                 rec["MY_SIG"], rec["MY_SIG_INFO"] = "POTA", ",".join(self._logger.parks)
@@ -210,7 +210,9 @@ class Api:
                     rec["MY_POTA_LOCS"] = dict(self._locs)        # parks spanning prefectures/states -> where I was
             info = tag_candidate(rec)
             accept = info["parks"] if info["auto"] and load_settings().get("p2p_auto") else None   # 設定 → P2P
-            ev = qso_event(rec, qsolog.received(rec, ext_id, listener, accept))
+            uid = qsolog.received(rec, ext_id, listener, accept)
+            # twins: copies the list already shows (WSJT-X's start time, the logger's end time) - one row each contact
+            ev = dict(qso_event(rec, uid), twins=qsolog.twins(uid), live=self._in_session(rec))
         ev.update({"source": listener, "at": time.time()})
         with self._lock:
             self._qso_events.append(ev)
@@ -235,6 +237,16 @@ class Api:
         self._locs = locs
         save_settings({"live": {"id": sess["id"], "parks": parks, "call": call, "start": sess["start"], "locs": locs}})
         return {"ok": True, "parks": parks, "start": sess["start"], "loc": loc}
+
+    def _in_session(self, rec):
+        """Does this QSO belong in the running session's list: logged at one of its parks today (a park
+        shared with an earlier session keeps its count), or since the session started."""
+        if not self._recording():
+            return False
+        if set(split_parks(rec.get("MY_SIG_INFO"))) & set(self._logger.parks):
+            return True
+        t = rec_minutes(rec)
+        return t is None or t >= session_since(self._logger.session["start"])
 
     def _on_spot(self, tm, act, parks, freq, mode, twofer):
         with self._lock:
@@ -430,7 +442,7 @@ class Api:
         # (builder.find_activation_qsos); each with the twin copy another program sent
         n = 0
         for r, _, _ in find_activation_qsos(qsolog.records([date]), dates=[date]):
-            n += 1 if qsolog.delete(None, r.get("CALL"), r.get("QSO_DATE"), r.get("TIME_ON")) else 0
+            n += 1 if qsolog.delete(None, r.get("CALL"), r.get("QSO_DATE"), r.get("TIME_ON")) else 0   # a QSO, not its copies
         return {"ok": True, "n": n, "log_count": qsolog.count()}
 
     def pick_out(self):
