@@ -4,6 +4,7 @@ Formats are detected per packet, whatever the listener is labelled:
   * N1MM Logger+ XML  <contactinfo>, <contactreplace>, <contactdelete>   (RUMlogNG, N1MM, DXLog...)
   * WSJT-X / JTDX binary protocol, message 12 "Logged ADIF"
   * plain ADIF text (one or more records), also ADIF wrapped in XML (RUMlog "Contact info ADIF")
+  * QLog "QSO changes" JSON (insert / update / delete, the record as ADIF)
 Every listener can also forward the raw packet to another host:port, so the
 app can sit between your logger and another program (e.g. RUMlog -> here -> OpsLog).
 """
@@ -83,6 +84,24 @@ def read_qt_string(buf, off):
     return buf[off:off + n].decode("utf-8", "replace"), off + n
 
 
+def parse_qlog(text):
+    """QLog's "QSO changes" notification: JSON with the record as an ADIF string.
+    {"appid": "QLog", "msgtype": "QSO", "logid": ..., "data": {"operation": insert|update|delete,
+    "rowid": N, "type": "adif", "value": "<call:6>..."}}. rowid (per log) keeps edits and deletes on
+    the same QSO; QLog sends one update per edited field."""
+    import json
+    try:
+        msg = json.loads(text)
+    except ValueError:
+        return []
+    d = msg.get("data") or {}
+    if str(msg.get("appid", "")).lower() != "qlog" or str(msg.get("msgtype", "")).lower() != "qso" or d.get("type", "adif") != "adif":
+        return []
+    uid = "qlog:%s:%s" % (msg.get("logid", ""), d.get("rowid", ""))
+    action = "delete" if d.get("operation") == "delete" else "upsert"
+    return [(action, r, uid) for r in parse_adif_text(d.get("value") or "")]
+
+
 def parse_packet(data):
     """-> list of (action, record, uid). Unknown packets -> []"""
     if len(data) >= 12 and struct.unpack_from(">I", data, 0)[0] == WSJTX_MAGIC:
@@ -93,6 +112,8 @@ def parse_packet(data):
             return [("upsert", r, None) for r in parse_adif_text(adif)]
         return []
     text = data.decode("utf-8", "replace").strip()
+    if text.startswith("{"):
+        return parse_qlog(text)
     if text.startswith("<?xml") or text.lower().startswith("<contact"):
         try:
             root = ET.fromstring(text)
