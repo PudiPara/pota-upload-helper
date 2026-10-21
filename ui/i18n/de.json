@@ -128,7 +128,7 @@
   "upd.checking": "Prüfe…", "upd.latest": "Aktuell (v{v})",
   "upd.available": "<strong>v{latest}</strong> ist verfügbar (du hast v{current}).",
   "upd.install.swap": "Wird heruntergeladen, ausgetauscht und neu gestartet.", "upd.install.dl": "Wird in deinen Downloads-Ordner geladen.",
-  "upd.page": "Releases-Seite öffnen", "upd.go": "Jetzt aktualisieren",
+  "upd.page": "Releases-Seite öffnen", "upd.go": "Jetzt aktualisieren", "ver.data": "Parkdaten {v}", "upd.dataAvailable": "Parkdaten <strong>{latest}</strong> sind verfügbar (installiert: {current}).", "upd.dataNote": "Neue Parkdaten verfügbar",
   "upd.modal.title": "Neue Version verfügbar",
   "upd.later": "Später", "upd.downloading": "Lade herunter…",
   "upd.manual": "Die neue App liegt unter <b>{path}</b>. Beende diese App, verschiebe sie in den Programme-Ordner und öffne sie.",

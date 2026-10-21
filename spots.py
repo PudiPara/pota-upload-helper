@@ -276,7 +276,7 @@ def load_sessions():
 # number shows its name and locations at once and offline. pota.app is asked only for a park newer than
 # that list, and for a park's comment when two parks are entered (the "does not overlap" note).
 PARKS_FILE = ("assets", "parks.tsv.gz")
-_shipped = None            # reference -> (name, "US-MI,US-ND", grid, (lat, lon) or None)
+_shipped = None            # reference -> (name, "US-MI,US-ND", grid, (lat, lon) or None, active)
 _fetched = {}              # reference -> pota.app's park record, for the run of the app
 
 
@@ -292,7 +292,7 @@ def shipped_parks():
                         at = (float(ll[0]), float(ll[1]))
                     except (IndexError, ValueError):
                         at = None                 # a park without a position (or an older list)
-                    parks[ref] = (name, locs, grid, at)
+                    parks[ref] = (name, locs, grid, at, ll[2:3] != ["0"])   # retired by pota.app: "0"
             _shipped = parks
         except (OSError, ValueError):
             _shipped = {}
@@ -301,12 +301,12 @@ def shipped_parks():
 
 def countries():
     """The park prefixes (ISO 3166 alpha-2) that have active parks, for 設定 → 所在国."""
-    return sorted({ref.split("-")[0] for ref in shipped_parks()})
+    return sorted({ref.split("-")[0] for ref, p in shipped_parks().items() if p[4]})
 
 
 def example_parks(country):
     """{cc, park, park2}: the first parks of a country, for the examples in the UI copy (US without one)."""
-    refs = sorted(r for r in shipped_parks() if r.split("-")[0] == country) or ["US-0001", "US-0002"]
+    refs = sorted(r for r, p in shipped_parks().items() if p[4] and r.split("-")[0] == country) or ["US-0001", "US-0002"]
     return {"cc": refs[0].split("-")[0], "park": refs[0], "park2": refs[min(1, len(refs) - 1)]}
 
 
@@ -331,7 +331,7 @@ def park_info(ref):
     locations are the prefectures / states it lies in."""
     hit = shipped_parks().get(ref)
     if hit:
-        return {"name": hit[0], "grid": hit[2], "locations": _locations(hit[1])}
+        return {"name": hit[0], "grid": hit[2], "locations": _locations(hit[1]), "active": hit[4]}
     p = _park_record(ref)
     return {"name": p.get("name") or "", "grid": p.get("grid6") or "", "locations": _locations(p.get("locationDesc"))}
 

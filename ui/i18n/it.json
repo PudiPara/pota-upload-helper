@@ -128,7 +128,7 @@
   "upd.checking": "Controllo…", "upd.latest": "Aggiornato (v{v})",
   "upd.available": "<strong>v{latest}</strong> è disponibile (hai la v{current}).",
   "upd.install.swap": "Verrà scaricata, sostituita e riavviata.", "upd.install.dl": "Verrà scaricata nella cartella Download.",
-  "upd.page": "Apri la pagina Releases", "upd.go": "Aggiorna ora",
+  "upd.page": "Apri la pagina Releases", "upd.go": "Aggiorna ora", "ver.data": "Dati dei parchi {v}", "upd.dataAvailable": "Dati dei parchi <strong>{latest}</strong> disponibili (hai {current}).", "upd.dataNote": "Nuovi dati dei parchi disponibili",
   "upd.modal.title": "È disponibile una nuova versione",
   "upd.later": "Più tardi", "upd.downloading": "Download…",
   "upd.manual": "La nuova app è in <b>{path}</b>. Chiudi questa app, spostala nella cartella Applicazioni e aprila.",

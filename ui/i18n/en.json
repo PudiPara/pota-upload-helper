@@ -206,7 +206,7 @@
  "upd.install.swap": "It will be downloaded, swapped in and restarted.",
  "upd.install.dl": "It will be downloaded to your Downloads folder.",
  "upd.page": "Open the Releases page",
- "upd.go": "Update now",
+ "upd.go": "Update now", "ver.data": "Park data {v}", "upd.dataAvailable": "Park data <strong>{latest}</strong> is out (you have {current}).", "upd.dataNote": "Park data update available",
  "upd.modal.title": "A new version is available",
  "upd.later": "Later",
  "upd.downloading": "Downloading…",

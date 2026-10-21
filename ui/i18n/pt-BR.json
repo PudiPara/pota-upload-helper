@@ -128,7 +128,7 @@
   "upd.checking": "Verificando…", "upd.latest": "Atualizado (v{v})",
   "upd.available": "<strong>v{latest}</strong> está disponível (você tem a v{current}).",
   "upd.install.swap": "Será baixado, substituído e reiniciado.", "upd.install.dl": "Será baixado para a pasta Downloads.",
-  "upd.page": "Abrir a página de Releases", "upd.go": "Atualizar agora",
+  "upd.page": "Abrir a página de Releases", "upd.go": "Atualizar agora", "ver.data": "Dados dos parques {v}", "upd.dataAvailable": "Dados dos parques <strong>{latest}</strong> disponíveis (você tem {current}).", "upd.dataNote": "Há dados de parques novos",
   "upd.modal.title": "Há uma nova versão",
   "upd.later": "Depois", "upd.downloading": "Baixando…",
   "upd.manual": "O novo app está em <b>{path}</b>. Feche este app, mova-o para a pasta Aplicativos e abra.",

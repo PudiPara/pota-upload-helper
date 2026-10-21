@@ -128,7 +128,7 @@
   "upd.checking": "正在檢查…", "upd.latest": "已是最新版（v{v}）",
   "upd.available": "<strong>v{latest}</strong> 已發布（目前 v{current}）。",
   "upd.install.swap": "將下載、替換並重新啟動。", "upd.install.dl": "將下載到「下載項目」資料夾。",
-  "upd.page": "開啟 Releases 頁面", "upd.go": "立即更新",
+  "upd.page": "開啟 Releases 頁面", "upd.go": "立即更新", "ver.data": "公園資料 {v}", "upd.dataAvailable": "公園資料 <strong>{latest}</strong> 已發布（目前為 {current}）。", "upd.dataNote": "有公園資料更新",
   "upd.modal.title": "有新版本",
   "upd.later": "稍後", "upd.downloading": "正在下載…",
   "upd.manual": "新版本已放在 <b>{path}</b>。請結束本程式，把它移到「應用程式」資料夾後再開啟。",

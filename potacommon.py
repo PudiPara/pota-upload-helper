@@ -13,7 +13,7 @@ API = "https://api.pota.app"
 PARK_RE = re.compile(r"\b([A-Z0-9]{1,4}-\d{4,5})\b")
 APP_NAME = "Potaroo"
 OLD_NAME = "POTA Upload Helper"      # the name until 2.0.0: its data folder is moved over on first start
-VERSION = "2.0.21"
+VERSION = "2.0.22"
 
 
 def _moved(new, old):
@@ -75,6 +75,15 @@ def lock_instance():
 def resource(*parts):
     """A file shipped with the app (inside the PyInstaller bundle, or next to the sources)."""
     return os.path.join(getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__))), *parts)
+
+
+def data_version():
+    """The version of the shipped pota.app data (assets/pota-data.txt, "2026.10.21"), "" when missing."""
+    try:
+        with open(resource("assets", "pota-data.txt"), encoding="utf-8") as fh:
+            return fh.read().strip()
+    except OSError:
+        return ""
 
 
 def data_path(name=""):

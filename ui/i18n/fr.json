@@ -128,7 +128,7 @@
   "upd.checking": "Vérification…", "upd.latest": "À jour (v{v})",
   "upd.available": "<strong>v{latest}</strong> est disponible (vous avez v{current}).",
   "upd.install.swap": "Téléchargement, remplacement puis redémarrage.", "upd.install.dl": "Téléchargement dans votre dossier Téléchargements.",
-  "upd.page": "Ouvrir la page Releases", "upd.go": "Mettre à jour",
+  "upd.page": "Ouvrir la page Releases", "upd.go": "Mettre à jour", "ver.data": "Données des parcs {v}", "upd.dataAvailable": "Données des parcs <strong>{latest}</strong> disponibles (vous avez {current}).", "upd.dataNote": "Mise à jour des données des parcs",
   "upd.modal.title": "Nouvelle version disponible",
   "upd.later": "Plus tard", "upd.downloading": "Téléchargement…",
   "upd.manual": "La nouvelle version est dans <b>{path}</b>. Quittez l’application, déplacez-la dans Applications puis ouvrez-la.",

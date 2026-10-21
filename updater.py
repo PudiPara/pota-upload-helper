@@ -17,7 +17,7 @@ import urllib.request
 import zipfile
 
 from i18n import t
-from potacommon import USER_AGENT, VERSION, fetch_json
+from potacommon import USER_AGENT, VERSION, data_version, fetch_json
 
 REPO = "PudiPara/potaroo"
 LATEST = "https://api.github.com/repos/%s/releases/latest" % REPO
@@ -33,6 +33,12 @@ def parse_version(tag):
     """'v1.2.3' / '1.2' -> (1, 2, 3) / (1, 2, 0)"""
     nums = [int(x) for x in re.findall(r"\d+", tag or "")][:3]
     return tuple(nums + [0] * (3 - len(nums)))
+
+
+def parse_tag(tag):
+    """'v2.0.21' -> ((2, 0, 21), ""); a data-only release 'v2.0.21-data-2026.11.01' -> ((2, 0, 21), "2026.11.01")."""
+    app, _, data = (tag or "").partition("-data-")
+    return parse_version(app), data
 
 
 def frozen():
@@ -57,7 +63,7 @@ def translocated(path):
     return bool(path) and "/AppTranslocation/" in path
 
 
-def summarize(rel, platform=None, installed=None):
+def summarize(rel, platform=None, installed=None, current_data=None):
     """-> dict for the UI, from the GitHub 'latest release' JSON."""
     platform = platform or sys.platform
     tag = rel.get("tag_name") or ""
@@ -65,7 +71,13 @@ def summarize(rel, platform=None, installed=None):
     asset = next((a for a in rel.get("assets") or [] if a.get("name") == want), None)
     url = (asset or {}).get("browser_download_url") or ""
     installed = installed if installed is not None else app_path()
-    return {"current": VERSION, "latest": tag.lstrip("vV"), "newer": parse_version(tag) > parse_version(VERSION),
+    app, data = parse_tag(tag)
+    newer_app = app > parse_version(VERSION)
+    # the same app with newer pota.app data (a monthly data release): an update, but a quiet one in the UI
+    newer_data = app == parse_version(VERSION) and bool(data) and data > (current_data if current_data is not None else data_version())
+    return {"current": VERSION, "latest": tag.lstrip("vV").partition("-data-")[0], "newer": newer_app or newer_data,
+            "data_only": newer_data and not newer_app, "data_latest": data,
+            "data_current": current_data if current_data is not None else data_version(),
             "notes": (rel.get("body") or "")[:3000], "page": rel.get("html_url") or PAGE, "asset": url,
             "can_install": bool(url and installed), "translocated": translocated(installed)}
 

@@ -1,8 +1,9 @@
 name: Update POTA data
 
 # Once a month: refresh the park list and location names shipped with the app
-# (scripts/update_pota_data.py) and commit them to main when they changed. No release is made here -
-# the new data goes out with the next release. A push by GITHUB_TOKEN does not start the build workflow.
+# (scripts/update_pota_data.py). When they changed: commit them (with a new assets/pota-data.txt) to main
+# and start a data-only release - the last released app with the new data, tag v<VERSION>-data-<date>.
+# The app shows that as a quiet "park data update" (updater.parse_tag), not the startup modal.
 on:
   schedule:
     - cron: "0 18 1 * *"        # the 1st of every month, 18:00 UTC (03:00 JST)
@@ -10,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  actions: write          # to start build.yml (a push by GITHUB_TOKEN does not start it)
 
 jobs:
   update:
@@ -26,6 +28,9 @@ jobs:
           if git diff --quiet -- assets/parks.tsv.gz locations.py; then echo "no change"; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/parks.tsv.gz locations.py
-          git commit -m "Monthly pota.app data: park list and location names"
+          git add assets/parks.tsv.gz locations.py assets/pota-data.txt
+          git commit -m "pota.app data $(cat assets/pota-data.txt): park list and location names"
           git push
+          gh workflow run build.yml --ref main -f data_release=true
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -41,6 +41,22 @@ class UpdaterTest(unittest.TestCase):
         self.assertFalse(same["newer"])
         self.assertFalse(same["can_install"])
 
+    def test_data_only_release(self):
+        tag = "v%s-data-2099.01.01" % potacommon.VERSION
+        self.assertEqual(updater.parse_tag(tag)[1], "2099.01.01")
+        r = updater.summarize({"tag_name": tag, "assets": []}, platform="darwin", installed=None, current_data="2026.10.21")
+        self.assertEqual((r["newer"], r["data_only"], r["latest"], r["data_latest"]), (True, True, potacommon.VERSION, "2099.01.01"))
+        same = updater.summarize({"tag_name": tag, "assets": []}, platform="darwin", installed=None, current_data="2099.01.01")
+        self.assertFalse(same["newer"])
+        # a newer app wins and is a normal (loud) update, whatever its data
+        app = updater.summarize({"tag_name": "v9.9.9-data-2000.01.01", "assets": []}, platform="darwin", installed=None,
+                                current_data="2026.10.21")
+        self.assertEqual((app["newer"], app["data_only"]), (True, False))
+        # an older app with newer data is not an update
+        old = updater.summarize({"tag_name": "v0.0.1-data-2099.01.01", "assets": []}, platform="darwin", installed=None,
+                                current_data="2026.10.21")
+        self.assertFalse(old["newer"])
+
     def test_download_refuses_other_hosts(self):
         with self.assertRaises(ValueError):
             updater.download("https://example.com/evil.zip", os.path.join(tempfile.mkdtemp(), "x.zip"))

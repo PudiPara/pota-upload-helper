@@ -128,7 +128,7 @@
   "upd.checking": "확인 중…", "upd.latest": "최신 버전입니다 (v{v})",
   "upd.available": "<strong>v{latest}</strong>이(가) 공개되었습니다 (현재 v{current}).",
   "upd.install.swap": "내려받아 교체하고 다시 시작합니다.", "upd.install.dl": "내려받아 ‘다운로드’ 폴더에 둡니다.",
-  "upd.page": "Releases 페이지 열기", "upd.go": "지금 업데이트",
+  "upd.page": "Releases 페이지 열기", "upd.go": "지금 업데이트", "ver.data": "공원 데이터 {v}", "upd.dataAvailable": "공원 데이터 <strong>{latest}</strong>이(가) 공개되었습니다(현재 {current}).", "upd.dataNote": "공원 데이터 업데이트가 있습니다",
   "upd.modal.title": "새 버전이 있습니다",
   "upd.later": "나중에", "upd.downloading": "내려받는 중…",
   "upd.manual": "새 앱을 <b>{path}</b>에 두었습니다. 이 앱을 종료한 뒤 ‘응용 프로그램’ 폴더로 옮겨 여세요.",

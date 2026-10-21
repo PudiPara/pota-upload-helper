@@ -27,7 +27,8 @@ import qsolog
 import updater
 from builder import build, find_activation_qsos, list_activations
 from i18n import t
-from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, base_call, data_path, fetch_json, grid_center, iso_date,
+from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, base_call, data_path, data_version, fetch_json, grid_center,
+                        iso_date,
                         iso_minutes, load_settings, lock_instance, mode_of, my_call, read_adif, rec_minutes, resource,
                         save_settings, split_parks)
 from qsolog import decided_parks
@@ -140,7 +141,7 @@ class Api:
         live = {"parks": self._logger.parks, "start": self._logger.session["start"]} if self._recording() else None
         calls = clean_calls(s.get("calls"), s.get("call"))
         lookup = s.get("lookup") or ["qrz"]
-        return {"version": VERSION, "call": calls[0] if calls else "", "calls": calls, "parks": s.get("parks", ""),
+        return {"version": VERSION, "data_version": data_version(), "call": calls[0] if calls else "", "calls": calls, "parks": s.get("parks", ""),
                 "prefix": "home" if s.get("prefix", "home") else "", "adif": s.get("adif", ""), "out": s.get("out", DEFAULT_OUT),
                 "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
                 "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
@@ -380,9 +381,11 @@ class Api:
         days = [(d, per) for d, _, _, per, _ in list_activations(recs=recs)]
         rec, parks = mypota.record(recs, days), shipped_parks()
         for row in rec["hunted"] + rec["activated"]:
-            name, _, grid, at = parks.get(row["ref"]) or ("", "", "", None)
+            hit = parks.get(row["ref"])
+            name, _, grid, at, active = hit or ("", "", "", None, True)
             # [lat, lon] for the map: the park's own position, else the middle of its grid square
             row["name"], row["at"] = name, at or grid_center(grid)
+            row["listed"] = "no" if not hit else "active" if active else "retired"   # in pota.app's park list?
         return rec
 
     def import_mypota(self):

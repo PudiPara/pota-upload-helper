@@ -37,6 +37,7 @@
     $("#country").value = st.country;
   }
   function rerender() {           // dynamic parts that hold translated text
+    $("#dataVersion").textContent = st.dataVersion ? t("ver.data", { v: st.dataVersion }) : "";
     renderListeners(); updateReceiver(st.receiver); renderCalls(); renderMypota();
     if (!$("#liveRun").hidden) { renderQsos(); renderSpots(); }
     if (!$("#view-spots").hidden) { spotsOptions(); renderSpotsPage(); }
@@ -727,7 +728,8 @@
   }
   // "v2.0.4 is out (you have v2.0.3)" + how it installs, or a link to the release page when it can't
   function showUpdate(txt, go) {
-    txt.innerHTML = t("upd.available", { latest: esc(upd.latest), current: esc(upd.current) }) + " " +
+    txt.innerHTML = (upd.data_only ? t("upd.dataAvailable", { latest: esc(upd.data_latest), current: esc(upd.data_current || "-") })
+                                   : t("upd.available", { latest: esc(upd.latest), current: esc(upd.current) })) + " " +
       (upd.can_install ? esc(t(upd.translocated ? "upd.install.dl" : "upd.install.swap"))
         : `<button class="link upd-page">${esc(t("upd.page"))}</button>`);
     const pg = txt.querySelector(".upd-page"); if (pg) pg.addEventListener("click", () => api.open_url(upd.page));
@@ -741,17 +743,21 @@
     if (!r.ok) { go.disabled = false; go.textContent = t("upd.go"); txt.textContent = r.error; return; }
     go.hidden = true;
     if (r.manual) { txt.innerHTML = t("upd.manual", { path: esc(r.manual) }); api.open_out(r.manual_dir); }
-    else txt.textContent = t("upd.done", { v: upd.latest });
+    else txt.textContent = t("upd.done", { v: upd.data_only ? t("ver.data", { v: upd.data_latest }) : upd.latest });
   }
   $("#updateGo").addEventListener("click", () => installUpdate($("#updateGo"), $("#updateText")));
   // At startup: check first and, when a newer release exists, ask in a modal (after the terms, if those are up).
+  // A data-only release (the monthly pota.app park list) is quiet: a small link under the version, which
+  // opens the settings box - no modal every month.
   async function promptUpdate() {
     await checkUpdate(true);
     if (!upd || !upd.newer) return;
+    if (upd.data_only) { $("#dataUpd").hidden = false; return; }
     const show = () => { showUpdate($("#updModalText"), $("#updModalGo")); $("#updModal").hidden = false; };
     if ($("#terms").hidden) show(); else st.afterTerms = show;
   }
   $("#updModalLater").addEventListener("click", () => ($("#updModal").hidden = true));
+  $("#dataUpd").addEventListener("click", () => { show("config"); cfgTab("app"); $("#update").hidden = false; showUpdate($("#updateText"), $("#updateGo")); });
   $("#updModalGo").addEventListener("click", () => installUpdate($("#updModalGo"), $("#updModalText")));
 
   // ---------- terms ----------
@@ -1008,6 +1014,8 @@
     await setCountry(country);
     await loadLang(lang);
     $("#version").textContent = `v${s.version}`;
+    st.dataVersion = s.data_version || "";
+    $("#dataVersion").textContent = st.dataVersion ? t("ver.data", { v: st.dataVersion }) : "";
     renderCalls(); $("#p2pAuto").checked = !!s.p2p_auto; $("#onTop").checked = !!s.on_top;
     st.lookup = s.lookup || ["qrz"]; renderLookup();
     st.mypota = s.mypota || {}; renderMypota();

@@ -206,7 +206,7 @@
  "upd.install.swap": "ダウンロードして入れ替え、再起動します。",
  "upd.install.dl": "ダウンロードして「ダウンロード」フォルダに置きます。",
  "upd.page": "Releases ページを開く",
- "upd.go": "今すぐ更新",
+ "upd.go": "今すぐ更新", "ver.data": "公園データ {v}", "upd.dataAvailable": "公園データ <strong>{latest}</strong> が公開されています（いまは {current}）。", "upd.dataNote": "公園データの更新があります",
  "upd.modal.title": "新しいバージョンがあります",
  "upd.later": "あとで",
  "upd.downloading": "ダウンロードしています…",
