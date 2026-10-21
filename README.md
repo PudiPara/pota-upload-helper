@@ -12,7 +12,7 @@ FT8 などでは、相手が公園から運用しているのか、さらに 2fe
 
 - **運用中はバー表示**：公園番号を入れて記録を始めると、ウィンドウが小さな帯になってロガーの上に残ります（自分の公園、経過時間、QSO 数、直近の交信）。「広げる」で元の大きさに戻せます。公園から出ている局は 1 分ごとに記録するので、相手が QRT しても後から判定できます。
 - **アクティベート中の局**：記録していないときでも、いま公園から出ている局を pota.app のスポットから一覧にします（1 分ごとに更新）。国（国旗つき）と地域、バンド、モード（CW／Phone／Data）、コールや公園番号の検索、2fer だけ、で絞れます。
-- **ロガーから QSO を受信**：OpsLog や JTAlert と同じく UDP で受け取ります。N1MM 形式（RUMlogNG・N1MM Logger+・DXLog など）、WSJT-X / JTDX（マルチキャスト対応）、ADIF（JTAlert・GridTracker・Log4OM など）。ロガーでの修正・削除も反映します。
+- **ロガーから QSO を受信**：OpsLog や JTAlert と同じく UDP で受け取ります。N1MM 形式（RUMlogNG・N1MM Logger+・DXLog など）、WSJT-X / JTDX（マルチキャスト対応）、ADIF（JTAlert・GridTracker・Log4OM など）、QLog の QSO 変更通知。Windows では起動中の Turbo HAMLOG からも読み取ります。ロガーでの修正・削除も反映します。
 - **P2P はその場で確認**：届いた QSO の相手が公園から出ていれば「P2P の可能性」と公園番号を出し、「はい」「いいえ」で決めます。スポットに出ていない相手（Phone や CW で公園番号を聞いたとき）は、その行に公園番号を直接入力します。勝手に P2P にはしません。
 - **10 QSO で知らせる**：アクティベーション成立の瞬間に画面いっぱいに表示します。
 - **終了でファイル作成**：「この公園での運用を終了」を押すと、その公園・その日のアップロード用ファイル（`JL1FVA@JP-1266-20261020.adi`）を保存先に書き、最初の画面に戻ります。次の公園に着いたら番号を入れるだけです。相手が 2fer なら QSO を公園の数だけ複製し、自分が 2fer なら公園ごとにファイルを分けます。
@@ -59,6 +59,10 @@ zip 版（`POTA-Upload-Helper-macOS.zip` / `POTA-Upload-Helper-Windows.zip`）�
 | N1MM（contactinfo XML） | RUMlogNG、N1MM Logger+、DXLog、Win-Test | RUMlogNG: Preferences → UDP の Contact info を N1MM に。N1MM Logger+: Config → Broadcast Data → Contacts |
 | WSJT-X | WSJT-X、JTDX | Settings → Reporting の UDP Server。`224.0.0.1`（マルチキャスト）にすると他のアプリと同時に受け取れます |
 | ADIF | JTAlert、GridTracker、Log4OM など | 各ソフトの「ADIF を UDP で送る」設定 |
+| QLog（JSON） | QLog | Settings → Network → Notifications の **QSO Changes** に `127.0.0.1:ポート` |
+| Turbo HAMLOG（Windows） | Turbo HAMLOG/Win | 受信口の種類を「Turbo HAMLOG」に。ポートは不要で、起動中の HAMLOG から読み取ります（JT_Linker・JT-Get's 経由の QSO も含む） |
+
+ロガーで修正・削除した QSO もアプリに反映されます。Windows 11 で確認済みなのは WSJT-X、Log4OM 2、Turbo HAMLOG、QLog、N1MM Logger+ です（CW・SSB・FT8 の受信と修正・削除）。
 
 **受け取れるのは同じパソコンのロガーからだけです。** 受信口は `127.0.0.1` で待ち受けるので、別のパソコンのロガーからは届きません。
 
