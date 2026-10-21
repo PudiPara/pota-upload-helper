@@ -66,7 +66,7 @@
   "row.note.stale": "spot antiguo",
   "row.note.unsure": "2fer supuesto", "row.yes": "Sí, P2P", "row.no": "No", "row.manual": "Escribir", "row.change": "Cambiar",
   "row.record": "Guardar", "row.cancel": "Cancelar", "row.none": "No es P2P", "row.ph": "Su parque, p. ej. {cc}-0000",
-  "cheer.sub": "Activación completada", "cheer.next": "Siguiente: {n} QSO",
+  "cheer.sub": "Activación completada", "cheer.next": "Siguiente: {n} QSO", "close.title": "¿Cerrar la aplicación?", "close.live": "Hay una activación en curso. Cerrar no la termina: el registro continúa la próxima vez que abras la aplicación.", "close.edit": "El editor de QSO está abierto.", "close.go": "Cerrar", "close.cancel": "Cancelar",
   "done.title.files": "{parks} terminado. {n} archivo(s) escritos", "done.title.nofiles": "{parks} terminado",
   "done.fail.title": "Grabación detenida, pero no se pudo escribir el archivo", "done.fail.body": "Puedes generarlo de nuevo en «Archivos de subida».",
   "done.close": "Cerrar", "done.open": "Abrir carpeta", "done.pota": "Abrir pota.app",

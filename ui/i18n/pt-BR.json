@@ -66,7 +66,7 @@
   "row.note.stale": "spot antigo",
   "row.note.unsure": "2fer suposto", "row.yes": "Sim, P2P", "row.no": "Não", "row.manual": "Digitar", "row.change": "Alterar",
   "row.record": "Salvar", "row.cancel": "Cancelar", "row.none": "Não é P2P", "row.ph": "Parque dele, ex. {cc}-0000",
-  "cheer.sub": "Ativação concluída", "cheer.next": "Próxima meta: {n} QSOs",
+  "cheer.sub": "Ativação concluída", "cheer.next": "Próxima meta: {n} QSOs", "close.title": "Fechar o app?", "close.live": "Há uma ativação em andamento. Fechar não a encerra: o registro continua na próxima vez que você abrir o app.", "close.edit": "O editor de QSOs está aberto.", "close.go": "Fechar", "close.cancel": "Cancelar",
   "done.title.files": "{parks} encerrado. {n} arquivo(s) gravado(s)", "done.title.nofiles": "{parks} encerrado",
   "done.fail.title": "Gravação parada, mas o arquivo não pôde ser gravado", "done.fail.body": "Você pode gerá-lo de novo em «Arquivos de upload».",
   "done.close": "Fechar", "done.open": "Abrir pasta", "done.pota": "Abrir pota.app",

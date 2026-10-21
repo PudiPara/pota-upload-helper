@@ -117,6 +117,16 @@ class BarMode:
         bar.events.loaded += lambda: set_zoom(bar, self.zoom)
         self._bar = bar
 
+    def close_now(self):
+        """The main window is closing: close the bar right here (called on the UI thread from its closing
+        handler; a call posted to the closing window was dropped and the bar stayed on screen)."""
+        bar, self._bar, self._on = self._bar, None, False
+        if bar:
+            try:
+                bar.destroy()
+            except Exception as e:
+                print("bar close failed: %s" % e, file=sys.stderr)
+
     def set_zoom(self, z):
         self.zoom = z
         set_zoom(self.window, z)

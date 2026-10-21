@@ -11,6 +11,7 @@ JSON-able data. Rules of the house:
   * Nothing here writes the logger's log.
 """
 import copy
+import json
 import os
 import re
 import subprocess
@@ -89,6 +90,8 @@ class Api:
     def __init__(self):
         self._window = None
         self._bar = None               # BarMode, once the window exists
+        self._busy = set()             # what the page is in the middle of ("edit": the QSO editor is open)
+        self._allow_close = False      # the operator confirmed closing (quit_app)
         self._logger = None            # SpotLogger while an activation is being recorded
         self._receiver = None
         self._events = []              # spots seen while recording, for the live view
@@ -610,6 +613,24 @@ class Api:
         if url.startswith("https://"):
             webbrowser.open(url)
 
+    def set_busy(self, what, on):
+        """The page starts / stops something that closing the window would cut off (the QSO editor)."""
+        (self._busy.add if on else self._busy.discard)(str(what))
+        return True
+
+    def close_reasons(self):
+        """Why closing the window should be confirmed: ["live"] while recording, ["edit"] in the editor."""
+        if self._allow_close:
+            return []
+        return (["live"] if self._recording() else []) + (["edit"] if "edit" in self._busy else [])
+
+    def quit_app(self):
+        """The operator confirmed: close the window (and with it the bar) without asking again."""
+        self._allow_close = True
+        from window import _run_steps
+        _run_steps(self._window, [("close", self._window.destroy)])
+        return True
+
     def shutdown(self):
         if self._recording():
             self._logger.stop()
@@ -638,9 +659,13 @@ def main():
     api._window = win
     api._bar = BarMode(win, resource("ui", "index.html"), api, APP_NAME + " - " + t("bar.title"),
                        keep_on_top=bool(load_settings().get("on_top")), bar_on_top=load_settings().get("bar_on_top", True) is not False)
-    def closing():                     # returns None: a closing handler returning False cancels the close
+    def closing():                     # returning False cancels the close; None lets it go
+        reasons = api.close_reasons()
+        if reasons:                    # recording or editing: ask in the page first (quit_app closes for real)
+            threading.Thread(target=lambda: win.evaluate_js("window.potarooAskClose(%s)" % json.dumps(reasons)), daemon=True).start()
+            return False
         api.shutdown()
-        api._bar.set(False)            # the bar never outlives the main window
+        api._bar.close_now()           # the bar never outlives the main window
     win.events.closing += closing
     api._bar.zoom = load_settings().get("font_scale", 1)
     win.events.loaded += lambda: set_zoom(win, api._bar.zoom)
