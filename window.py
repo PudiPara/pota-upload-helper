@@ -74,6 +74,20 @@ class BarMode:
             _run_steps(self.window, [("bar on_top", lambda: setattr(bar, "on_top", self.bar_on_top))])
         return self.bar_on_top
 
+    def fit(self, width, inner):
+        """Make the bar as wide as its content (CSS px `width`; `inner` = the page's current width, so the
+        window's own border is kept), keeping its right edge where it is."""
+        bar = self._bar
+        if not bar:
+            return
+
+        def run():
+            new = bar.width - inner + width
+            x = bar.x + bar.width - new
+            bar.resize(new, bar.height)
+            bar.move(x, bar.y)
+        _run_steps(self.window, [("fit", run)])
+
     @property
     def active(self):
         return self._on

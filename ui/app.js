@@ -281,7 +281,7 @@
       if (BAR) { if (!$("#ask").hidden) blinkAsk(); if (!q.decision && q.candidate.length) ask.q.push(q.uid); }
     }
     if (freshS.size || freshQ.size || removed) { renderSpots(freshS); renderQsos(freshQ); }
-    if (BAR) askNext();
+    if (BAR) { askNext(); fitBar(); }
   }
   function workedCalls() { return new Set([...st.qsos.values()].map((q) => baseCall(q.call))); }
   function spotRow(e, worked, fresh, page) {
@@ -437,6 +437,13 @@
     if (!box.hidden && box.dataset.uid === q.uid) return;
     box.dataset.uid = q.uid; box.hidden = false;
     $("#askCall").textContent = q.call; $("#askParks").innerHTML = plates(q.candidate, q.new);
+  }
+  // the bar window is as wide as its content needs: no wraps, nothing to spare (window.py BarMode.fit)
+  function fitBar() {
+    const bar = $("#bar"); bar.classList.add("is-measure");
+    const w = Math.ceil(bar.getBoundingClientRect().width);
+    bar.classList.remove("is-measure");
+    if (Math.abs(w - window.innerWidth) > 2) api.fit_bar(w, window.innerWidth);
   }
   function blinkAsk() { const b = $("#ask"); b.classList.remove("is-blink"); void b.offsetWidth; b.classList.add("is-blink"); }
   $$("#ask [data-ask]").forEach((b) => b.addEventListener("click", async () => {
@@ -1085,7 +1092,7 @@
     setSource(st.source);
     if (BAR) {                                      // the bar window: the running activation only
       document.body.classList.add("is-bar"); $("#bar").hidden = false;
-      if (s.live) enterRunning(s.live.parks, s.live.start); else api.set_bar(false);
+      if (s.live) { await enterRunning(s.live.parks, s.live.start); await document.fonts.ready; fitBar(); } else api.set_bar(false);
       return;
     }
     if (s.live) enterRunning(s.live.parks, s.live.start);
