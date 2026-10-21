@@ -15,7 +15,7 @@
   "cfg.calls.last": "Ostatniego znaku nie można usunąć.",
   "cfg.lang.h": "Język", "cfg.tab.general": "Ogólne", "cfg.tab.qso": "QSO", "cfg.country.h": "Kraj",
   "cfg.app.h": "Aplikacja",
-  "cfg.window.h": "Okno",
+  "cfg.look.h": "Wygląd", "cfg.look.size": "Rozmiar tekstu", "cfg.look.s1": "Standardowy", "cfg.look.s2": "Większy", "cfg.look.s3": "Największy", "cfg.look.theme": "Kolory", "cfg.look.auto": "Jak w systemie", "cfg.look.light": "Jasny", "cfg.look.dark": "Ciemny", "cfg.look.p": "Rozmiar tekstu i kolory dotyczą też paska.", "cfg.window.h": "Okno",
   "cfg.window.ontop": "Główne okno zawsze na wierzchu", "cfg.window.barTop": "Pasek zawsze na wierzchu",
   "cfg.window.p": "Pasek to małe okno otwierane podczas aktywacji, nad programem do logowania.",
   "pop.copy": "Kopiuj {text}",

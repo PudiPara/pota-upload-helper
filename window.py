@@ -36,6 +36,20 @@ def _run_steps(w, steps):
         run()
 
 
+def set_zoom(w, z):
+    """設定 → 表示 → 文字の大きさ: the web view's own zoom, like Ctrl + plus in a browser. Not CSS zoom: this
+    makes the page narrower in CSS px, so its narrow-window layout takes over instead of overflowing."""
+    def run():
+        if os.name == "nt":
+            w.native.webview.ZoomFactor = float(z)            # WebView2
+        else:
+            from PyObjCTools import AppHelper                 # WKWebView, on the main thread (macOS 11+)
+            from webview.platforms.cocoa import BrowserView
+            AppHelper.callAfter(BrowserView.instances[w.uid].webview.setPageZoom_, float(z))
+    if w:
+        _run_steps(w, [("zoom", run)])
+
+
 def focus_running(title):
     """A second copy was started: bring the first one's window to the front instead (Windows;
     macOS already does this itself when an .app is opened twice)."""
@@ -58,6 +72,7 @@ class BarMode:
         self._on = False
         self.keep_on_top = keep_on_top   # 設定 → ウインドウ: the main window on top
         self.bar_on_top = bar_on_top     # 設定 → ウインドウ: the bar on top
+        self.zoom = 1                    # 設定 → 表示 → 文字の大きさ, for the bar when it opens
 
     def set_on_top(self, on):
         """設定 → 常に最前面 for the main window."""
@@ -74,7 +89,7 @@ class BarMode:
             _run_steps(self.window, [("bar on_top", lambda: setattr(bar, "on_top", self.bar_on_top))])
         return self.bar_on_top
 
-    def fit(self, width):
+    def fit(self, width, height):
         """Make the bar as wide as its content (CSS px), keeping its right edge where it is. An absolute
         width: the bar is frameless (window = page), and requests that follow each other quickly must not
         build on a size that is still changing."""
@@ -84,7 +99,7 @@ class BarMode:
 
         def run():
             from webview.window import FixPoint
-            bar.resize(width, bar.height, fix_point=FixPoint.NORTH | FixPoint.EAST)
+            bar.resize(width, height, fix_point=FixPoint.NORTH | FixPoint.EAST)
         _run_steps(self.window, [("fit", run)])
 
     @property
@@ -99,7 +114,13 @@ class BarMode:
         bar = webview.create_window(self._title, self._url + "#bar", js_api=self._api, width=BAR_W, height=BAR_H,
                                     x=x, y=y, frameless=True, on_top=self.bar_on_top)   # a banner: dragged by its tile (.pywebview-drag-region)
         bar.events.closed += self._closed
+        bar.events.loaded += lambda: set_zoom(bar, self.zoom)
         self._bar = bar
+
+    def set_zoom(self, z):
+        self.zoom = z
+        set_zoom(self.window, z)
+        set_zoom(self._bar, z)
 
     def set(self, on):
         """Open the bar window (index.html#bar) or close it. The calls go through the main window's UI

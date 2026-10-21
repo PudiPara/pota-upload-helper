@@ -7,13 +7,14 @@ import re
 import ssl
 import subprocess
 import sys
+import threading
 import urllib.request
 
 API = "https://api.pota.app"
 PARK_RE = re.compile(r"\b([A-Z0-9]{1,4}-\d{4,5})\b")
 APP_NAME = "Potaroo"
 OLD_NAME = "POTA Upload Helper"      # the name until 2.0.0: its data folder is moved over on first start
-VERSION = "2.0.30"
+VERSION = "2.0.31"
 
 
 def _moved(new, old):
@@ -113,10 +114,16 @@ def load_settings():
     return read_json(data_path("settings.json"), {})
 
 
+_SETTINGS_LOCK = threading.Lock()
+
+
 def save_settings(d):
-    cur = load_settings()
-    cur.update(d)
-    write_json(data_path("settings.json"), cur)
+    # one at a time: two saves at once (each JS call has its own thread) each read the old file and the
+    # last write dropped the other's key (設定 → 表示: text size then colors, clicked quickly)
+    with _SETTINGS_LOCK:
+        cur = load_settings()
+        cur.update(d)
+        write_json(data_path("settings.json"), cur)
 
 
 CALL_RE = re.compile(r"[A-Z0-9/]{3,}")

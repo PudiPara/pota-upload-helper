@@ -15,7 +15,7 @@
   "cfg.calls.last": "L’ultimo nominativo non può essere rimosso.",
   "cfg.lang.h": "Lingua", "cfg.tab.general": "Generale", "cfg.tab.qso": "QSO", "cfg.country.h": "Paese",
   "cfg.app.h": "App",
-  "cfg.window.h": "Finestra",
+  "cfg.look.h": "Visualizzazione", "cfg.look.size": "Dimensione del testo", "cfg.look.s1": "Normale", "cfg.look.s2": "Grande", "cfg.look.s3": "Molto grande", "cfg.look.theme": "Colori", "cfg.look.auto": "Come il sistema", "cfg.look.light": "Chiaro", "cfg.look.dark": "Scuro", "cfg.look.p": "Dimensione del testo e colori valgono anche per la barra.", "cfg.window.h": "Finestra",
   "cfg.window.ontop": "Tieni la finestra principale sempre in primo piano", "cfg.window.barTop": "Tieni la barra sempre in primo piano",
   "cfg.window.p": "La barra è la piccola finestra aperta durante l'attivazione, sopra il programma di log.",
   "pop.copy": "Copia {text}",

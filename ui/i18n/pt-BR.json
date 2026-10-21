@@ -15,7 +15,7 @@
   "cfg.calls.last": "O último indicativo não pode ser removido.",
   "cfg.lang.h": "Idioma", "cfg.tab.general": "Geral", "cfg.tab.qso": "QSOs", "cfg.country.h": "País",
   "cfg.app.h": "Aplicativo",
-  "cfg.window.h": "Janela",
+  "cfg.look.h": "Exibição", "cfg.look.size": "Tamanho do texto", "cfg.look.s1": "Padrão", "cfg.look.s2": "Maior", "cfg.look.s3": "Muito grande", "cfg.look.theme": "Cores", "cfg.look.auto": "Igual ao sistema", "cfg.look.light": "Claro", "cfg.look.dark": "Escuro", "cfg.look.p": "O tamanho do texto e as cores também valem para a barra.", "cfg.window.h": "Janela",
   "cfg.window.ontop": "Manter a janela principal sempre na frente", "cfg.window.barTop": "Manter a barra sempre na frente",
   "cfg.window.p": "A barra é a janela pequena aberta durante a ativação, sobre o programa de log.",
   "pop.copy": "Copiar {text}",
