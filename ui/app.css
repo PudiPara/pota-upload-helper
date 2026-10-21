@@ -501,3 +501,9 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .act-park { display: contents; }                       /* plate | count | what pota.app keeps, one park per row */
 .act-park small { font-size: 12.5px; font-weight: 700; color: var(--ink); text-align: right; min-width: 2em; }
 .act-park .act-pota { font-weight: 500; color: var(--ink-3); text-align: left; min-width: 0; }
+
+/* ---------- where I stand (prefecture / state) ---------- */
+.park-loc { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13.5px; }
+.loc-label { color: var(--ink-2); font-size: 12.5px; }
+.loc-fixed { font-weight: 700; }
+.park-loc select { padding: 6px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); color: var(--ink); font-size: 13.5px; font-weight: 600; }

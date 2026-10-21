@@ -74,6 +74,11 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
 - **A running session survives a restart**: `start_live` stores `settings.live` (id, parks, call, start),
   `Api._resume_live` restarts the SpotLogger on it (`SpotLogger.start(resume=...)` keeps the id and
   start), `finish_live` / `stop_live` clear it.
+- **Parks across prefectures / states** (JP-0016, US-4239): `Api.park_locations` = the locations all
+  entered parks share (pota.app `locationDesc`); one → shown fixed, several → the operator picks before
+  recording. The session stores `{park: location}` for the multi-location parks; each QSO carries it as
+  `MY_POTA_LOCS`, and the builder writes one file per (park, date, location) with `MY_STATE` and the
+  documented name `CALL@PARK-DATE-LOCATION.adi`. Single-location parks are unchanged.
 - **Window close ≠ finish.** `finish_live` stops, builds **the whole UTC day** (every park of the day gets
   its file with all of its QSOs, so a park shared by several sessions is never cut down to the last
   session) and resets; `shutdown` only stops threads.

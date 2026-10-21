@@ -19,7 +19,7 @@ from spots import load_sessions, load_spots, their_parks_at
 
 ORDER = ["STATION_CALLSIGN", "OPERATOR", "CALL", "QSO_DATE", "TIME_ON", "BAND", "FREQ", "MODE", "SUBMODE",
          "RST_SENT", "RST_RCVD", "MY_SIG", "MY_SIG_INFO", "MY_POTA_REF", "SIG", "SIG_INFO", "POTA_REF",
-         "MY_GRIDSQUARE", "GRIDSQUARE", "COMMENT"]
+         "MY_STATE", "MY_GRIDSQUARE", "GRIDSQUARE", "COMMENT"]
 KEEP = ["CALL", "QSO_DATE", "TIME_ON", "BAND", "FREQ", "MODE", "SUBMODE", "RST_SENT", "RST_RCVD",
         "MY_GRIDSQUARE", "GRIDSQUARE"]
 HUNTER_WINDOW = 5      # minutes: hunter log time vs your log time
@@ -171,7 +171,8 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
             if not s_sure and not set(s_parks) <= set(log_parks):
                 notes.append(tr("b.note.twofer", date=r["QSO_DATE"], time=r["TIME_ON"][:4], call=r["CALL"], parks=",".join(s_parks)))
         for mp in mp_list:
-            key = (mp, r["QSO_DATE"])
+            loc = (r.get("MY_POTA_LOCS") or {}).get(mp, "")      # "JP-TK" when the park spans several
+            key = (mp, r["QSO_DATE"], loc)
             rep = report[key]
             rep["qsos"].add((b, r["QSO_DATE"], r.get("TIME_ON", "")[:4], band, r.get("MODE")))
             rep["calls"].add(b)
@@ -183,6 +184,8 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
                 o = {k: r.get(k) for k in KEEP}
                 o.update({"STATION_CALLSIGN": call, "OPERATOR": r.get("OPERATOR") or call,
                           "MY_SIG": "POTA", "MY_SIG_INFO": mp, "MY_POTA_REF": mp})
+                if loc:
+                    o["MY_STATE"] = loc.split("-", 1)[-1]
                 if tp:
                     o.update({"SIG": "POTA", "SIG_INFO": tp, "POTA_REF": tp})
                 files[key].append(o)
@@ -196,17 +199,18 @@ def build(adif_path=None, dates=None, my_parks=None, call="JL1FVA", out_dir=None
                                band=x.get("band"), park=p))
 
     lines, written, summary = [], [], []
-    for (mp, d) in sorted(files, key=lambda k: (k[1], k[0])):
-        fn = "%s@%s-%s.adi" % (call.replace("/", "_"), mp, d)
-        write_adif(os.path.join(out_dir, fn), files[(mp, d)], ORDER)
+    for (mp, d, loc) in sorted(files, key=lambda k: (k[1], k[0], k[2])):
+        # the documented name for a park crossing state lines: CALL@PARK-DATE-LOCATION.adi
+        fn = "%s@%s-%s%s.adi" % (call.replace("/", "_"), mp, d, "-" + loc if loc else "")
+        write_adif(os.path.join(out_dir, fn), files[(mp, d, loc)], ORDER)
         written.append(fn)
-        rep = report[(mp, d)]
+        rep = report[(mp, d, loc)]
         n = len(rep["qsos"])
-        summary.append({"park": mp, "date": d, "file": fn, "qsos": n, "stations": len(rep["calls"]),
-                        "records": len(files[(mp, d)]), "rows": rep["rows"],
+        summary.append({"park": mp, "date": d, "loc": loc, "file": fn, "qsos": n, "stations": len(rep["calls"]),
+                        "records": len(files[(mp, d, loc)]), "rows": rep["rows"],
                         # what pota.app will keep: its duplicate key is CALL+MODE+date+BAND+MY_SIG_INFO+SIG_INFO
                         "unique": len({(o["CALL"].upper(), (o.get("BAND") or "").lower(), (o.get("SUBMODE") or o.get("MODE") or "").upper(),
-                                        o.get("SIG_INFO") or "") for o in files[(mp, d)]}),
+                                        o.get("SIG_INFO") or "") for o in files[(mp, d, loc)]}),
                         "p2p": [{"time": tm, "call": c, "parks": ps.split(","), "source": src}
                                 for tm, c, ps, src in rep["p2p"]]})
         lines.append(tr("b.line.file", date=d, park=mp, n=n, stations=len(rep["calls"]), short="" if n >= 10 else tr("b.short"), file=fn))
