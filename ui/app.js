@@ -123,6 +123,17 @@
     segSet("#fontScale", "scale", String(z)); segSet("#themeSel", "theme", th);
     return true;
   }
+  // distances: always "about" (a park is one point for the whole park); km or miles (設定 → 表示); one
+  // decimal under 10, whole numbers with the language's thousands separator above
+  const MILE_COUNTRIES = ["US", "GB", "LR", "MM"];
+  const distUnit = () => st.distUnit || (MILE_COUNTRIES.includes(st.country) ? "mi" : "km");
+  function fmtDist(km) {
+    if (km == null) return "";
+    const unit = distUnit(), v = unit === "mi" ? km / 1.609344 : km;
+    const d = v < 10 ? v.toLocaleString(st.lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : Math.round(v).toLocaleString(st.lang);
+    return t("dist.about", { d, u: unit === "mi" ? "mi" : "km" });
+  }
+  const distTag = (km) => (km == null ? "" : `<span class="dist">${esc(fmtDist(km))}</span>`);
   function segSet(group, attr, val) {
     $$(group + " button").forEach((x) => { const on = x.dataset[attr] === val; x.classList.toggle("is-on", on); x.setAttribute("aria-checked", on); });
   }
@@ -307,7 +318,7 @@
       <li class="spot${e.twofer ? " is-twofer" : ""}${worked ? " is-worked" : ""}${fresh ? " is-new" : ""}${page && e.ago >= 30 ? " is-stale" : ""}">
         <span class="spot-time">${esc(e.time)}Z</span>
         <span class="spot-call">${esc(e.call)}${worked ? `<span class="worked-tag">${t("spots.worked")}</span>` : ""}</span>
-        <span class="plates">${e.country ? `<span class="flag" title="${esc(countryName(e.country))}">${flagOf(e.country)}</span>` : ""}${plates(e.parks, e.new)}${e.twofer ? `<span class="twofer-tag">${e.parks.length}fer</span>` : ""}${newTag(e.new)}${e.qrt ? `<span class="qrt-tag">QRT</span>` : ""}</span>
+        <span class="plates">${e.country ? `<span class="flag" title="${esc(countryName(e.country))}">${flagOf(e.country)}</span>` : ""}${plates(e.parks, e.new)}${e.twofer ? `<span class="twofer-tag">${e.parks.length}fer</span>` : ""}${newTag(e.new)}${e.qrt ? `<span class="qrt-tag">QRT</span>` : ""}${distTag(e.km)}</span>
         <span class="spot-meta"><span class="spot-freq">${fmtFreq(e.freq)}</span>${e.mode ? `<span class="spot-mode">${esc(e.mode)}</span>` : ""}</span>
         ${page ? `<span class="spot-ago">${e.ago ? t("spots.ago", { n: e.ago }) : t("spots.now")}</span>
         <span class="spot-note" title="${esc(e.comments)}">${esc(e.comments)}</span>` : ""}
@@ -338,9 +349,9 @@
         ${q.candidate.length || decided || q.decision === "no" ? `<button class="link" data-act="cancel" data-uid="${esc(q.uid)}">${t("row.cancel")}</button>` : ""}</span>`;
     let ctl;
     if (editing) ctl = input;
-    else if (p2p) ctl = `<span class="p2p-tag">P2P</span><span class="plates">${plates(q.parks, q.new)}</span>${newTag(q.new.filter((p) => q.parks.includes(p)))}<button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.change")}</button>`;
+    else if (p2p) ctl = `<span class="p2p-tag">P2P</span><span class="plates">${plates(q.parks, q.new)}</span>${newTag(q.new.filter((p) => q.parks.includes(p)))}${distTag(q.km)}<button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.change")}</button>`;
     else if (q.decision === "no") ctl = `<span class="qso-none">${t("row.none")}</span><button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.change")}</button>`;
-    else if (q.candidate.length) ctl = `<span class="ask-text">${t("row.ask")}</span><span class="plates">${plates(q.candidate, q.new)}</span>${newTag(q.new)}${q.note ? `<span class="ask-note">${esc(t("row.note." + q.note))}</span>` : ""}
+    else if (q.candidate.length) ctl = `<span class="ask-text">${t("row.ask")}</span><span class="plates">${plates(q.candidate, q.new)}</span>${newTag(q.new)}${distTag(q.km)}${q.note ? `<span class="ask-note">${esc(t("row.note." + q.note))}</span>` : ""}
         <button class="chip chip-yes" data-act="yes" data-uid="${esc(q.uid)}">${t("row.yes")}</button><button class="chip" data-act="no" data-uid="${esc(q.uid)}">${t("row.no")}</button>
         <button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.manual")}</button>`;
     else ctl = input;
@@ -1029,6 +1040,9 @@
   $("#onTop").addEventListener("change", (e) => api.set_on_top(e.target.checked));
   $("#barOnTop").addEventListener("change", (e) => api.set_bar_on_top(e.target.checked));
   $$("#fontScale button").forEach((b) => b.addEventListener("click", () => { applyLook({ ...LOOK, font_scale: +b.dataset.scale }); api.save({ font_scale: LOOK.font_scale }); }));
+  $$("#distUnit button").forEach((b) => b.addEventListener("click", () => {
+    st.distUnit = b.dataset.unit; segSet("#distUnit", "unit", distUnit()); api.save({ dist_unit: st.distUnit }); renderQsos(); renderSpots();
+  }));
   $$("#themeSel button").forEach((b) => b.addEventListener("click", () => { applyLook({ ...LOOK, theme: b.dataset.theme }); api.save({ theme: LOOK.theme }); }));
 
   // ---------- click a park plate or a callsign: copy, or open it on the web ----------
@@ -1133,6 +1147,7 @@
     api = window.pywebview.api;
     const s = await api.get_state();
     applyLook(s); segSet("#fontScale", "scale", String(LOOK.font_scale)); segSet("#themeSel", "theme", LOOK.theme);
+    st.distUnit = s.dist_unit || "";
     Object.assign(st, { call: s.call || "", calls: s.calls || [], prefix: s.prefix, out: s.out, adif: s.adif, source: s.source || "app", listeners: s.listeners,
                         langs: s.langs || [["ja", "日本語"]], termsAccepted: s.terms_accepted || "", countries: s.countries || [] });
     $("#lang").innerHTML = st.langs.map(([c, name]) => `<option value="${esc(c)}">${esc(name)}</option>`).join("");
@@ -1141,6 +1156,7 @@
     const country = s.country || guessCountry(navigator.language, lang);
     if (!s.country && country) api.save({ country });
     await setCountry(country);
+    segSet("#distUnit", "unit", distUnit());       // not saved: follows 所在国 until the operator picks one
     await loadLang(lang);
     $("#version").textContent = `v${s.version}`;
     st.dataVersion = s.data_version || "";
