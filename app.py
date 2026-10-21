@@ -99,6 +99,7 @@ class Api:
         self._logger = SpotLogger(live["parks"], live.get("call") or "JL1FVA", 60,
                                   on_activator=self._on_spot, on_status=self._on_status)
         self._logger.start(resume={"id": live.get("id"), "start": live["start"]})
+        self._locs = live.get("locs") or {}
 
     # ================================================================ settings
     def get_state(self):
@@ -178,6 +179,8 @@ class Api:
         else:
             if self._logger and self._logger.running() and not rec.get("MY_SIG_INFO"):
                 rec["MY_SIG"], rec["MY_SIG_INFO"] = "POTA", ",".join(self._logger.parks)
+                if getattr(self, "_locs", None):
+                    rec["MY_POTA_LOCS"] = dict(self._locs)        # parks spanning prefectures/states -> where I was
             cand = candidate_for(rec)
             if cand:
                 rec["P2P_CANDIDATE"] = ",".join(cand)
@@ -197,10 +200,11 @@ class Api:
                 self._recv_status[listener] = self._receiver.state[listener]
 
     # ================================================================ the activation (運用中)
-    def start_live(self, parks, call):
+    def start_live(self, parks, call, loc=""):
         parks = split_parks(parks)
         if not parks:
             return {"ok": False, "error": t("api.badPark")}
+        locs = self._locs_for(parks, loc)
         if self._logger and self._logger.running():
             self._logger.stop()
         with self._lock:
@@ -209,8 +213,9 @@ class Api:
         self._logger = SpotLogger(parks, call, 60, on_activator=self._on_spot, on_status=self._on_status)
         self._logger.start()
         sess = self._logger.session
-        save_settings({"live": {"id": sess["id"], "parks": parks, "call": call.upper(), "start": sess["start"]}})
-        return {"ok": True, "parks": parks, "start": sess["start"]}
+        self._locs = locs
+        save_settings({"live": {"id": sess["id"], "parks": parks, "call": call.upper(), "start": sess["start"], "locs": locs}})
+        return {"ok": True, "parks": parks, "start": sess["start"], "loc": loc}
 
     def _on_spot(self, tm, act, parks, freq, mode, twofer):
         with self._lock:
@@ -316,11 +321,36 @@ class Api:
                     local = (p.get("parkComments") or "").strip()
                     if not re.search(r"[぀-ヿ一-鿿]", local) or len(local) > 40:
                         local = ""
-                    self._parks[ref] = {"name": p.get("name") or "", "local": local, "grid": p.get("grid6") or ""}
+                    codes = [c.strip() for c in (p.get("locationDesc") or "").split(",") if c.strip()]
+                    names = [n.strip() for n in (p.get("locationName") or "").split(",")]
+                    self._parks[ref] = {"name": p.get("name") or "", "local": local, "grid": p.get("grid6") or "",
+                                        "locations": [{"code": c, "name": names[i] if i < len(names) else ""} for i, c in enumerate(codes)]}
                 except Exception:
-                    self._parks[ref] = {"name": "", "local": "", "grid": ""}
+                    self._parks[ref] = {"name": "", "local": "", "grid": "", "locations": []}
             out[ref] = self._parks[ref]
         return out
+
+    def park_locations(self, refs):
+        """Where the operator can stand for these parks: the locations (prefecture / state) every park
+        has in common. {"options": [{code, name}], "multi": [parks spanning several locations]}.
+        One option = shown fixed; several = the operator picks; none = the parks don't overlap."""
+        info = self.park_info(refs)
+        parks = split_parks(refs)
+        common = None
+        for ref in parks:
+            codes = [l["code"] for l in info[ref].get("locations") or []]
+            if not codes:
+                continue                      # unknown to pota.app: no constraint from it
+            common = codes if common is None else [c for c in common if c in codes]
+        names = {l["code"]: l["name"] for ref in parks for l in info[ref].get("locations") or []}
+        return {"options": [{"code": c, "name": names.get(c, "")} for c in (common or [])],
+                "multi": [ref for ref in parks if len(info[ref].get("locations") or []) > 1]}
+
+    def _locs_for(self, parks, loc):
+        """{park: location} for the parks that span several locations - what the upload file needs."""
+        if not loc:
+            return {}
+        return {ref: loc for ref in self.park_locations(",".join(parks))["multi"]}
 
     # ================================================================ upload files (アップロード作成)
     def pick_adif(self):

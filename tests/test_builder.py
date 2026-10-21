@@ -158,3 +158,18 @@ class ActivationRowsCountPerPark(unittest.TestCase):
         self.assertEqual(per, {"JP-1206": 3, "JP-1266": 2, "JP-1946": 1})
         self.assertEqual(pota, {"JP-1206": 2, "JP-1266": 2, "JP-1946": 1})       # JA1AAA counts once for JP-1206
 
+
+class ParkAcrossPrefectures(unittest.TestCase):
+    def test_one_file_per_location_with_my_state(self):
+        import tempfile, builder
+        out = tempfile.mkdtemp()
+        q = lambda call, t, loc: {"CALL": call, "QSO_DATE": "20260109", "TIME_ON": t, "BAND": "40m", "MODE": "CW",
+                                  "MY_SIG": "POTA", "MY_SIG_INFO": "JP-0016,JP-1206", "MY_POTA_LOCS": {"JP-0016": loc}}
+        recs = [q("JA1AAA", "010000", "JP-TK"), q("JA1BBB", "030000", "JP-KN")]
+        files = {f["file"]: f for f in builder.build(None, None, None, "JL1FVA", out, offline=True, recs=recs,
+                                                     confirmed_only=True, log=lambda *a: None)["summary"]}
+        self.assertEqual(sorted(files), ["JL1FVA@JP-0016-20260109-JP-KN.adi", "JL1FVA@JP-0016-20260109-JP-TK.adi",
+                                         "JL1FVA@JP-1206-20260109.adi"])
+        self.assertIn("<MY_STATE:2>TK", open(os.path.join(out, "JL1FVA@JP-0016-20260109-JP-TK.adi"), encoding="utf-8").read())
+        self.assertEqual(files["JL1FVA@JP-1206-20260109.adi"]["qsos"], 2)      # the one-prefecture park keeps one file
+

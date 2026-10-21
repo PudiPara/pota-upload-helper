@@ -98,8 +98,28 @@
       try {
         const info = await api.park_info(parks.join(","));
         $$("#parksPreview .park-name").forEach((el) => { const i = info[el.dataset.ref] || {}; el.textContent = i.local || i.name || ""; });
+        renderLoc(await api.park_locations(parks.join(",")));
       } catch (e) { /* optional */ }
     }, 500);
+    if (!parks.length) renderLoc(null);
+  }
+  // Where I stand: the prefecture/state the parks have in common - fixed when there is one, a choice
+  // when a park spans several (JP-0016 = Kanagawa, Shizuoka, Tokyo, Yamanashi). Python computes it.
+  function renderLoc(r) {
+    const box = $("#parkLoc"); st.locOptions = r ? r.options : [];
+    if (!r || (!r.options.length && !r.multi.length)) { box.hidden = true; st.loc = ""; return; }
+    box.hidden = false;
+    const label = (o) => `${esc(o.code)}${o.name ? " " + esc(o.name) : ""}`;
+    if (!r.options.length) { box.innerHTML = `<span class="loc-label">${esc(t("live.loc"))}</span><span class="error">${esc(t("live.err.noLoc"))}</span>`; st.loc = ""; return; }
+    if (r.options.length === 1) {
+      st.loc = r.options[0].code;
+      box.innerHTML = `<span class="loc-label">${esc(t("live.loc"))}</span><span class="loc-fixed">${label(r.options[0])}</span>`;
+      return;
+    }
+    if (!r.options.some((o) => o.code === st.loc)) st.loc = "";
+    box.innerHTML = `<span class="loc-label">${esc(t("live.loc"))}</span><select id="locSel"><option value="">${esc(t("live.loc.pick"))}</option>` +
+      r.options.map((o) => `<option value="${esc(o.code)}"${o.code === st.loc ? " selected" : ""}>${label(o)}</option>`).join("") + `</select>`;
+    $("#locSel").addEventListener("change", (e) => (st.loc = e.target.value));
   }
   $("#parks").addEventListener("input", renderPreview);
   $("#parks").addEventListener("keydown", (e) => { if (e.key === "Enter") startLive(); });
@@ -108,8 +128,9 @@
     const parks = splitParks($("#parks").value);
     const err = $("#liveError");
     if (!parks.length) { err.textContent = t("live.err.park"); err.hidden = false; return; }
+    if ((st.locOptions || []).length > 1 && !st.loc) { err.textContent = t("live.err.loc"); err.hidden = false; return; }
     err.hidden = true; $("#doneCard").hidden = true;
-    const r = await api.start_live(parks.join(","), st.call);
+    const r = await api.start_live(parks.join(","), st.call, st.loc || "");
     if (!r.ok) { err.textContent = r.error; err.hidden = false; return; }
     enterRunning(r.parks, r.start);
   }
