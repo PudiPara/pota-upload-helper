@@ -4,6 +4,8 @@
 
 [日本語](README.md) · [English](README.en.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Italiano](README.it.md) · [Português (Brasil)](README.pt-BR.md) · [한국어](README.ko.md) · [Polski](README.pl.md)
 
+<a href="https://buymeacoffee.com/pudipara"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" height="40"></a>
+
 一款面向 POTA（Parks on the Air）激活者的桌面应用，从运用开始一直帮到上传。支持 macOS 和 Windows。
 
 在 FT8 等模式下，很难当场知道对方是否在公园里，更不用说是否 2fer。本应用在运用期间记录 pota.app 的 spot，和日志软件发来的 QSO 当场比对，**给出 P2P（公园对公园）和 2fer 的候选，由你确认后记录**。运用结束时，按自己的公园和 UTC 日期生成可直接上传到 pota.app 的文件。

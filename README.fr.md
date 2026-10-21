@@ -4,6 +4,8 @@
 
 [日本語](README.md) · [English](README.en.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Italiano](README.it.md) · [Português (Brasil)](README.pt-BR.md) · [한국어](README.ko.md) · [Polski](README.pl.md)
 
+<a href="https://buymeacoffee.com/pudipara"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" height="40"></a>
+
 Une application de bureau pour les activateurs POTA (Parks on the Air), qui aide du début de l’activation jusqu’à l’envoi. Fonctionne sous macOS et Windows.
 
 En FT8, impossible de savoir sur le moment si la station en face est dans un parc, et encore moins si c’est un 2fer. Cette application enregistre les spots pota.app pendant l’activation, les confronte aux QSO envoyés par votre logger et **propose le P2P (parc à parc) et le 2fer, que vous confirmez et enregistrez**. À la fin, elle écrit un fichier par parc et par jour UTC, prêt à être envoyé sur pota.app.

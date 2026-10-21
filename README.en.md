@@ -4,6 +4,8 @@
 
 [日本語](README.md) · [English](README.en.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Italiano](README.it.md) · [Português (Brasil)](README.pt-BR.md) · [한국어](README.ko.md) · [Polski](README.pl.md)
 
+<a href="https://buymeacoffee.com/pudipara"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" height="40"></a>
+
 A desktop app for POTA (Parks on the Air) activators that helps from the moment you go on the air until the upload. Runs on macOS and Windows.
 
 On FT8 you cannot tell whether the other station is in a park, let alone a 2fer. This app records pota.app spots while you activate, matches them against the QSOs your logger sends, and **suggests P2P (park-to-park) and 2fer for you to confirm and record**. When you finish, it writes one file per park and UTC day, ready to upload to pota.app.

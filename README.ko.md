@@ -4,6 +4,8 @@
 
 [日本語](README.md) · [English](README.en.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Italiano](README.it.md) · [Português (Brasil)](README.pt-BR.md) · [한국어](README.ko.md) · [Polski](README.pl.md)
 
+<a href="https://buymeacoffee.com/pudipara"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" height="40"></a>
+
 POTA(Parks on the Air) 활성화를 운용 중부터 업로드까지 돕는 데스크톱 앱입니다. macOS와 Windows에서 동작합니다.
 
 FT8 등에서는 상대가 공원에서 운용 중인지, 더구나 2fer인지 그 자리에서 알 수 없습니다. 이 앱은 운용 중에 pota.app 스팟을 기록하고, 로거에서 온 QSO와 그 자리에서 대조해 **P2P(공원 대 공원)와 2fer 후보를 제시하며, 당신이 확인해 기록합니다**. 운용을 마치면 내 공원별·UTC 날짜별로 pota.app에 바로 올릴 수 있는 파일을 만듭니다.
