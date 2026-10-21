@@ -81,6 +81,7 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
 - **The live list is the day's QSOs at the current parks** (`Api.session_qsos(start, parks)` + the poll
   filter in app.js): a park shared by several sessions keeps its count; the header shows the smallest
   park count with a per-park breakdown when they differ. Rows sort by `ts`, ties by arrival (`seq`).
+- **Upload hours**: POTA asks for no log uploads 03-11 UTC; every results box (`uploadHoursHtml` in app.js, top of `resultsHtml`) says so in local time, amber while it is that time now.
 - **Results list every QSO** (`summary[].rows`, P2P rows with plates and source; a "P2P only" switch) and
   the pota.app line count (`records`) next to the QSO count when their 2fer doubled lines.
 - **A running session survives a restart**: `start_live` stores `settings.live` (id, parks, call, start),

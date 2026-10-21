@@ -110,7 +110,7 @@
   "res.qso": "QSO", "res.qsoShort": "QSO·不足 10", "res.noP2P": "沒有 P2P",
   "res.lines": "上傳 {n} 行",
   "res.unique": "pota.app 計為 {n}",
-  "res.p2pOnly": "只看 P2P", "res.notes": "請確認",
+  "res.p2pOnly": "只看 P2P", "res.notes": "請確認", "res.hours": "請避免在 {from}–{to}（UTC 3–11 時）上傳到 pota.app。這是 POTA 為減少日誌處理錯誤提出的請求。", "res.hours.now": "現在是 {from}–{to}（UTC 3–11 時）。依 POTA 的請求，請在此時段之後再上傳到 pota.app。",
   "src.hunter": "已核實", "src.confirmed": "已確認", "src.manual": "手動", "src.spot": "spot", "src.log": "日誌", "src.logspot": "日誌+spot",
   "set.title": "連接日誌軟體",
   "set.lede": "透過 UDP 接收日誌軟體記錄的 QSO。格式：N1MM（RUMlogNG、N1MM Logger+、DXLog 等）、WSJT-X（WSJT-X、JTDX）、ADIF（JTAlert、GridTracker、Log4OM 等）。程式會自動辨識每個封包的格式。",

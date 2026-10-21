@@ -167,7 +167,7 @@
  "res.lines": "POTA へ {n} 行",
  "res.unique": "pota.app では {n}",
  "res.p2pOnly": "P2P だけ表示",
- "res.notes": "確認してください",
+ "res.notes": "確認してください", "res.hours": "pota.app へのアップロードは {from}〜{to}（UTC 3〜11 時）を避けてください。ログ処理のエラーを減らすための POTA からのお願いです。", "res.hours.now": "いまは {from}〜{to}（UTC 3〜11 時）です。POTA のお願いにより、pota.app へのアップロードはこの時間帯を過ぎてからにしてください。",
  "src.hunter": "確定",
  "src.confirmed": "確認済み",
  "src.manual": "手入力",

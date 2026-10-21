@@ -110,7 +110,7 @@
   "res.qso": "QSO", "res.qsoShort": "QSO·不足 10", "res.noP2P": "没有 P2P",
   "res.lines": "上传 {n} 行",
   "res.unique": "pota.app 计为 {n}",
-  "res.p2pOnly": "只看 P2P", "res.notes": "请确认",
+  "res.p2pOnly": "只看 P2P", "res.notes": "请确认", "res.hours": "请避免在 {from}–{to}（UTC 3–11 时）上传到 pota.app。这是 POTA 为减少日志处理错误提出的请求。", "res.hours.now": "现在是 {from}–{to}（UTC 3–11 时）。按照 POTA 的请求，请在此时段之后再上传到 pota.app。",
   "src.hunter": "已核实", "src.confirmed": "已确认", "src.manual": "手动", "src.spot": "spot", "src.log": "日志", "src.logspot": "日志+spot",
   "set.title": "连接日志软件",
   "set.lede": "通过 UDP 接收日志软件记录的 QSO。格式：N1MM（RUMlogNG、N1MM Logger+、DXLog 等）、WSJT-X（WSJT-X、JTDX）、ADIF（JTAlert、GridTracker、Log4OM 等）。应用会自动识别每个数据包的格式。",

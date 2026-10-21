@@ -531,6 +531,13 @@
   $("#pickOut").addEventListener("click", async () => { const p = await api.pick_out(); if (p) { st.out = p; $("#outPath").textContent = p; } });
 
   const SRC_CLASS = { hunter: "src-ok", confirmed: "src-ok", manual: "src-ok", spot: "src-spot", log: "src-log", logspot: "src-log" };
+  // POTA asks that logs are not uploaded 03-11 UTC (log processing); shown in the user's local time
+  function uploadHoursHtml() {
+    const now = new Date(), at = (h) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), h));
+    const hm = (d) => d.toLocaleTimeString(st.lang, { hour: "2-digit", minute: "2-digit" });
+    const busy = now.getUTCHours() >= 3 && now.getUTCHours() < 11;
+    return `<p class="upload-hours${busy ? " is-now" : ""}">${esc(t(busy ? "res.hours.now" : "res.hours", { from: hm(at(3)), to: hm(at(11)) }))}</p>`;
+  }
   function resultsHtml(r) {
     const files = r.summary || [];
     // every QSO of each file; P2P rows carry the other park(s) and how they were known; a switch hides the rest
@@ -538,7 +545,7 @@
           <div class="qrow${q.parks.length ? " is-p2p" : ""}"><span class="muted">${hhmm(q.time)}</span>
           <span class="qrow-call">${esc(q.call)}</span><span class="qrow-bm">${esc(q.band)} ${esc(q.mode)}</span>
           ${q.parks.length ? `<span class="plates">${plates(q.parks)}</span><span class="src ${SRC_CLASS[q.source] || "src-log"}">${esc(t("src." + q.source))}</span>` : ""}</div>`;
-    return (files.length ? `<div class="res-tools"><label class="switch switch-sm"><input type="checkbox" class="res-p2p-only"><span class="switch-ui"></span><span>${esc(t("res.p2pOnly"))}</span></label></div>` : "") +
+    return (files.length ? uploadHoursHtml() : "") + (files.length ? `<div class="res-tools"><label class="switch switch-sm"><input type="checkbox" class="res-p2p-only"><span class="switch-ui"></span><span>${esc(t("res.p2pOnly"))}</span></label></div>` : "") +
       files.map((f) => `
       <article class="file">
         <div class="file-head">

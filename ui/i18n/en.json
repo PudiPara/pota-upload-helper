@@ -167,7 +167,7 @@
  "res.lines": "{n} lines to POTA",
  "res.unique": "{n} on pota.app",
  "res.p2pOnly": "P2P only",
- "res.notes": "Please check",
+ "res.notes": "Please check", "res.hours": "Please don't upload to pota.app between {from} and {to} (03-11 UTC). POTA asks this to reduce log processing errors.", "res.hours.now": "It is now between {from} and {to} (03-11 UTC). POTA asks that you upload to pota.app after this window.",
  "src.hunter": "verified",
  "src.confirmed": "confirmed",
  "src.manual": "typed",
