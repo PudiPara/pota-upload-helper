@@ -57,6 +57,19 @@ class MyPota(unittest.TestCase):
         a = mypota.activations("JP-1281", [("20990101", {"JP-1281": 12}), ("20000101", {"JP-1281": 5})])
         self.assertEqual((a["next"], a["done"], a["qsos"]), (26, 25, 1023))
 
+    def test_record_marks_what_the_app_added(self):
+        mypota.import_files(self.files[:2])
+        p2p = {"CALL": "JA1Y", "QSO_DATE": "20991021", "TIME_ON": "063000", "P2P_DECISION": "yes", "SIG_INFO": "JP-0003"}
+        rec = mypota.record([p2p], [("20991021", {"JP-1281": 12, "JP-0009": 3}), ("20991021", {"JP-0009": 8})])
+        h = {r["ref"]: r for r in rec["hunted"]}
+        self.assertEqual((h["JP-0003"]["source"], h["JP-0003"]["added"], h["JP-0003"]["first"]), ("app", True, "2099-10-21"))
+        self.assertEqual((h["JP-1206"]["source"], h["JP-1206"]["added"], h["JP-1206"]["qsos"]), ("csv", False, 3))
+        self.assertEqual(rec["hunted"][0]["ref"], "JP-0003")                      # newest first
+        a = {r["ref"]: r for r in rec["activated"]}
+        self.assertEqual((a["JP-1281"]["attempts"], a["JP-1281"]["added"], a["JP-1281"]["app"]), (25, False, 1))
+        # two entries of one day are one activation: 3 + 8 QSOs = 11, a success
+        self.assertEqual((a["JP-0009"]["attempts"], a["JP-0009"]["activations"], a["JP-0009"]["added"]), (1, 1, True))
+
 
 if __name__ == "__main__":
     unittest.main()

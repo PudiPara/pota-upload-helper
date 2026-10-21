@@ -5,7 +5,7 @@
   "nav.spots": "Activations en cours", "nav.spots.sub": "Qui émet depuis un parc",
   "nav.build": "Fichiers d’envoi", "nav.build.sub": "Fichiers pour pota.app",
     "nav.config": "Réglages",
-  "nav.config.sub": "Indicatifs, entrées, langue",
+  "nav.config.sub": "Indicatifs, entrées, langue", "nav.record.sub": "Parcs chassés et activés", "rec.hunted": "Chassés", "rec.activated": "Activés", "rec.sum.hunted": "Chassés : {n} parcs (+{added} depuis l'import)", "rec.sum.activated": "Activés : {n} parcs (+{added} depuis l'import)", "rec.addedOnly": "Seulement les parcs ajoutés depuis l'import", "rec.search.ph": "Filtrer par parc ou nom", "rec.src.csv": "CSV", "rec.src.log": "pota.app", "rec.src.app": "P2P", "rec.qsos": "{n} QSO", "rec.acts": "{done} / {n} activations", "rec.appDays": "+{n} dans l'appli", "rec.none": "Aucun parc ne correspond.", "rec.empty": "Pas encore de bilan. Importez hunter_parks.csv et activator_parks.csv depuis pota.app pour voir vos parcs ici.", "rec.hint": "Les étiquettes vertes sont des parcs ajoutés d'après les données de l'appli après l'import (QSO confirmés P2P ici, journal chasseur de pota.app, activations enregistrées ici à partir du lendemain de l'import). Ils peuvent différer du décompte de pota.app : pour un bilan exact, téléchargez à nouveau les CSV sur pota.app et importez-les ; les parcs qu'ils contiennent passent en étiquette grise « CSV ».",
   "cfg.title": "Réglages",
   "cfg.calls.h": "Indicatifs",
   "cfg.calls.p": "Enregistrez-en autant que nécessaire ; choisissez-en un au début de l’enregistrement.",

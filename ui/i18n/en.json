@@ -8,7 +8,7 @@
  "nav.build": "Upload files",
  "nav.build.sub": "Files for pota.app",
     "nav.config": "Settings",
-  "nav.config.sub": "Callsigns, listeners, language",
+  "nav.config.sub": "Callsigns, listeners, language", "nav.record.sub": "Parks hunted and activated", "rec.hunted": "Hunted", "rec.activated": "Activated", "rec.sum.hunted": "Hunted {n} parks (+{added} since import)", "rec.sum.activated": "Activated {n} parks (+{added} since import)", "rec.addedOnly": "Only parks added since the import", "rec.search.ph": "Filter by park or name", "rec.src.csv": "CSV", "rec.src.log": "pota.app", "rec.src.app": "P2P", "rec.qsos": "{n} QSOs", "rec.acts": "{done} / {n} activations", "rec.appDays": "+{n} in this app", "rec.none": "No parks match.", "rec.empty": "No record yet. Import hunter_parks.csv and activator_parks.csv from pota.app to see your parks here.", "rec.hint": "Green labels are parks added from this app's own records after the CSV import (QSOs confirmed as P2P here, pota.app's hunter log, activations recorded here from the day after the import). They may differ from pota.app's count, so for an accurate record download the CSVs from pota.app again and import them; parks they contain turn into a grey “CSV” label.",
   "cfg.title": "Settings",
   "cfg.calls.h": "Callsigns",
   "cfg.calls.p": "Save as many as you use; pick one when you start recording.",

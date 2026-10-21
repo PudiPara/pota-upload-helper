@@ -33,7 +33,7 @@ from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, base_call, data
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import (SESSION_MARGIN, SpotLogger, common_locations, countries, example_parks, history_parks, park_info,
-                   summarize, tag_candidate)
+                   shipped_parks, summarize, tag_candidate)
 from window import BarMode
 
 SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "p2p_auto", "lookup", "on_top")   # "live" is set by start_live/finish_live only
@@ -372,6 +372,16 @@ class Api:
         park before activator_parks.csv is imported)."""
         days = [(d, per) for d, _, _, per, _ in list_activations(recs=qsolog.records())]
         return {ref: mypota.activations(ref, days) for ref in split_parks(refs)}
+
+    def mypota_record(self):
+        """実績 page: mypota.record over the app log, each park with its name from the shipped park list
+        (no pota.app request, so a long list stays instant)."""
+        recs = qsolog.records()
+        days = [(d, per) for d, _, _, per, _ in list_activations(recs=recs)]
+        rec, names = mypota.record(recs, days), shipped_parks()
+        for row in rec["hunted"] + rec["activated"]:
+            row["name"] = (names.get(row["ref"]) or ("",))[0]
+        return rec
 
     def import_mypota(self):
         """設定 → POTA の実績: pick pota.app's hunter_parks.csv / activator_parks.csv and import them."""

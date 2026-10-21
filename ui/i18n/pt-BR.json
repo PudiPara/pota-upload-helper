@@ -5,7 +5,7 @@
   "nav.spots": "Ativando agora", "nav.spots.sub": "Quem está no ar de um parque",
   "nav.build": "Arquivos de upload", "nav.build.sub": "Arquivos para o pota.app",
     "nav.config": "Configurações",
-  "nav.config.sub": "Indicativos, entradas, idioma",
+  "nav.config.sub": "Indicativos, entradas, idioma", "nav.record.sub": "Parques caçados e ativados", "rec.hunted": "Caçados", "rec.activated": "Ativados", "rec.sum.hunted": "Caçados: {n} parques (+{added} desde a importação)", "rec.sum.activated": "Ativados: {n} parques (+{added} desde a importação)", "rec.addedOnly": "Só parques adicionados desde a importação", "rec.search.ph": "Filtrar por parque ou nome", "rec.src.csv": "CSV", "rec.src.log": "pota.app", "rec.src.app": "P2P", "rec.qsos": "{n} QSOs", "rec.acts": "{done} / {n} ativações", "rec.appDays": "+{n} neste app", "rec.none": "Nenhum parque corresponde.", "rec.empty": "Ainda sem histórico. Importe hunter_parks.csv e activator_parks.csv do pota.app para ver seus parques aqui.", "rec.hint": "Etiquetas verdes são parques adicionados a partir dos registros deste app após importar o CSV (QSOs confirmados como P2P aqui, log de caçador do pota.app, ativações registradas aqui a partir do dia seguinte à importação). Podem diferir da contagem do pota.app; para um histórico exato, baixe de novo os CSVs do pota.app e importe-os: os parques que eles contêm passam à etiqueta cinza “CSV”.",
   "cfg.title": "Configurações",
   "cfg.calls.h": "Indicativos",
   "cfg.calls.p": "Salve quantos usar; escolha um ao começar a gravar.",

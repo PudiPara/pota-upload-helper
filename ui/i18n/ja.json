@@ -8,7 +8,7 @@
  "nav.build": "アップロード作成",
  "nav.build.sub": "pota.app 用ファイル",
     "nav.config": "設定",
-  "nav.config.sub": "コールサイン・受信口・言語",
+  "nav.config.sub": "コールサイン・受信口・言語", "nav.record.sub": "ハント・アクティベートした公園", "rec.hunted": "ハント", "rec.activated": "アクティベート", "rec.sum.hunted": "ハント {n} 公園（読み込み後 +{added}）", "rec.sum.activated": "アクティベート {n} 公園（読み込み後 +{added}）", "rec.addedOnly": "読み込み後に増えた公園のみ", "rec.search.ph": "公園番号・名前で絞る", "rec.src.csv": "CSV", "rec.src.log": "pota.app", "rec.src.app": "P2P", "rec.qsos": "{n} QSO", "rec.acts": "成立 {done} / {n} 回", "rec.appDays": "このアプリで +{n} 回", "rec.none": "条件に合う公園がありません。", "rec.empty": "まだ実績がありません。pota.app の hunter_parks.csv と activator_parks.csv を読み込むと、ここに一覧が出ます。", "rec.hint": "緑のラベルは、CSV を読み込んだあとにこのアプリの記録から追加した公園です（このアプリで P2P と確定した交信、pota.app のハンターログ、このアプリで記録したアクティベート〈読み込んだ翌日以降〉）。pota.app の集計と違う場合があるので、正確な実績にするには pota.app から CSV をダウンロードし直して読み込んでください。CSV に入った公園は灰色の「CSV」に変わります。",
   "cfg.title": "設定",
   "cfg.calls.h": "コールサイン",
   "cfg.calls.p": "複数保存できます。記録を始めるときに使うコールを選びます。",

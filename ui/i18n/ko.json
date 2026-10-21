@@ -5,7 +5,7 @@
   "nav.spots": "활성화 중", "nav.spots.sub": "지금 공원에서 교신 중인 국",
   "nav.build": "업로드 파일 만들기", "nav.build.sub": "pota.app용 파일",
     "nav.config": "설정",
-  "nav.config.sub": "호출부호·수신구·언어",
+  "nav.config.sub": "호출부호·수신구·언어", "nav.record.sub": "헌팅·액티베이트한 공원", "rec.hunted": "헌팅", "rec.activated": "액티베이트", "rec.sum.hunted": "헌팅 공원 {n}곳 (불러온 뒤 +{added})", "rec.sum.activated": "액티베이트 공원 {n}곳 (불러온 뒤 +{added})", "rec.addedOnly": "불러온 뒤 늘어난 공원만", "rec.search.ph": "공원 번호·이름으로 찾기", "rec.src.csv": "CSV", "rec.src.log": "pota.app", "rec.src.app": "P2P", "rec.qsos": "QSO {n}개", "rec.acts": "성공 {done} / {n}회", "rec.appDays": "이 앱에서 +{n}회", "rec.none": "조건에 맞는 공원이 없습니다.", "rec.empty": "아직 기록이 없습니다. pota.app의 hunter_parks.csv와 activator_parks.csv를 불러오면 여기에 목록이 나옵니다.", "rec.hint": "초록색 라벨은 CSV를 불러온 뒤 이 앱의 기록으로 추가한 공원입니다(이 앱에서 P2P로 확정한 교신, pota.app 헌터 로그, 불러온 다음 날부터 이 앱에서 기록한 액티베이트). pota.app의 집계와 다를 수 있으니, 정확한 기록이 필요하면 pota.app에서 CSV를 다시 내려받아 불러오세요. CSV에 들어 있는 공원은 회색 “CSV” 라벨로 바뀝니다.",
   "cfg.title": "설정",
   "cfg.calls.h": "호출부호",
   "cfg.calls.p": "여러 개 저장할 수 있습니다. 기록을 시작할 때 사용할 호출부호를 고릅니다.",

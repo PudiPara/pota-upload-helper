@@ -5,7 +5,7 @@
   "nav.spots": "Gerade aktiv", "nav.spots.sub": "Wer gerade aus einem Park funkt",
   "nav.build": "Upload-Dateien", "nav.build.sub": "Dateien für pota.app",
     "nav.config": "Einstellungen",
-  "nav.config.sub": "Rufzeichen, Empfänger, Sprache",
+  "nav.config.sub": "Rufzeichen, Empfänger, Sprache", "nav.record.sub": "Gejagte und aktivierte Parks", "rec.hunted": "Gejagt", "rec.activated": "Aktiviert", "rec.sum.hunted": "Gejagt: {n} Parks (+{added} seit dem Einlesen)", "rec.sum.activated": "Aktiviert: {n} Parks (+{added} seit dem Einlesen)", "rec.addedOnly": "Nur seit dem Einlesen hinzugekommene Parks", "rec.search.ph": "Nach Park oder Name filtern", "rec.src.csv": "CSV", "rec.src.log": "pota.app", "rec.src.app": "P2P", "rec.qsos": "{n} QSOs", "rec.acts": "{done} / {n} Aktivierungen", "rec.appDays": "+{n} in dieser App", "rec.none": "Keine passenden Parks.", "rec.empty": "Noch keine Bilanz. Lies hunter_parks.csv und activator_parks.csv von pota.app ein, dann erscheinen deine Parks hier.", "rec.hint": "Grüne Labels sind Parks, die nach dem Einlesen aus den Daten dieser App ergänzt wurden (hier als P2P bestätigte QSOs, Jäger-Log von pota.app, hier aufgezeichnete Aktivierungen ab dem Tag nach dem Einlesen). Sie können von der Zählung auf pota.app abweichen – für eine genaue Bilanz die CSVs von pota.app neu herunterladen und einlesen; enthaltene Parks bekommen das graue „CSV“.",
   "cfg.title": "Einstellungen",
   "cfg.calls.h": "Rufzeichen",
   "cfg.calls.p": "Beliebig viele speichern; beim Start der Aufzeichnung wird eines gewählt.",

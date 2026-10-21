@@ -180,6 +180,21 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .plate.is-new { box-shadow: inset 0 0 0 1.5px var(--plate-bg), inset 0 0 0 3px var(--amber); }
 .new-tag { color: var(--amber-ink); background: var(--amber-bg); font-weight: 800; font-size: 11px; letter-spacing: .04em;
   border-radius: 4px; padding: 1px 5px; margin-left: 6px; }
+/* 実績 page */
+.rec-note { display: flex; gap: 14px; align-items: center; background: var(--amber-bg); border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: var(--r-md); padding: 10px 14px; margin-bottom: 14px; }
+.rec-note p { margin: 0; font-size: 12.5px; text-wrap: pretty; }
+.rec-note .btn { flex: none; padding: 6px 12px; font-size: 12.5px; }
+.rec-sum { display: flex; gap: 20px; flex-wrap: wrap; font-size: 13.5px; font-weight: 600; margin-bottom: 12px; }
+.recs { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.rec { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--line); }
+.rec:first-child { border-top: 0; }
+.rec-date { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.rec-park { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.rec-name { font-size: 12.5px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: 4px; }
+.rec-meta { display: flex; gap: 10px; align-items: center; font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+.rec-src { font-size: 11px; font-weight: 700; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+.rec-src.is-app { color: var(--pine-2); border-color: var(--pine-2); background: rgba(47, 122, 91, .08); }
+#recSearch { padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 12.5px; color: var(--ink); }
 .mypota-files { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
 .mypota-files li { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; font-size: 13.5px; }
 .mypota-files b { min-width: 9em; }

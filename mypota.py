@@ -69,29 +69,34 @@ def status():
 
 
 # ---------------------------------------------------------------- hunted
-def first_hunted(app_records=()):
-    """{ref: earliest known hunt as "YYYYMMDDHHMMSS"} - None before hunter_parks.csv is imported.
-    app_records: the app log's records (their confirmed P2P parks count as hunted at the QSO)."""
-    data = _load().get("hunter")
-    if not data:
-        return None
+def _hunts(app_records=()):
+    """{ref: (earliest hunt "YYYYMMDDHHMMSS", source)} - source "csv" (hunter_parks.csv), "log" (the
+    pota.app hunter log the app keeps fetching, hunter.json) or "app" (a confirmed P2P in the app log)."""
     first = {}
 
-    def seen(ref, ts):
-        if ts and (ref not in first or ts < first[ref]):
-            first[ref] = ts
+    def seen(ref, ts, src):
+        if ts and (ref not in first or ts < first[ref][0]):
+            first[ref] = (ts, src)
 
-    for ref, r in data["parks"].items():
-        seen(ref, r["first"].replace("-", "").ljust(14, "0"))
-    for h in read_json(data_path("hunter.json"), []):             # the hunter log builder keeps fetching
+    for ref, r in ((_load().get("hunter") or {}).get("parks") or {}).items():
+        seen(ref, r["first"].replace("-", "").ljust(14, "0"), "csv")
+    for h in read_json(data_path("hunter.json"), []):
         if h.get("reference") and h.get("date"):
-            seen(h["reference"].upper(), "".join(c for c in h["date"] if c.isdigit())[:14].ljust(14, "0"))
+            seen(h["reference"].upper(), "".join(c for c in h["date"] if c.isdigit())[:14].ljust(14, "0"), "log")
     for r in app_records:
         if r.get("P2P_DECISION") in ("yes", "manual", "log"):
             for ref in (r.get("POTA_REF") or r.get("SIG_INFO") or "").upper().replace(" ", "").split(","):
                 if ref:
-                    seen(ref, (r.get("QSO_DATE") or "") + (r.get("TIME_ON") or "").ljust(6, "0"))
+                    seen(ref, (r.get("QSO_DATE") or "") + (r.get("TIME_ON") or "").ljust(6, "0"), "app")
     return first
+
+
+def first_hunted(app_records=()):
+    """{ref: earliest known hunt as "YYYYMMDDHHMMSS"} - None before hunter_parks.csv is imported.
+    app_records: the app log's records (their confirmed P2P parks count as hunted at the QSO)."""
+    if not _load().get("hunter"):
+        return None
+    return {ref: ts for ref, (ts, _) in _hunts(app_records).items()}
 
 
 def new_parks(parks, first, at=None):
@@ -103,21 +108,47 @@ def new_parks(parks, first, at=None):
 
 
 # ---------------------------------------------------------------- activated
+def _activated(app_days=()):
+    """{ref: {first, qsos, attempts, activations, added, app}}: activator_parks.csv plus the app log's
+    activation days after the import day (the CSV already counts the rest; every day without a CSV).
+    app_days: [(YYYYMMDD, {park: qsos})]; added = a park the CSV does not have, app = days added."""
+    data = _load().get("activator") or {}
+    since = (data.get("at") or "")[:10].replace("-", "")
+    out = {ref: dict(r, added=False, app=0) for ref, r in (data.get("parks") or {}).items()}
+    per_day = {}
+    for day, per in app_days:                      # one activation per park and UTC day
+        for ref, n in per.items():
+            per_day[(day, ref)] = per_day.get((day, ref), 0) + n
+    for (day, ref), n in sorted(per_day.items()):
+        if n and day > since:
+            r = out.setdefault(ref, {"first": "", "qsos": 0, "attempts": 0, "activations": 0, "added": True, "app": 0})
+            r["attempts"] += 1
+            r["activations"] += 1 if n >= ACTIVATED_MIN else 0
+            r["qsos"] += n
+            r["app"] += 1
+            r["first"] = r["first"] or "%s-%s-%s" % (day[:4], day[4:6], day[6:])
+    return out
+
+
 def activations(ref, app_days=()):
     """What this park's next activation would be: {"next": n, "done": successful, "qsos": total,
-    "first": date} - None before activator_parks.csv is imported. app_days: [(YYYYMMDD, {park: qsos})]
-    from the app log; only days after the import day are added (the CSV already counts the rest)."""
-    data = _load().get("activator")
-    if not data:
+    "first": date} - None before activator_parks.csv is imported."""
+    if not _load().get("activator"):
         return None
-    r = data["parks"].get(ref) or {"first": "", "qsos": 0, "attempts": 0, "activations": 0}
-    since = data["at"][:10].replace("-", "")
-    attempts, done, qsos, first = r["attempts"], r["activations"], r["qsos"], r["first"]
-    for day, per in app_days:
-        n = per.get(ref, 0)
-        if n and day > since:
-            attempts += 1
-            done += 1 if n >= ACTIVATED_MIN else 0
-            qsos += n
-            first = first or "%s-%s-%s" % (day[:4], day[4:6], day[6:])
-    return {"next": attempts + 1, "done": done, "qsos": qsos, "first": first}
+    r = _activated(app_days).get(ref) or {"first": "", "qsos": 0, "attempts": 0, "activations": 0}
+    return {"next": r["attempts"] + 1, "done": r["activations"], "qsos": r["qsos"], "first": r["first"]}
+
+
+# ---------------------------------------------------------------- the 実績 page
+def record(app_records=(), app_days=()):
+    """{"hunted": [{ref, first, source, qsos, added}], "activated": [{ref, first, attempts, activations,
+    qsos, added, app}], "imported": status()} - newest first. added = not in the imported CSV: hunted
+    or activated since, found by this app (its P2P log / activations) or pota.app's hunter log."""
+    csv_hunt = (_load().get("hunter") or {}).get("parks") or {}
+    hunted = [{"ref": ref, "first": "%s-%s-%s" % (ts[:4], ts[4:6], ts[6:8]), "source": src,
+               "qsos": (csv_hunt.get(ref) or {}).get("qsos"), "added": ref not in csv_hunt}
+              for ref, (ts, src) in _hunts(app_records).items()]
+    activated = [dict(r, ref=ref) for ref, r in _activated(app_days).items()]
+    for rows in (hunted, activated):
+        rows.sort(key=lambda r: (r["first"], r["ref"]), reverse=True)
+    return {"hunted": hunted, "activated": activated, "imported": status()}

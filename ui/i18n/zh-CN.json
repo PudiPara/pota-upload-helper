@@ -5,7 +5,7 @@
   "nav.spots": "正在激活的电台", "nav.spots.sub": "此刻在公园里发射的电台",
   "nav.build": "生成上传文件", "nav.build.sub": "pota.app 用文件",
     "nav.config": "设置",
-  "nav.config.sub": "呼号、接收口、语言",
+  "nav.config.sub": "呼号、接收口、语言", "nav.record.sub": "猎取与激活的公园", "rec.hunted": "猎取", "rec.activated": "激活", "rec.sum.hunted": "猎取 {n} 个公园（导入后 +{added}）", "rec.sum.activated": "激活 {n} 个公园（导入后 +{added}）", "rec.addedOnly": "只看导入后新增的公园", "rec.search.ph": "按公园编号或名称筛选", "rec.src.csv": "CSV", "rec.src.log": "pota.app", "rec.src.app": "P2P", "rec.qsos": "{n} 个 QSO", "rec.acts": "成功 {done} / {n} 次", "rec.appDays": "本应用 +{n} 次", "rec.none": "没有符合条件的公园。", "rec.empty": "还没有记录。导入 pota.app 的 hunter_parks.csv 和 activator_parks.csv 后会在这里列出。", "rec.hint": "绿色标签是导入 CSV 后根据本应用的记录添加的公园（本应用确认为 P2P 的通联、pota.app 的猎人日志、本应用记录的激活〈导入次日起〉）。可能与 pota.app 的统计不同，要获得准确的记录，请从 pota.app 重新下载并导入 CSV；CSV 中包含的公园会变为灰色“CSV”标签。",
   "cfg.title": "设置",
   "cfg.calls.h": "呼号",
   "cfg.calls.p": "可保存多个，开始记录时选择要使用的呼号。",

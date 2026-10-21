@@ -52,6 +52,10 @@
         <span data-i18n="nav.build">アップロード作成</span>
         <small data-i18n="nav.build.sub">pota.app 用ファイル</small>
       </button>
+      <button class="nav-item" data-view="record">
+        <span data-i18n="cfg.mypota.h">POTA の実績</span>
+        <small data-i18n="nav.record.sub">ハント・アクティベートした公園</small>
+      </button>
       <button class="nav-item" data-view="config">
         <span data-i18n="nav.config">設定</span>
         <small id="recvSummary" data-i18n="nav.config.sub">コールサイン・受信口・言語</small>
@@ -241,6 +245,29 @@
         </div>
         <div id="resultsBody"></div>
       </section>
+    </section>
+
+    <!-- ======================= record (実績) ======================= -->
+    <section class="view" id="view-record" hidden>
+      <h1 class="view-title" data-i18n="cfg.mypota.h">POTA の実績</h1>
+      <div class="empty" id="recEmpty" hidden>
+        <p data-i18n="rec.empty">まだ実績がありません。</p>
+        <button class="btn" id="recPick" data-i18n="cfg.mypota.pick">CSV を読み込む</button>
+      </div>
+      <div id="recBody" hidden>
+        <div class="rec-sum" id="recSum"></div>
+        <div class="rec-note"><p data-i18n="rec.hint"></p><button class="btn" id="recReimport" data-i18n="cfg.mypota.pick">CSV を読み込む</button></div>
+        <div class="filters">
+          <div class="seg rec-kind" role="tablist">
+            <button role="tab" data-kind="hunted" class="is-on" data-i18n="rec.hunted">ハント</button>
+            <button role="tab" data-kind="activated" data-i18n="rec.activated">アクティベート</button>
+          </div>
+          <input id="recSearch" placeholder="公園番号・名前で絞る" data-i18n-ph="rec.search.ph" spellcheck="false" autocomplete="off">
+          <label class="switch switch-sm"><input type="checkbox" id="recAdded"><span class="switch-ui"></span><span data-i18n="rec.addedOnly">読み込み後に増えた公園のみ</span></label>
+        </div>
+        <ol class="recs" id="recList"></ol>
+        <div class="empty" id="recNone" hidden><p data-i18n="rec.none">条件に合う公園がありません。</p></div>
+      </div>
     </section>
 
     <!-- ======================= config (設定) ======================= -->

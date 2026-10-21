@@ -5,7 +5,7 @@
   "nav.spots": "Attivi adesso", "nav.spots.sub": "Chi trasmette da un parco",
   "nav.build": "File di upload", "nav.build.sub": "File per pota.app",
     "nav.config": "Impostazioni",
-  "nav.config.sub": "Nominativi, ascolti, lingua",
+  "nav.config.sub": "Nominativi, ascolti, lingua", "nav.record.sub": "Parchi cacciati e attivati", "rec.hunted": "Cacciati", "rec.activated": "Attivati", "rec.sum.hunted": "Cacciati: {n} parchi (+{added} dall'importazione)", "rec.sum.activated": "Attivati: {n} parchi (+{added} dall'importazione)", "rec.addedOnly": "Solo parchi aggiunti dopo l'importazione", "rec.search.ph": "Filtra per parco o nome", "rec.src.csv": "CSV", "rec.src.log": "pota.app", "rec.src.app": "P2P", "rec.qsos": "{n} QSO", "rec.acts": "{done} / {n} attivazioni", "rec.appDays": "+{n} in questa app", "rec.none": "Nessun parco corrisponde.", "rec.empty": "Nessun bilancio ancora. Importa hunter_parks.csv e activator_parks.csv da pota.app per vedere qui i tuoi parchi.", "rec.hint": "Le etichette verdi sono parchi aggiunti dai dati di questa app dopo l'importazione del CSV (QSO confermati P2P qui, log cacciatore di pota.app, attivazioni registrate qui dal giorno dopo l'importazione). Possono differire dal conteggio di pota.app: per un bilancio esatto scarica di nuovo i CSV da pota.app e importali; i parchi che contengono passano all'etichetta grigia «CSV».",
   "cfg.title": "Impostazioni",
   "cfg.calls.h": "Nominativi",
   "cfg.calls.p": "Salvane quanti ne usi; ne scegli uno quando avvii la registrazione.",

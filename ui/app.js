@@ -40,6 +40,7 @@
     renderListeners(); updateReceiver(st.receiver); renderCalls(); renderMypota();
     if (!$("#liveRun").hidden) { renderQsos(); renderSpots(); }
     if (!$("#view-spots").hidden) { spotsOptions(); renderSpotsPage(); }
+    if (!$("#view-record").hidden) renderRecord();
     if (st.source) renderActs({ items: st.acts, path: st.adif }, st.source === "adif" && !st.adif);
   }
 
@@ -104,11 +105,12 @@
   // ---------- navigation ----------
   function show(view) {
     $$(".nav-item").forEach((b) => b.classList.toggle("is-active", b.dataset.view === view));
-    ["live", "spots", "build", "config"].forEach((v) => ($("#view-" + v).hidden = v !== view));
+    ["live", "spots", "build", "record", "config"].forEach((v) => ($("#view-" + v).hidden = v !== view));
     $(".main").scrollTo(0, 0);
     if (view === "build" && st.source === "app") loadActs();
     if (view === "config") api.poll_live(1e12, 1e12).then((r) => updateReceiver(r.receiver));
     if (view === "spots") loadSpotsPage();
+    if (view === "record") loadRecord();
   }
   $$(".nav-item").forEach((b) => b.addEventListener("click", () => show(b.dataset.view)));
 
@@ -802,12 +804,48 @@
         <span>${esc(m[k] ? t("cfg.mypota.count", { n: m[k].n, at: day(m[k].at) }) : t("cfg.mypota.missing"))}</span></li>`).join("");
     $("#spotsNewBox").hidden = !m.hunter;                 // "New" needs the hunter list
   }
-  $("#mypotaPick").addEventListener("click", async () => {
+  async function importMypota() {
     const r = await api.import_mypota();
     if (!r) return;
     if (!r.ok) { toast(r.error); return; }
     st.mypota = r.mypota; renderMypota(); toast(t("cfg.mypota.done"));
-  });
+    if (!$("#view-record").hidden) loadRecord();
+  }
+  $("#mypotaPick").addEventListener("click", importMypota);
+
+  // ---------- 実績: the imported CSVs plus the parks this app found since (mypota.record) ----------
+  const rec = { data: null, kind: "hunted", q: "", added: false };
+  async function loadRecord() { rec.data = await api.mypota_record(); renderRecord(); }
+  function recRow(r) {
+    // grey = from the imported CSV, green = found by this app since the import (a re-import turns it grey)
+    const src = (key, mine, p) => `<span class="rec-src${mine ? " is-app" : ""}">${esc(t(key, p))}</span>`;
+    const meta = rec.kind === "hunted"
+      ? src("rec.src." + r.source, r.added) + (r.qsos ? `<span>${esc(t("rec.qsos", { n: r.qsos }))}</span>` : "")
+      : (r.added ? "" : src("rec.src.csv", false)) + (r.app ? src("rec.appDays", true, { n: r.app }) : "") +
+        `<span>${esc(t("rec.acts", { done: r.activations, n: r.attempts }))}</span><span>${esc(t("rec.qsos", { n: r.qsos }))}</span>`;
+    return `<li class="rec">
+      <span class="rec-date">${esc(r.first || "")}</span>
+      <span class="rec-park"><span class="flag">${flagOf(r.ref.split("-")[0])}</span>${plate(r.ref)}<span class="rec-name" title="${esc(r.name || "")}">${esc(r.name || "")}</span></span>
+      <span class="rec-meta">${meta}</span></li>`;
+  }
+  function renderRecord() {
+    const d = rec.data;
+    if (!d) return;
+    const empty = !d.hunted.length && !d.activated.length;
+    $("#recEmpty").hidden = !empty; $("#recBody").hidden = empty;
+    if (empty) return;
+    const sum = (k, rows) => esc(t(k, { n: rows.length, added: rows.filter((r) => r.added).length }));
+    $("#recSum").innerHTML = `<span>${sum("rec.sum.hunted", d.hunted)}</span><span>${sum("rec.sum.activated", d.activated)}</span>`;
+    const q = rec.q.trim().toUpperCase();
+    const rows = d[rec.kind].filter((r) => (!rec.added || r.added) && (!q || r.ref.includes(q) || (r.name || "").toUpperCase().includes(q)));
+    $("#recList").innerHTML = rows.map(recRow).join("");
+    $("#recList").hidden = !rows.length; $("#recNone").hidden = rows.length > 0;
+  }
+  $$(".rec-kind button").forEach((b) => b.addEventListener("click", () => { rec.kind = b.dataset.kind; segSet(".rec-kind", "kind", rec.kind); renderRecord(); }));
+  $("#recSearch").addEventListener("input", (e) => { rec.q = e.target.value; renderRecord(); });
+  $("#recAdded").addEventListener("change", (e) => { rec.added = e.target.checked; renderRecord(); });
+  $("#recPick").addEventListener("click", importMypota);
+  $("#recReimport").addEventListener("click", importMypota);
   $("#onTop").addEventListener("change", (e) => api.set_on_top(e.target.checked));
 
   // ---------- click a park plate or a callsign: copy, or open it on the web ----------

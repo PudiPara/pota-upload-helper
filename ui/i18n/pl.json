@@ -5,7 +5,7 @@
   "nav.spots": "Aktywni teraz", "nav.spots.sub": "Kto nadaje z parku",
   "nav.build": "Pliki do wysłania", "nav.build.sub": "Pliki dla pota.app",
     "nav.config": "Ustawienia",
-  "nav.config.sub": "Znaki, odbiorniki, język",
+  "nav.config.sub": "Znaki, odbiorniki, język", "nav.record.sub": "Parki upolowane i aktywowane", "rec.hunted": "Upolowane", "rec.activated": "Aktywowane", "rec.sum.hunted": "Upolowane: {n} parków (+{added} od wczytania)", "rec.sum.activated": "Aktywowane: {n} parków (+{added} od wczytania)", "rec.addedOnly": "Tylko parki dodane od wczytania", "rec.search.ph": "Filtruj po parku lub nazwie", "rec.src.csv": "CSV", "rec.src.log": "pota.app", "rec.src.app": "P2P", "rec.qsos": "{n} QSO", "rec.acts": "{done} / {n} aktywacji", "rec.appDays": "+{n} w tej aplikacji", "rec.none": "Brak pasujących parków.", "rec.empty": "Brak dorobku. Wczytaj hunter_parks.csv i activator_parks.csv z pota.app, a parki pojawią się tutaj.", "rec.hint": "Zielone etykiety to parki dodane na podstawie zapisów tej aplikacji po wczytaniu CSV (QSO potwierdzone tu jako P2P, dziennik łowcy pota.app, aktywacje zapisane tu od dnia po wczytaniu). Mogą różnić się od zliczenia pota.app — dla dokładnego dorobku pobierz CSV z pota.app ponownie i wczytaj je; zawarte w nich parki dostaną szarą etykietę „CSV”.",
   "cfg.title": "Ustawienia",
   "cfg.calls.h": "Znaki wywoławcze",
   "cfg.calls.p": "Zapisz tyle, ile używasz; jeden wybierasz przy rozpoczęciu nagrywania.",
