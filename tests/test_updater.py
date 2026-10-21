@@ -49,7 +49,7 @@ class UpdaterTest(unittest.TestCase):
 class RenamedRepo(unittest.TestCase):
     def test_downloads_from_the_old_and_the_new_repo_name_only(self):
         import unittest.mock as m
-        for url in ("https://github.com/PudiPara/potaroo/releases/download/v9/x.zip",
+        for url in ("https://github.com/PudiPara/pota-upload-helper/releases/download/v9/x.zip",
                     updater.DOWNLOAD_PREFIX + "v9/x.zip"):
             with m.patch("urllib.request.urlopen", side_effect=OSError("offline")), m.patch("subprocess.run", side_effect=OSError("no curl")):
                 with self.assertRaises(Exception) as e:

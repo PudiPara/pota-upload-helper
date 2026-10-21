@@ -122,9 +122,11 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
   Windows has no flag glyphs) and names the country with `Intl.DisplayNames` in the UI language.
 - **Name**: Potaroo since 2.0.0 (was POTA Upload Helper; POTA did not answer whether "POTA" may be in the
   name, so it is not). Kept on purpose: the macOS bundle id `com.jl1fva.pota-upload-helper` (Local Network
-  permission is tied to it), the Inno Setup AppId (installing over 1.x upgrades it), the GitHub repo name,
+  permission is tied to it), the Inno Setup AppId (installing over 1.x upgrades it),
   and release copies named `POTA-Upload-Helper-*.zip` (1.x's updater looks for them). An update keeps the
   installed file name (`POTA Upload Helper.exe/.app`) so shortcuts keep working.
+- **Repository**: `PudiPara/potaroo` since 2.0.2 (was `pota-upload-helper`; GitHub redirects the old name, and
+  2.0.1+ accept download URLs under either name - 2.0.0 and older refuse the new one and need a manual install).
 - **Example park references** in copy: JP-1266, and JP-1266,JP-1206 for a 2fer.
 
 ## Design system (keep it)

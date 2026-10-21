@@ -14,7 +14,7 @@
 
 - **送信先**：`api.pota.app`（スポット、公園情報、ハンターログの取得）と `api.github.com` / `github.com`（更新の確認とダウンロード）だけです。QSO やログを外部に送ることはありません。
 - **受信**：設定した UDP ポートでロガーからの QSO を待ち受けます。通常の受信口は `127.0.0.1` だけで待ち受けるので、同じパソコンのロガーからしか受け取りません。マルチキャストの受信口（WSJT-X の `224.0.0.1` など）は、macOS ではそのグループ、Windows ではループバックで待ち受けます。どの受信口も全インターフェースでは待ち受けません。受け取った内容は解析して SQLite に保存するだけで、実行はしません。
-- **更新**：ダウンロード元は `https://github.com/PudiPara/pota-upload-helper/releases/download/` 配下に限定しています。バイナリには署名がないため、Releases ページから取ったものであることを確認してください。
+- **更新**：ダウンロード元は `https://github.com/PudiPara/potaroo/releases/download/` 配下に限定しています。バイナリには署名がないため、Releases ページから取ったものであることを確認してください。
 - **保存先**：すべてのデータはこのパソコンの中（README の「データの保存場所」）にあります。アップロード用ファイルには自分と相手のコールサイン、時刻、公園番号が含まれます。
 
 ## English
@@ -31,5 +31,5 @@ Please do not open a public issue. Use GitHub's **Security → Report a vulnerab
 
 - **Outbound**: only `api.pota.app` (spots, park info, hunter log) and `api.github.com` / `github.com` (update check and download). QSOs and logs are never sent anywhere.
 - **Inbound**: the configured UDP ports receive QSOs from your logger. Ordinary listeners bind to `127.0.0.1` only, so they accept packets from loggers on the same computer and nothing from the network. A multicast listener (WSJT-X on `224.0.0.1`, …) binds the group on macOS and loopback on Windows. No listener binds all interfaces. Received packets are parsed and stored in SQLite, never executed.
-- **Updates**: downloads are restricted to `https://github.com/PudiPara/pota-upload-helper/releases/download/`. The binaries are unsigned, so make sure you got them from the Releases page.
+- **Updates**: downloads are restricted to `https://github.com/PudiPara/potaroo/releases/download/`. The binaries are unsigned, so make sure you got them from the Releases page.
 - **Storage**: all data stays on your computer (see "Data" in the README). Upload files contain your and the other station's callsigns, times and park references.
