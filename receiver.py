@@ -221,6 +221,7 @@ class Receiver:
             status("error", err=str(e))
             return
         last = None
+        seen = []                # the QSOs taken from HAMLOG this run, to notice deletions
         while not self._stop.is_set():
             n = client.count()
             if n is None:
@@ -236,15 +237,34 @@ class Receiver:
                             break
                         last -= 1
                     status("listening")
-                if n < last:                           # records deleted in HAMLOG: start over from here
+                if n < last:                           # records deleted in HAMLOG: delete them here too
+                    self._hamlog_deleted(client, seen, n, name)
                     last = n
                 for i in range(last + 1, n + 1):
                     rec = client.record(i)
                     if rec:
                         status("receiving")
-                        self.on_qso("upsert", rec, "hamlog:%d" % i, name)
+                        seen.append(rec)
+                        # no ext_id: HAMLOG renumbers records when one is deleted, so the number
+                        # would later point at another QSO; the record itself is the identity
+                        self.on_qso("upsert", rec, None, name)
                 last = n
             self._stop.wait(self.HAMLOG_POLL)
+
+    @staticmethod
+    def _hamlog_key(rec):
+        return (rec.get("CALL"), rec.get("QSO_DATE"), rec.get("TIME_ON"), rec.get("BAND"), rec.get("MODE"))
+
+    def _hamlog_deleted(self, client, seen, n, name):
+        """HAMLOG's count went down: read back the tail it still has (as far as the QSOs taken this
+        session reach) and report the ones that are gone as deleted."""
+        if not seen:
+            return
+        depth = min(n, len(seen) + 50)
+        still = {self._hamlog_key(r) for r in (client.record(i) for i in range(n - depth + 1, n + 1)) if r}
+        for rec in [r for r in seen if self._hamlog_key(r) not in still]:
+            seen.remove(rec)
+            self.on_qso("delete", rec, None, name)
 
     def _run(self, cfg):
         name = cfg["name"]

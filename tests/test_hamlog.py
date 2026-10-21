@@ -26,5 +26,22 @@ class ParseRecord(unittest.TestCase):
         self.assertIsNone(hamlog.parse_record("1\r\n\r\n\r\n"))
 
 
+class DeletionsFollowHamlog(unittest.TestCase):
+    def test_a_deleted_record_is_reported_and_numbers_are_not_ids(self):
+        import receiver
+        recs = [hamlog.parse_record(RAW.replace("JA1HML", c)) for c in ("JA1AAA", "JA1BBB", "JA1CCC")]
+
+        class Fake:                      # HAMLOG after JA1BBB was deleted: the rest renumbered
+            def record(self, i):
+                left = [recs[0], recs[2]]
+                return left[i - 1] if 1 <= i <= len(left) else None
+        got = []
+        r = receiver.Receiver([], lambda a, rec, uid, name: got.append((a, rec["CALL"], uid)))
+        seen = list(recs)
+        r._hamlog_deleted(Fake(), seen, 2, "Turbo HAMLOG")
+        self.assertEqual(got, [("delete", "JA1BBB", None)])
+        self.assertEqual([x["CALL"] for x in seen], ["JA1AAA", "JA1CCC"])
+
+
 if __name__ == "__main__":
     unittest.main()
