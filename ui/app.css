@@ -497,7 +497,7 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .is-p2p-only .qrow:not(.is-p2p) { display: none; }
 
 /* ---------- activation rows: the day's parks listed with their counts (a "+" would mean one 2fer) ---------- */
-.act-parks { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
-.act-park { display: inline-flex; align-items: center; gap: 4px; }
-.act-park small { font-size: 12px; font-weight: 600; color: var(--ink-2); }
-.act-park .act-pota { font-weight: 500; color: var(--ink-3); }
+.act-parks { display: grid; grid-template-columns: auto auto auto; gap: 4px 12px; align-items: center; justify-content: start; }
+.act-park { display: contents; }                       /* plate | count | what pota.app keeps, one park per row */
+.act-park small { font-size: 12.5px; font-weight: 700; color: var(--ink); text-align: right; min-width: 2em; }
+.act-park .act-pota { font-weight: 500; color: var(--ink-3); text-align: left; min-width: 0; }
