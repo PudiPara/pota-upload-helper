@@ -716,7 +716,7 @@
     hamqth: ["HamQTH", (c) => `https://www.hamqth.com/${encodeURIComponent(c)}`],
     qrzcq: ["QRZCQ", (c) => `https://www.qrzcq.com/call/${encodeURIComponent(c)}`],
     hamcall: ["HamCall.net", (c) => `https://hamcall.net/call?callsign=${encodeURIComponent(c)}`],
-    soumu: ["総務省 無線局等情報検索", (c) => `https://www.tele.soumu.go.jp/musen/list?ST=1&OF=2&DA=0&SC=0&DC=1&OW=AT&MA=${encodeURIComponent(baseCall(c))}`],
+    soumu: ["総務省 無線局等情報検索", (c) => `https://www.tele.soumu.go.jp/musen/SearchServlet?SK=2&DC=100&SC=1&pageID=3&CONFIRM=0&SelectID=1&CONTENTS=&SelectOW=01&IT=A&HC=&HV=&FF=&TF=&HZ=3&NA=&MA=${encodeURIComponent(c)}&DFY=&DFM=&DFD=&DTY=&DTM=&DTD=&SN=1`],
   };
   function renderLookup() {           // several sites can be on; the click menu lists each
     $("#lookupSel").innerHTML = Object.entries(LOOKUP).map(([k, v]) =>
@@ -757,7 +757,8 @@
       const call = (callEl.firstChild ? callEl.firstChild.textContent : callEl.textContent).trim();
       const sites = (st.lookup || []).filter((k) => LOOKUP[k]).map((k) => LOOKUP[k]);
       showPop(e.clientX, e.clientY, [[t("pop.copy", { text: call }), () => copyText(call)],
-                                     ...sites.map((site) => [t("pop.call", { site: site[0] }), () => api.open_url(site[1](call))]),
+                                     // the sites know the licensed call: JF1AWC/1, JA1XXX/P -> JF1AWC, JA1XXX
+                                     ...sites.map((site) => [t("pop.call", { site: site[0] }), () => api.open_url(site[1](baseCall(call)))]),
                                      [t("pop.profile"), () => api.open_url(`https://pota.app/#/profile/${encodeURIComponent(baseCall(call))}`)]]);
     }
   }, true);
