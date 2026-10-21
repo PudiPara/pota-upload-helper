@@ -316,47 +316,47 @@
     if (st.editing) { const el = $(`[data-in="${CSS.escape(st.editing)}"]`); if (el) el.focus(); }
     if (n >= 10 && !st.cheered) { st.cheered = true; cheer(); }
   }
-  // Party poppers over a celebration: two, at the bottom corners, each firing curly paper streamers up
-  // toward the middle; they tumble and drift down. With reduced motion (Windows "Animation effects" off,
-  // macOS "Reduce motion") the streamers just appear up there and fade.
-  const STREAMERS = ["#F2C46B", "#F4F1E4", "#7FC79F", "#E9A9A0", "#8EC5FF", "#C9A0F0"];
-  // a paper ribbon with one lazy wave (curled tighter at the end), and small square bits of paper
-  const RIBBON = "M15 4 C 26 34, 4 62, 15 92 C 22 112, 26 128, 16 146";
+  // Party poppers over a celebration: two, at the bottom corners, each firing a cloud of paper confetti up
+  // toward the middle; the pieces flip and flutter side to side down to the bottom of the window. It plays
+  // whatever the OS motion setting says: it is a few seconds and the operator asked for it (Windows had
+  // "Animation effects" off on the owner's PC, and the still version looked like nothing happened).
+  const CONFETTI = ["#F2C46B", "#F4F1E4", "#7FC79F", "#E9A9A0", "#8EC5FF", "#C9A0F0"];
   // -> a promise that settles when the last piece is gone
-  function burst(perPopper = 8, bits = 10) {
-    const still = matchMedia("(prefers-reduced-motion: reduce)").matches, done = [];
-    const W = innerWidth, H = innerHeight;
-    [[W * .06, H * .98, 1], [W * .94, H * .98, -1]].forEach(([x0, y0, dir]) => {
-      for (let i = 0; i < perPopper + bits; i++) {
-        const bit = i >= perPopper, color = STREAMERS[(i + (dir > 0 ? 0 : 3)) % STREAMERS.length];
-        const el = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        el.setAttribute("class", bit ? "streamer is-bit" : "streamer");
-        el.setAttribute("viewBox", bit ? "0 0 10 10" : "0 0 30 150");
-        el.innerHTML = bit ? `<rect width="10" height="10" rx="1.5" fill="${color}"/>` : `<path d="${RIBBON}" stroke="${color}"/>`;
+  function burst(perPopper = 36) {
+    const done = [], W = innerWidth, H = innerHeight;
+    [[W * .05, H * .98, 1], [W * .95, H * .98, -1]].forEach(([x0, y0, dir]) => {
+      for (let i = 0; i < perPopper; i++) {
+        const el = document.createElement("i");
+        el.className = "confetti"; el.style.background = CONFETTI[(i + (dir > 0 ? 0 : 3)) % CONFETTI.length];
+        if (i % 3 === 0) el.classList.add("is-long");                       // some strips among the squares
         el.style.left = x0 + "px"; el.style.top = y0 + "px";
         document.body.appendChild(el);
-        const tx = dir * W * (.2 + Math.random() * .36), ty = -H * (.55 + Math.random() * .33);   // the arc's top
-        const r0 = dir * (20 + Math.random() * 30), r1 = r0 + dir * (120 + Math.random() * 260), s = .7 + Math.random() * .5;
-        const sw = 30 + Math.random() * 40, fall = -ty + H * .04;           // sway; down to the bottom of the window
-        const at = (x, y, r, o, offset, easing) => ({ transform: `translate(${x}px, ${y}px) rotate(${r}deg) scale(${s})`,
-                                                      opacity: o, ...(offset != null && { offset }), ...(easing && { easing }) });
-        const frames = still
-          ? [at(tx, ty, r1, 1), at(tx, ty, r1, 1, .6), at(tx, ty, r1, 0)]
-          : [at(0, 0, r0, 1, 0, "cubic-bezier(.15, .8, .35, 1)"),                  // shot out, slowing at the top
-             at(tx, ty, r1, 1, .22, "ease-in-out"),                                  // then it flutters down, side to side
-             at(tx + sw, ty + fall * .25, r1 + 50, 1, .4, "ease-in-out"),
-             at(tx - sw, ty + fall * .5, r1 - 30, 1, .58, "ease-in-out"),
-             at(tx + sw, ty + fall * .75, r1 + 60, 1, .76, "ease-in-out"),
-             at(tx - sw * .5, ty + fall * .93, r1, 1, .92),
-             at(tx, ty + fall, r1 + 30, 0)];                                         // gone at the bottom
-        const anim = el.animate(frames, { duration: still ? 1500 : 3300 + Math.random() * 700, delay: still ? 0 : Math.random() * 90,
-                                           fill: "forwards" });
+        const tx = dir * W * (.12 + Math.random() * .48), ty = -H * (.5 + Math.random() * .4);   // the arc's top
+        const rnd = (a, b) => a + Math.random() * (b - a);
+        const r = rnd(0, 360), spin = (Math.random() < .5 ? -1 : 1) * rnd(200, 900);
+        const fall = -ty + H * .03, drift = rnd(-.12, .12) * W, apex = rnd(.12, .26);
+        // flip: scaleY swings through 0 so a piece seems to turn over as it falls
+        const at = (x, y, rot, sy, o, offset, easing) => ({ transform: `translate(${x}px, ${y}px) rotate(${rot}deg) scaleY(${sy})`,
+                                                            opacity: o, ...(offset != null && { offset }), ...(easing && { easing }) });
+        const frames = [at(0, 0, r, 1, 1, 0, `cubic-bezier(.1, ${rnd(.7, .9)}, .3, 1)`),        // shot out of the popper
+                        at(tx, ty, r + spin * .3, 1, 1, apex, "ease-in-out")];                  // top of the arc
+        // then flutter down: each piece its own number of swings, widths, timing and flips
+        const n = 3 + Math.floor(Math.random() * 5);
+        let side = Math.random() < .5 ? -1 : 1, f = 0;
+        for (let k = 1; k <= n; k++) {
+          f = Math.min(.97, f + (1 / (n + 1)) * rnd(.6, 1.4));
+          side = Math.random() < .8 ? -side : side;
+          frames.push(at(tx + drift * f + side * rnd(8, 50) * (1 - f * .5), ty + fall * f * rnd(.9, 1), r + spin * (.3 + f * .7) + rnd(-40, 40),
+                         rnd(-1, 1), 1, apex + f * (.95 - apex), "ease-in-out"));
+        }
+        frames.push(at(tx + drift, ty + fall, r + spin, rnd(-1, 1), 0));                      // gone at the bottom
+        const anim = el.animate(frames, { duration: rnd(2700, 4800), delay: rnd(0, 260), fill: "forwards" });
         done.push(anim.finished.then(() => el.remove(), () => el.remove()));
       }
     });
     return Promise.all(done);
   }
-  // A celebration closes when its poppers are done (at least 3 s, for the still version), on a click or
+  // A celebration closes when its poppers are done (at least 3 s), on a click or
   // Esc, or when the next QSO arrives; a newer celebration is not closed by an older one's end.
   function celebrate(sel, poppers) {
     const id = (celebrate.id = (celebrate.id || 0) + 1);
@@ -377,7 +377,7 @@
   function hideCelebrations() { $("#hunted").hidden = true; $("#cheer").hidden = true; }
   $("#hunted").addEventListener("click", hideCelebrations);
   function cheer() {
-    celebrate("#cheer", burst(11, 14));
+    celebrate("#cheer", burst(48));
   }
   $("#cheer").addEventListener("click", () => ($("#cheer").hidden = true));
 
