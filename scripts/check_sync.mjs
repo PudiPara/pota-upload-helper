@@ -12,7 +12,8 @@ async function conn(bar) {
   const t = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find((t) => t.type === "page" && t.url.endsWith("#bar") === bar);
   if (!t) throw new Error(bar ? "no bar window: start an activation first" : "no main window");
   const ws = new WebSocket(t.webSocketDebuggerUrl); await new Promise((r) => (ws.onopen = r));
-  let id = 0; const pend = new Map(); ws.onmessage = (m) => { const d = JSON.parse(m.data); pend.get(d.id)?.(d); };
+  let id = 0; const pend = new Map(); ws.onmessage = (m) => { const d = JSON.parse(m.data);   // only answers to our own numbered requests
+    const f = Number.isInteger(d.id) && pend.has(d.id) ? pend.get(d.id) : null; if (typeof f === "function") { pend.delete(d.id); f(d); } };
   const ev = async (e) => (await new Promise((r) => { pend.set(++id, r); ws.send(JSON.stringify({ id, method: "Runtime.evaluate", params: { expression: e, returnByValue: true } })); })).result.result?.value;
   return { ev, close: () => ws.close() };
 }

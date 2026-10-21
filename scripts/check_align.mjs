@@ -37,7 +37,8 @@ async function conn(bar) {
   const t = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find((t) => t.type === "page" && t.url.endsWith("#bar") === bar);
   if (!t) return null;
   const ws = new WebSocket(t.webSocketDebuggerUrl); await new Promise((r) => (ws.onopen = r));
-  let id = 0; const pend = new Map(); ws.onmessage = (m) => { const d = JSON.parse(m.data); pend.get(d.id)?.(d); };
+  let id = 0; const pend = new Map(); ws.onmessage = (m) => { const d = JSON.parse(m.data);   // only answers to our own numbered requests
+    const f = Number.isInteger(d.id) && pend.has(d.id) ? pend.get(d.id) : null; if (typeof f === "function") { pend.delete(d.id); f(d); } };
   const send = (method, params = {}) => new Promise((r) => { pend.set(++id, r); ws.send(JSON.stringify({ id, method, params })); });
   const ev = async (e) => (await send("Runtime.evaluate", { expression: e, awaitPromise: true, returnByValue: true })).result.result?.value;
   return { send, ev, close: () => ws.close() };
@@ -52,8 +53,11 @@ async function check(c, label) {
 }
 
 const main = await conn(false);
-for (const v of (process.argv[2] || "live,spots,build,history,record,config").split(",").filter(Boolean)) {
-  await main.ev(`document.querySelector('.rail [data-view=${v}]').click(); new Promise(r => setTimeout(r, 1500))`);
+// view and overlay names go into code run in the page: only the app's own names
+const VIEWS = ["live", "spots", "build", "history", "record", "config"], OVERLAYS = ["ask", "cheer", "hunted"];
+const pick = (arg, known, all) => (arg ? arg.split(",") : all).filter((x) => known.includes(x));
+for (const v of pick(process.argv[2], VIEWS, VIEWS)) {
+  await main.ev(`document.querySelector('.rail [data-view=${JSON.stringify(v)}]').click(); new Promise(r => setTimeout(r, 1500))`);
   const more = await main.ev(`(() => { const m = document.querySelector('.main'); m.scrollTop = 0; return m.scrollHeight - m.clientHeight; })()`);
   for (let y = 0; y <= more && y < 3000; y += 600) {
     await main.ev(`document.querySelector('.main').scrollTop = ${y}; new Promise(r => setTimeout(r, 200))`);
@@ -69,8 +73,8 @@ if (bar) {
   // overlays, display only, on a copy (the page's own poll would hide the real P2P question)
   const plate = (r) => `<span class="plate" data-ref="${r}"><b>${r.split("-")[0]}-</b>${r.split("-")[1]}</span>`;
   const parks = ["US-11782", "US-12320", "US-2153"].map(plate).join('<span class="plate-join">+</span>');
-  for (const o of (process.argv[3] || "").split(",").filter(Boolean)) {
-    await bar.ev(`(() => { const c = document.querySelector('#${o}').cloneNode(true); c.id = 'alignTest'; c.hidden = false;
+  for (const o of pick(process.argv[3], OVERLAYS, [])) {
+    await bar.ev(`(() => { const c = document.getElementById(${JSON.stringify(o)}).cloneNode(true); c.id = 'alignTest'; c.hidden = false;
       c.querySelectorAll('[id]').forEach((e) => { if (/Parks$/.test(e.id)) e.innerHTML = ${JSON.stringify(parks)}; if (e.id === 'askCall') e.textContent = 'KC4JAB'; e.id += 'T'; });
       document.body.appendChild(c); })()`);
     await wait(300);
