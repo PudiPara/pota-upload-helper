@@ -334,16 +334,21 @@
         el.innerHTML = bit ? `<rect width="10" height="10" rx="1.5" fill="${color}"/>` : `<path d="${RIBBON}" stroke="${color}"/>`;
         el.style.left = x0 + "px"; el.style.top = y0 + "px";
         document.body.appendChild(el);
-        const tx = dir * W * (.22 + Math.random() * .34), ty = -H * (.45 + Math.random() * .38);   // the arc's top
+        const tx = dir * W * (.2 + Math.random() * .36), ty = -H * (.55 + Math.random() * .33);   // the arc's top
         const r0 = dir * (20 + Math.random() * 30), r1 = r0 + dir * (120 + Math.random() * 260), s = .7 + Math.random() * .5;
-        const at = (x, y, r, o) => ({ transform: `translate(${x}px, ${y}px) rotate(${r}deg) scale(${s})`, opacity: o });
+        const sw = 30 + Math.random() * 40, fall = -ty + H * .04;           // sway; down to the bottom of the window
+        const at = (x, y, r, o, offset, easing) => ({ transform: `translate(${x}px, ${y}px) rotate(${r}deg) scale(${s})`,
+                                                      opacity: o, ...(offset != null && { offset }), ...(easing && { easing }) });
         const frames = still
-          ? [at(tx, ty, r1, 1), { ...at(tx, ty, r1, 1), offset: .6 }, at(tx, ty, r1, 0)]
-          : [{ ...at(0, 0, r0, 1), easing: "cubic-bezier(.15, .8, .35, 1)" },         // shot out, slowing at the top
-             { ...at(tx, ty, r1, 1), offset: .38, easing: "ease-in" },                   // then it drifts down
-             { ...at(tx * 1.12, ty + H * .18, r1 + dir * 90, 1), offset: .8, easing: "linear" },
-             at(tx * 1.2, ty + H * .3, r1 + dir * 140, 0)];
-        el.animate(frames, { duration: still ? 1500 : 2200 + Math.random() * 500, delay: still ? 0 : Math.random() * 90,
+          ? [at(tx, ty, r1, 1), at(tx, ty, r1, 1, .6), at(tx, ty, r1, 0)]
+          : [at(0, 0, r0, 1, 0, "cubic-bezier(.15, .8, .35, 1)"),                  // shot out, slowing at the top
+             at(tx, ty, r1, 1, .22, "ease-in-out"),                                  // then it flutters down, side to side
+             at(tx + sw, ty + fall * .25, r1 + 50, 1, .4, "ease-in-out"),
+             at(tx - sw, ty + fall * .5, r1 - 30, 1, .58, "ease-in-out"),
+             at(tx + sw, ty + fall * .75, r1 + 60, 1, .76, "ease-in-out"),
+             at(tx - sw * .5, ty + fall * .93, r1, 1, .92),
+             at(tx, ty + fall, r1 + 30, 0)];                                         // gone at the bottom
+        el.animate(frames, { duration: still ? 1500 : 3300 + Math.random() * 700, delay: still ? 0 : Math.random() * 90,
                              fill: "forwards" }).onfinish = () => el.remove();
       }
     });
