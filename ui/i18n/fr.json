@@ -45,7 +45,7 @@
   "live.loc.pick": "Choisissez la préfecture / l’État",
   "live.err.loc": "Ce parc s’étend sur plusieurs préfectures / États. Choisissez où vous êtes.",
   "live.err.noLoc": "Ces parcs n’ont aucune préfecture / aucun État en commun.",
-  "live.warn.apart": "Selon pota.app, {a} et {b} ne se chevauchent pas. Vérifiez que ce 2fer est possible.", "live.note.spread": "Les points de référence des parcs sont distants de {d} (chaque parc n’est ici qu’un point). Cela ne compte comme 2fer / 3fer que si vous êtes dans tous les parcs à la fois.",
+  "live.warn.apart": "D’après les informations de pota.app, {a} et {b} ne se chevauchent pas : ils ne peuvent pas être enregistrés comme 2fer.", "live.note.spread": "Les points de référence des parcs sont distants de {d} (chaque parc n’est ici qu’un point). Cela ne compte comme 2fer / 3fer que si vous êtes dans tous les parcs à la fois.",
   "live.toBar": "Barre", "live.finish": "Terminer l’activation de ce parc", "live.finishArmed": "Terminer avec {n} non confirmé(s)",
   "live.working": "Écriture…",
   "live.qsoNote.done": "Activation validée ({n} combinaisons station/bande/mode)", "live.qsoNote.left": "Encore {n} QSO pour valider l’activation",

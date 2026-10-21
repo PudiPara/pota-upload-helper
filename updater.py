@@ -224,27 +224,6 @@ def _install_win(zip_path, work, exe):
     return {"relaunch": exe}
 
 
-def relaunch(path):
-    """macOS: start the new bundle once this process is gone (the helper script does it on Windows)."""
-    if sys.platform == "darwin":
-        subprocess.Popen(["/bin/sh", "-c", 'sleep 2; open -n "%s"' % path.replace('"', '\\"')], env=child_env())
-
-
-def cleanup():
-    """Remove the previous copy left behind by install(). Call at startup."""
-    p = app_path()
-    if not p:
-        return
-    old = p + ".old"
-    try:
-        if os.path.isdir(old):
-            shutil.rmtree(old, ignore_errors=True)
-        elif os.path.isfile(old):
-            os.remove(old)
-    except OSError:
-        pass
-
-
 # adopt_name renamed the exe: point the shortcuts that started the old one at it (Start menu, desktop, the
 # taskbar's pinned ones), rename the "POTA Upload Helper" ones to Potaroo (not the pinned: renaming unpins),
 # and show the new name and icon in Settings > Apps.   shortcuts.ps1 <old exe> <new exe> [folder ...]
@@ -272,9 +251,13 @@ if ($real -and (Test-Path $k)) { Set-ItemProperty $k DisplayName 'Potaroo'; Set-
 
 
 def relaunch(path):
-    """macOS: start the new bundle once this process is gone (the helper script does it on Windows)."""
+    """macOS: start the new bundle once this process is gone (the helper script does it on Windows).
+    It waits for this PID (up to 60 s) instead of a fixed time: the new copy finds the old one's
+    instance.lock otherwise and quits without a word (2.0.27 hung on exit and the update never came up)."""
     if sys.platform == "darwin":
-        subprocess.Popen(["/bin/sh", "-c", 'sleep 2; open -n "%s"' % path.replace('"', '\\"')], env=child_env())
+        script = ('n=0; while kill -0 %d 2>/dev/null && [ $n -lt 300 ]; do sleep 0.2; n=$((n+1)); done; '
+                  'sleep 0.5; open -n "%s"' % (os.getpid(), path.replace('"', '\\"')))
+        subprocess.Popen(["/bin/sh", "-c", script], env=child_env(), start_new_session=True)
 
 
 def cleanup():

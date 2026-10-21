@@ -51,7 +51,7 @@
  "live.loc.pick": "Choose the prefecture / state",
  "live.err.loc": "This park spans several prefectures / states. Choose where you are.",
  "live.err.noLoc": "These parks do not share a prefecture / state.",
- "live.warn.apart": "pota.app says {a} and {b} do not overlap. Check that this 2fer is possible.", "live.note.spread": "The parks' reference points are {d} apart (each park is one point here). It counts as a 2fer / 3fer only when you are inside every park at once.",
+ "live.warn.apart": "pota.app's park information says {a} and {b} do not overlap, so they cannot be recorded as a 2fer.", "live.note.spread": "The parks' reference points are {d} apart (each park is one point here). It counts as a 2fer / 3fer only when you are inside every park at once.",
  "live.toBar": "Bar view",
  "live.finish": "Finish this park",
  "live.finishArmed": "Finish with {n} unconfirmed",

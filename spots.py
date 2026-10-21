@@ -44,8 +44,24 @@ def now_utc():
 # ---------------------------------------------------------------- reading a spot
 def parks_of(spot):
     """['JP-1788', 'JP-0157'] - the reference first, then references written in the comment ("2fer JP-0157")."""
-    refs = [(spot.get("reference") or "").upper()] + parks_in(spot.get("comments"))
+    refs = [(spot.get("reference") or "").upper()] + comment_parks(spot.get("comments"))
     return [r for i, r in enumerate(refs) if r and r not in refs[:i]]
+
+
+def comment_parks(text):
+    """Park references written in a spot comment - only with a POTA prefix: "IC-7300 5W" is a radio (Icom),
+    "FT-891" too, not parks. A prefix the shipped list has never seen is not taken from free text."""
+    return [r for r in parks_in(text) if r.split("-")[0] in park_prefixes()]
+
+
+def park_prefixes():
+    global _prefixes
+    if _prefixes is None:
+        _prefixes = {ref.split("-")[0] for ref in shipped_parks()}
+    return _prefixes
+
+
+_prefixes = None
 
 
 def spot_time(spot):
@@ -172,7 +188,7 @@ def parks_from_history(hist, activator, reference, now=None):
             own = (x.get("spotter") or "").upper() == activator.upper()
             if own != mine or (not own and not FER.search(x.get("comments") or "")):
                 continue
-            for p in parks_in(x.get("comments")):
+            for p in comment_parks(x.get("comments")):
                 if p not in out:
                     out.append(p)
     return out

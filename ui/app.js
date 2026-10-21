@@ -210,9 +210,10 @@
     if (!warn.hidden) warn.textContent = r.apart.map(([a, b]) => t("live.warn.apart", { a, b })).join(" ");
     // a note, not a warning: a park is one point here, so how far apart they are can't say whether they overlap
     const spread = $("#parkSpread");
-    spread.hidden = !(r && r.spread_km != null) || !!r.none;   // no shared prefecture/state already says they can't
+    spread.hidden = !(r && r.spread_km != null) || !!r.none || !!(r.apart && r.apart.length);   // already known they can't
     if (!spread.hidden) spread.textContent = t("live.note.spread", { d: fmtDist(r.spread_km) });
-    st.noOverlap = !!(r && r.none);           // no prefecture/state in common: they can't be a 2fer
+    // they can't be one activation: no prefecture/state in common, or pota.app says they don't overlap
+    st.noOverlap = !!(r && (r.none || (r.apart && r.apart.length)));
     $("#startLive").disabled = st.noOverlap; $("#startLive").classList.toggle("is-blocked", st.noOverlap);
     st.sharedLocs = r && splitParks(parkValue()).length > 1 ? r.options.map((o) => o.code) : [];
     markShared();
@@ -239,7 +240,7 @@
     const parks = splitParks(parkValue());
     const err = $("#liveError");
     if (!parks.length) return showError(err, t("live.err.park"));
-    if (parks.length > 1 && st.noOverlap) { $("#parkLoc").scrollIntoView({ block: "nearest" }); return; }   // its row says why
+    if (parks.length > 1 && st.noOverlap) { ($("#parkApart").hidden ? $("#parkLoc") : $("#parkApart")).scrollIntoView({ block: "nearest" }); return; }   // that row says why
     if ((st.locOptions || []).length > 1 && !st.loc) return showError(err, t("live.err.loc"));
     showError(err, ""); $("#doneCard").hidden = true;
     const r = await api.start_live(parks.join(","), st.call, st.loc || "");
@@ -413,8 +414,10 @@
       const el = dot.getTooltip() && dot.getTooltip().getElement();
       if (el) side[dir] = Math.max(side[dir], el.offsetWidth + 16);
     });
-    Lf.circleMarker(r.me, { radius: 8, weight: 2, color: "#fff", fillColor: "#2A6A50", fillOpacity: 1 })
+    const me = Lf.circleMarker(r.me, { radius: 8, weight: 2, color: "#fff", fillColor: "#2A6A50", fillOpacity: 1 })
       .bindTooltip(esc((st.parks || []).join(" + ")), { permanent: true, direction: "bottom", offset: [0, 8], className: "map-tag" }).addTo(lmap.layer);
+    const meEl = me.getTooltip() && me.getTooltip().getElement();       // centred under my dot: half of it on each side
+    if (meEl) { side.left = Math.max(side.left, meEl.offsetWidth / 2 + 16); side.right = Math.max(side.right, meEl.offsetWidth / 2 + 16); }
     // frame when a P2P is added or the parks change, not on every redraw
     const key = (st.parks || []).join() + "|" + pts.length;
     if (key !== lmap.framed) { lmap.framed = key; pts.length > 1   // room at each side for the widest label there

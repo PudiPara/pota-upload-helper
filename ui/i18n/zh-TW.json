@@ -45,7 +45,7 @@
   "live.loc.pick": "請選擇縣/州",
   "live.err.loc": "此公園跨越多個縣/州，請選擇你所在的位置。",
   "live.err.noLoc": "這些公園沒有共同的縣/州。",
-  "live.warn.apart": "pota.app 的公園資訊顯示 {a} 與 {b} 不重疊。請確認能否作為 2fer 記錄。", "live.note.spread": "所輸入公園的代表點相距 {d}（每個公園在這裡只用一個點表示）。只有同時位於所有公園之內，才能記為 2fer 或 3fer。",
+  "live.warn.apart": "根據 pota.app 的公園資訊，{a} 與 {b} 並不重疊，因此不能作為 2fer 記錄。", "live.note.spread": "所輸入公園的代表點相距 {d}（每個公園在這裡只用一個點表示）。只有同時位於所有公園之內，才能記為 2fer 或 3fer。",
   "live.toBar": "運作列", "live.finish": "結束在本公園的運作", "live.finishArmed": "保留 {n} 筆未確認並結束",
   "live.working": "正在產生…",
   "live.qsoNote.done": "啟用成功（{n} 個電台·波段·模式組合）", "live.qsoNote.left": "再 {n} 個 QSO 即可啟用",
