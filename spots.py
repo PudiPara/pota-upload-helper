@@ -346,11 +346,12 @@ def continent_of(country):
     return _CONTINENT_OF.get((country or "").upper(), "")
 
 
-def summarize(spots, now=None, history=None):
+def summarize(spots, now=None, history=None, new_of=None):
     """One row per station from api.pota.app/spot/activator, newest first: the parks of its spots
     of the last TWOFER_GAP minutes merged (more than one = 2fer), band and mode group computed here
     so the UI only displays. history(activator, reference) -> parks or None adds what the station's
-    spot history says; None marks the row pending (the page asks again shortly)."""
+    spot history says; None marks the row pending (the page asks again shortly). new_of(parks) -> the
+    parks the operator has not hunted yet (mypota), shown as "New"."""
     now = now or now_utc()
     by = {}
     for s in spots:
@@ -378,7 +379,8 @@ def summarize(spots, now=None, history=None):
                     "freq": newest.get("frequency"), "band": band_from_khz(newest.get("frequency")),
                     "mode": newest.get("mode") or "", "group": mode_group(newest.get("mode")),
                     "time": t0.strftime("%H:%M"), "ago": max(0, int((now - t0).total_seconds() // 60)),
-                    "comments": newest.get("comments") or "", "spots": len(items), "pending": pending})
+                    "comments": newest.get("comments") or "", "spots": len(items), "pending": pending,
+                    "new": new_of(parks) if new_of else []})
     out.sort(key=lambda e: (e["ago"], e["base"]))
     return out
 

@@ -172,6 +172,7 @@
         <select id="spotsBand"><option value="" data-i18n="spots.band.all">全バンド</option></select>
         <input id="spotsSearch" placeholder="コール・公園番号で絞る" data-i18n-ph="spots.search.ph" spellcheck="false" autocomplete="off">
         <label class="switch switch-sm"><input type="checkbox" id="spotsTwofer"><span class="switch-ui"></span><span data-i18n="spots.twofer">2fer 以上のみ</span></label>
+        <label class="switch switch-sm" id="spotsNewBox" hidden><input type="checkbox" id="spotsNew"><span class="switch-ui"></span><span data-i18n="spots.newOnly">未ハントのみ</span></label>
       </div>
       </div>
       <ol class="spots spots-page" id="spotsPage"></ol>
@@ -266,6 +267,11 @@
           <p class="cfg-help cfg-help-after" data-i18n="cfg.window.p">バー表示のときは、この設定に関係なく手前に表示します。</p>
         </section>
         <section class="cfg-block">
+          <h2 data-i18n="cfg.mypota.h">POTA の実績</h2>
+          <p class="cfg-help" data-i18n="cfg.mypota.p"></p>
+          <div class="mypota"><button class="btn" id="mypotaPick" data-i18n="cfg.mypota.pick">CSV を読み込む</button><span class="muted" id="mypotaStatus"></span></div>
+        </section>
+        <section class="cfg-block">
           <h2 data-i18n="cfg.p2p.h">P2P</h2>
           <label class="switch"><input type="checkbox" id="p2pAuto"><span class="switch-ui"></span><span data-i18n="cfg.p2p.auto">スポットで相手の公園が分かるときは、確認せずに P2P として記録する</span></label>
           <p class="cfg-help cfg-help-after" data-i18n="cfg.p2p.p"></p>
@@ -311,6 +317,7 @@
 <div class="toast" id="toast" role="status" hidden></div>
 <div class="pop" id="pop" hidden role="menu"></div>
 <div class="cheer" id="cheer" hidden role="status"><strong>10 QSO</strong><span data-i18n="cheer.sub">アクティベーション成立</span></div>
+<div class="cheer cheer-hunt" id="hunted" hidden role="status"><strong>Hunted!</strong><span class="plates" id="huntedParks"></span><span data-i18n="hunted.sub">新しい公園をハント</span></div>
 <div class="modal" id="editor" hidden role="dialog" aria-modal="true">
   <div class="modal-card modal-wide">
     <h2 id="editorTitle"></h2>

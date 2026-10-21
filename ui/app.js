@@ -7,7 +7,7 @@
     call: "", calls: [], prefix: "JP", spots: new Map(), qsos: new Map(), lastAt: 0, lastQ: 0,
     start: null, timer: null, poll: null, source: "app", adif: "", out: "", outDir: "",
     acts: [], selected: new Set(), listeners: [], receiver: {}, editing: null, bar: false, cheered: false,
-    lang: "ja", langs: [], termsAccepted: "",
+    lang: "ja", langs: [], termsAccepted: "", mypota: {}, huntedShown: new Set(),
   };
   const TERMS_VERSION = "2026-10-20";
 
@@ -33,7 +33,7 @@
     $("#lang").value = lang;
   }
   function rerender() {           // dynamic parts that hold translated text
-    renderListeners(); updateReceiver(st.receiver); renderCalls();
+    renderListeners(); updateReceiver(st.receiver); renderCalls(); renderMypota();
     if (!$("#liveRun").hidden) { renderQsos(); renderSpots(); }
     if (!$("#view-spots").hidden) { spotsOptions(); renderSpotsPage(); }
     if (st.source) renderActs({ items: st.acts, path: st.adif }, st.source === "adif" && !st.adif);
@@ -49,9 +49,11 @@
     return parts.length ? parts.sort((a, b) => b.length - a.length)[0] : String(c || "").toUpperCase();
   };
   const refInner = (ref) => { const i = ref.indexOf("-"); return `<b>${esc(ref.slice(0, i + 1))}</b>${esc(ref.slice(i + 1))}`; };
-  const plate = (ref) => `<span class="plate" data-ref="${esc(ref)}">${refInner(ref)}</span>`;
+  // isNew: parks the operator has not hunted yet (Python's mypota) get an amber rule
+  const plate = (ref, isNew) => `<span class="plate${isNew ? " is-new" : ""}" data-ref="${esc(ref)}">${refInner(ref)}</span>`;
   const JOIN = '<span class="plate-join" aria-hidden="true">+</span>';
-  const plates = (refs) => (refs || []).map(plate).join(JOIN);
+  const plates = (refs, fresh) => (refs || []).map((r) => plate(r, fresh && fresh.includes(r))).join(JOIN);
+  const newTag = (fresh) => (fresh && fresh.length ? `<span class="new-tag">${esc(t("tag.new"))}</span>` : "");
   // Country = the park prefix (ISO 3166 alpha-2, sent by Python): flag from regional indicators, name in the UI language.
   const flagOf = (cc) => /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map((c) => 0x1F1E6 + c.charCodeAt(0) - 65)) : "";
   const countryName = (cc) => { try { return new Intl.DisplayNames([st.lang], { type: "region" }).of(cc) || cc; } catch (e) { return cc; } };
@@ -134,11 +136,18 @@
   $("#parkAdd").addEventListener("click", () => addParkRow("").focus());
   function renderPreview() {
     const parks = splitParks(parkValue());
-    $("#parksPreview").innerHTML = parks.map((p) => `${plate(p)}<span class="park-name" data-ref="${esc(p)}"></span>`).join("");
+    $("#parksPreview").innerHTML = parks.map((p) => `${plate(p)}<span class="park-name" data-ref="${esc(p)}"></span><span class="park-act" data-act="${esc(p)}"></span>`).join("");
     clearTimeout(renderPreview.h);
     if (parks.length) renderPreview.h = setTimeout(async () => {
       fillParkNames("#parksPreview", parks);
       try { renderLoc(await api.park_locations(parks.join(","))); } catch (e) { /* optional */ }
+      try {                                   // 設定 → POTA の実績: which activation of this park this would be
+        const mine = await api.my_parks(parks.join(","));
+        $$("#parksPreview .park-act").forEach((el) => {
+          const a = mine[el.dataset.act];
+          el.textContent = !a ? "" : a.next === 1 ? t("park.first") : t("park.nth", { n: a.next, done: a.done, qsos: a.qsos });
+        });
+      } catch (e) { /* optional */ }
     }, 500);
     if (!parks.length) renderLoc(null);
   }
@@ -188,7 +197,7 @@
       `<div class="sign-park">${refHtml(p)}<span class="name" data-ref="${esc(p)}"></span></div>`).join("");
     $("#barParks").innerHTML = parks.map(refHtml).join(JOIN);
     $("#liveStatus").textContent = t("live.status.first");
-    for (const q of await api.session_qsos(start, parks.join(","))) { q.seq = ++st.seq; st.qsos.set(q.uid, q); }
+    for (const q of await api.session_qsos(start, parks.join(","))) { q.seq = ++st.seq; st.qsos.set(q.uid, q); huntedNow(q).forEach((p) => st.huntedShown.add(p)); }
     st.lastQ = Date.now() / 1000 - 1;
     st.cheered = st.qsos.size >= 10;            // re-opened mid-activation: don't celebrate twice
     renderSpots(); renderQsos();
@@ -225,6 +234,7 @@
       }
       q.seq = (st.qsos.get(q.uid) || {}).seq || ++st.seq;   // arrival order breaks ties in the sort
       st.qsos.set(q.uid, q); freshQ.add(q.uid);
+      hunted(q);                                   // decided as it arrived (設定 → P2P, or typed in the logger)
     }
     if (freshS.size || freshQ.size || removed) { renderSpots(freshS); renderQsos(freshQ); }
   }
@@ -234,7 +244,7 @@
       <li class="spot${e.twofer ? " is-twofer" : ""}${worked ? " is-worked" : ""}${fresh ? " is-new" : ""}${page && e.ago >= 30 ? " is-stale" : ""}">
         <span class="spot-time">${esc(e.time)}Z</span>
         <span class="spot-call">${esc(e.call)}${worked ? `<span class="worked-tag">${t("spots.worked")}</span>` : ""}</span>
-        <span class="plates">${e.country ? `<span class="flag" title="${esc(countryName(e.country))}">${flagOf(e.country)}</span>` : ""}${plates(e.parks)}${e.twofer ? `<span class="twofer-tag">${e.parks.length}fer</span>` : ""}</span>
+        <span class="plates">${e.country ? `<span class="flag" title="${esc(countryName(e.country))}">${flagOf(e.country)}</span>` : ""}${plates(e.parks, e.new)}${e.twofer ? `<span class="twofer-tag">${e.parks.length}fer</span>` : ""}${newTag(e.new)}</span>
         <span class="spot-meta"><span class="spot-freq">${fmtFreq(e.freq)}</span>${e.mode ? `<span class="spot-mode">${esc(e.mode)}</span>` : ""}</span>
         ${page ? `<span class="spot-ago">${e.ago ? t("spots.ago", { n: e.ago }) : t("spots.now")}</span>
         <span class="spot-note" title="${esc(e.comments)}">${esc(e.comments)}</span>` : ""}
@@ -264,9 +274,9 @@
         ${q.candidate.length || decided || q.decision === "no" ? `<button class="link" data-act="cancel" data-uid="${esc(q.uid)}">${t("row.cancel")}</button>` : ""}</span>`;
     let ctl;
     if (editing) ctl = input;
-    else if (p2p) ctl = `<span class="p2p-tag">P2P</span><span class="plates">${plates(q.parks)}</span><button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.change")}</button>`;
+    else if (p2p) ctl = `<span class="p2p-tag">P2P</span><span class="plates">${plates(q.parks, q.new)}</span>${newTag(q.new.filter((p) => q.parks.includes(p)))}<button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.change")}</button>`;
     else if (q.decision === "no") ctl = `<span class="qso-none">${t("row.none")}</span><button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.change")}</button>`;
-    else if (q.candidate.length) ctl = `<span class="ask-text">${t("row.ask")}</span><span class="plates">${plates(q.candidate)}</span>${q.note ? `<span class="ask-note">${esc(t("row.note." + q.note))}</span>` : ""}
+    else if (q.candidate.length) ctl = `<span class="ask-text">${t("row.ask")}</span><span class="plates">${plates(q.candidate, q.new)}</span>${newTag(q.new)}${q.note ? `<span class="ask-note">${esc(t("row.note." + q.note))}</span>` : ""}
         <button class="chip chip-yes" data-act="yes" data-uid="${esc(q.uid)}">${t("row.yes")}</button><button class="chip" data-act="no" data-uid="${esc(q.uid)}">${t("row.no")}</button>
         <button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.manual")}</button>`;
     else ctl = input;
@@ -304,8 +314,42 @@
     if (st.editing) { const el = $(`[data-in="${CSS.escape(st.editing)}"]`); if (el) el.focus(); }
     if (n >= 10 && !st.cheered) { st.cheered = true; cheer(); }
   }
+  // A short party-popper burst over a celebration: pieces fly out from the middle and fall. With reduced
+  // motion (Windows "Animation effects" off, macOS "Reduce motion") they only appear around it and fade.
+  const CONFETTI = ["#F2C46B", "#F4F1E4", "#7FC79F", "#E9A9A0", "#8EC5FF"];
+  function burst(n = 46) {
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement("i"), a = Math.random() * Math.PI * 2, d = 120 + Math.random() * 260;
+      const x = Math.cos(a) * d, y = Math.sin(a) * d * .7, r = Math.random() * 900 - 450;
+      el.className = "confetti"; el.style.background = CONFETTI[i % CONFETTI.length];
+      document.body.appendChild(el);
+      const frames = still
+        ? [{ transform: `translate(${x * .7}px, ${y * .7}px) rotate(${r}deg)`, opacity: 1, offset: 0 },
+           { transform: `translate(${x * .7}px, ${y * .7}px) rotate(${r}deg)`, opacity: 1, offset: .6 },
+           { transform: `translate(${x * .7}px, ${y * .7}px) rotate(${r}deg)`, opacity: 0 }]
+        : [{ transform: "translate(0, 0) rotate(0) scale(.6)", opacity: 1 },
+           { transform: `translate(${x}px, ${y}px) rotate(${r / 2}deg) scale(1)`, opacity: 1, offset: .45 },
+           { transform: `translate(${x * 1.1}px, ${y + 220 + Math.random() * 120}px) rotate(${r}deg) scale(1)`, opacity: 0 }];
+      el.animate(frames, { duration: still ? 1400 : 1500, delay: still ? 0 : Math.random() * 120,
+                           easing: "cubic-bezier(.15, .7, .3, 1)", fill: "forwards" }).onfinish = () => el.remove();
+    }
+  }
+
+  // Hunted!: a P2P that hunts a park the operator had never hunted (Python's mypota marks it "new"),
+  // once per park per session; rows loaded when the session (re)opens don't celebrate
+  const huntedNow = (q) => (q.decision && q.decision !== "no" ? (q.new || []).filter((p) => (q.parks || []).includes(p)) : []);
+  function hunted(q) {
+    const parks = huntedNow(q).filter((p) => !st.huntedShown.has(p));
+    if (!parks.length) return;
+    parks.forEach((p) => st.huntedShown.add(p));
+    $("#huntedParks").innerHTML = plates(parks);
+    const c = $("#hunted"); c.hidden = false; burst();
+    clearTimeout(hunted.h); hunted.h = setTimeout(() => (c.hidden = true), 5000);
+  }
+  $("#hunted").addEventListener("click", () => ($("#hunted").hidden = true));
   function cheer() {
-    const c = $("#cheer"); c.hidden = false;
+    const c = $("#cheer"); c.hidden = false; burst(70);
     clearTimeout(cheer.h); cheer.h = setTimeout(() => (c.hidden = true), 7000);
   }
   $("#cheer").addEventListener("click", () => ($("#cheer").hidden = true));
@@ -316,6 +360,7 @@
     st.editing = null;
     for (const ev of r.events) { const old = st.qsos.get(ev.uid); if (old) st.qsos.set(ev.uid, { ...old, ...ev }); }
     renderQsos();
+    if (st.qsos.get(uid)) hunted(st.qsos.get(uid));
     const q = st.qsos.get(uid);
     if (q && q.parks.length) toast(t("live.recorded", { call: q.call, parks: q.parks.join(" + ") }));
   }
@@ -383,7 +428,7 @@
 
   // ================================================================ spots page (like pota.app's list)
   // band and mode group come computed from Python (spots.summarize); the page only filters.
-  const sp = { items: [], worked: new Set(), region: "", country: "JP", group: "", band: "", q: "", twofer: false, timer: null };
+  const sp = { items: [], worked: new Set(), region: "", country: "JP", group: "", band: "", q: "", twofer: false, newOnly: false, timer: null };
   const REGIONS = ["as", "eu", "na", "sa", "af", "oc"];      // continent codes from spots.continent_of
   async function loadSpotsPage() {
     const r = await api.spots_now();
@@ -422,6 +467,7 @@
       (!sp.group || e.group === sp.group) &&
       (!sp.band || e.band === sp.band) &&
       (!sp.twofer || e.twofer) &&
+      (!sp.newOnly || (e.new || []).length) &&
       (!q || e.call.toUpperCase().includes(q) || e.parks.some((p) => p.includes(q))));
     $("#spotsPage").innerHTML = list.map((e) => spotRow(e, sp.worked.has(e.base), false, true)).join("");
     $("#spotsPageEmpty").hidden = list.length > 0; $("#spotsPage").hidden = list.length === 0;
@@ -433,6 +479,7 @@
   $("#spotsBand").addEventListener("change", (e) => { sp.band = e.target.value; renderSpotsPage(); });
   $("#spotsSearch").addEventListener("input", (e) => { sp.q = e.target.value.trim(); renderSpotsPage(); });
   $("#spotsTwofer").addEventListener("change", (e) => { sp.twofer = e.target.checked; renderSpotsPage(); });
+  $("#spotsNew").addEventListener("change", (e) => { sp.newOnly = e.target.checked; renderSpotsPage(); });
   $("#spotsRefresh").addEventListener("click", loadSpotsPage);
 
   // ================================================================ build
@@ -712,6 +759,18 @@
   });
   $("#liveCall").addEventListener("change", (e) => saveCalls(st.calls, e.target.value));
   $("#p2pAuto").addEventListener("change", (e) => api.save({ p2p_auto: e.target.checked }));
+  function renderMypota() {
+    const m = st.mypota || {}, day = (iso) => fmtDate(iso.slice(0, 10).replace(/-/g, ""));
+    $("#mypotaStatus").textContent = [m.hunter ? t("cfg.mypota.hunter", { n: m.hunter.n, at: day(m.hunter.at) }) : "",
+      m.activator ? t("cfg.mypota.activator", { n: m.activator.n, at: day(m.activator.at) }) : ""].filter(Boolean).join(" · ") || t("cfg.mypota.none");
+    $("#spotsNewBox").hidden = !m.hunter;                 // "New" needs the hunter list
+  }
+  $("#mypotaPick").addEventListener("click", async () => {
+    const r = await api.import_mypota();
+    if (!r) return;
+    if (!r.ok) { toast(r.error); return; }
+    st.mypota = r.mypota; renderMypota(); toast(t("cfg.mypota.done"));
+  });
   $("#onTop").addEventListener("change", (e) => api.set_on_top(e.target.checked));
 
   // ---------- click a park plate or a callsign: copy, or open it on the web ----------
@@ -785,6 +844,7 @@
     $("#version").textContent = `v${s.version}`;
     renderCalls(); $("#p2pAuto").checked = !!s.p2p_auto; $("#onTop").checked = !!s.on_top;
     st.lookup = s.lookup || ["qrz"]; renderLookup();
+    st.mypota = s.mypota || {}; renderMypota();
     setParks(s.parks);
     $("#outPath").textContent = s.out;
     setLogCount(s.log_count);

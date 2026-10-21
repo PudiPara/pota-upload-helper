@@ -22,6 +22,7 @@ import webbrowser
 import webview
 
 import i18n
+import mypota
 import qsolog
 import updater
 from builder import build, find_activation_qsos, list_activations
@@ -63,11 +64,15 @@ def open_path(path):
         subprocess.Popen(["xdg-open", path])
 
 
-def qso_event(rec, uid=None):
-    """What the UI needs to draw one QSO row: identity, the spot candidate, the decision so far."""
+def qso_event(rec, uid=None, hunted=None):
+    """What the UI needs to draw one QSO row: identity, the spot candidate, the decision so far, and
+    which of their parks the operator had not hunted before this QSO (hunted = mypota.first_hunted)."""
+    ts = (rec.get("QSO_DATE") or "") + (rec.get("TIME_ON") or "").ljust(6, "0")
+    theirs = split_parks(rec.get("P2P_CANDIDATE")) + decided_parks(rec)[1]
     return {"action": "upsert", "uid": uid or qsolog.make_uid(rec), "call": rec.get("CALL"),
             "date": rec.get("QSO_DATE"), "time": (rec.get("TIME_ON") or "")[:4], "band": rec.get("BAND", ""),
-            "ts": (rec.get("QSO_DATE") or "") + (rec.get("TIME_ON") or "").ljust(6, "0"),   # sort key, to the second
+            "ts": ts,                                                     # sort key, to the second
+            "new": mypota.new_parks(list(dict.fromkeys(theirs)), hunted, ts),
             "mode": mode_of(rec), "decision": rec.get("P2P_DECISION") or "", "parks": decided_parks(rec)[1],
             "candidate": split_parks(rec.get("P2P_CANDIDATE")), "my": split_parks(rec.get("MY_SIG_INFO")),
             "note": rec.get("P2P_NOTE") or ""}
@@ -88,6 +93,7 @@ class Api:
         self._recv_status = {}         # listener name -> state dict (codes; see receiver.describe_state)
         self._lock = threading.Lock()
         self._locs = {}               # {park: location} of the running session (parks across prefectures)
+        self._hunted = (0, None)      # (computed at, mypota.first_hunted) - the "New" marks
         self._spots_cache = (0, [])   # (fetched at, raw spots) for the アクティベート中 page
         self.start_receiver()
         self._resume_live()
@@ -102,6 +108,17 @@ class Api:
                                   on_activator=self._on_spot, on_status=self._on_status)
         self._logger.start(resume={"id": live.get("id"), "start": live["start"]})
         self._locs = live.get("locs") or {}
+
+    def _first_hunted(self, max_age=30):
+        """mypota.first_hunted over the app log, recomputed at most every max_age seconds."""
+        at, first = self._hunted
+        if time.time() - at > max_age:
+            first = mypota.first_hunted(qsolog.records())
+            self._hunted = (time.time(), first)
+        return first
+
+    def _event(self, rec, uid=None):
+        return qso_event(rec, uid, self._first_hunted())
 
     def _stop_logger(self):
         """Stop recording and forget the running session. -> its session dict, or None."""
@@ -128,7 +145,7 @@ class Api:
                 "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
                 "terms_accepted": s.get("terms_accepted") or "", "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")),
                 "lookup": lookup if isinstance(lookup, list) else [lookup],
-                "log_count": qsolog.count(), "receiver": self._receiver_texts()}
+                "log_count": qsolog.count(), "receiver": self._receiver_texts(), "mypota": mypota.status()}
 
     def save(self, data):
         keep = {k: v for k, v in data.items() if k in SETTINGS_KEYS}
@@ -207,7 +224,7 @@ class Api:
             accept = info["parks"] if info["auto"] and load_settings().get("p2p_auto") else None   # 設定 → P2P
             uid = qsolog.received(rec, ext_id, listener, accept)
             # twins: copies the list already shows (WSJT-X's start time, the logger's end time) - one row each contact
-            ev = dict(qso_event(rec, uid), twins=qsolog.twins(uid), live=self._in_session(rec))
+            ev = dict(self._event(rec, uid), twins=qsolog.twins(uid), live=self._in_session(rec))
         ev.update({"source": listener, "at": time.time()})
         with self._lock:
             self._qso_events.append(ev)
@@ -267,9 +284,9 @@ class Api:
         out = {}
         for r in qsolog.records([iso_date(start_iso)]):
             if mine & set(split_parks(r.get("MY_SIG_INFO"))):
-                out[qsolog.make_uid(r)] = dict(qso_event(r), at=0)
+                out[qsolog.make_uid(r)] = dict(self._event(r), at=0)
         for r in qsolog.between(session_since(start_iso)):
-            out.setdefault(qsolog.make_uid(r), dict(qso_event(r), at=0))
+            out.setdefault(qsolog.make_uid(r), dict(self._event(r), at=0))
         return list(out.values())
 
     def set_p2p(self, uid, decision, parks=""):
@@ -280,7 +297,8 @@ class Api:
         updated = qsolog.set_p2p(uid, decision, parks)
         if not updated:
             return {"ok": False, "error": t("api.qsoNotFound")}
-        return {"ok": True, "events": [qso_event(r) for r in updated]}
+        self._hunted = (0, None)                 # a P2P hunts their park
+        return {"ok": True, "events": [self._event(r) for r in updated]}
 
     def finish_live(self, online=True):
         """End the activation at this park: stop recording, write the upload file(s) for the
@@ -329,7 +347,9 @@ class Api:
         if self._recording():
             worked = sorted({base_call(r.get("CALL")) for r in qsolog.between(session_since(self._logger.session["start"]))})
         return {"ok": True, "at": time.strftime("%H:%M", time.gmtime(self._spots_cache[0])),
-                "items": (items := summarize(spots, history=history_parks)), "worked": worked,
+                "items": (items := summarize(spots, history=history_parks,
+                                             new_of=lambda parks, first=self._first_hunted(): mypota.new_parks(parks, first))),
+                "worked": worked,
                 "pending": sum(1 for r in items if r.get("pending"))}
 
     def park_info(self, refs):
@@ -339,6 +359,24 @@ class Api:
     def park_locations(self, refs):
         """spots.common_locations: where the operator can stand for these parks together."""
         return common_locations(refs)
+
+    def my_parks(self, refs):
+        """{ref: mypota.activations} - this park's next activation by the operator's record (None per
+        park before activator_parks.csv is imported)."""
+        days = [(d, per) for d, _, _, per, _ in list_activations(recs=qsolog.records())]
+        return {ref: mypota.activations(ref, days) for ref in split_parks(refs)}
+
+    def import_mypota(self):
+        """設定 → POTA の実績: pick pota.app's hunter_parks.csv / activator_parks.csv and import them."""
+        r = self._window.create_file_dialog(OPEN_DIALOG, allow_multiple=True, file_types=("CSV (*.csv)", "All files (*.*)"))
+        paths = list(r) if isinstance(r, (list, tuple)) else [r] if r else []
+        if not paths:
+            return None
+        res = mypota.import_files(paths)
+        if not res["ok"]:
+            return {"ok": False, "error": t("api.mypotaBad", file=os.path.basename(res["bad"]))}
+        self._hunted = (0, None)
+        return {"ok": True, "mypota": mypota.status()}
 
     def _locs_for(self, parks, loc):
         """{park: location} for the parks that span several locations - what the upload file needs."""

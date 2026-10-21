@@ -25,6 +25,7 @@
   "pop.profile": "Station auf pota.app öffnen",
   "cfg.lookup.h": "Rufzeichen-Suche",
   "cfg.lookup.p": "Seiten im Menü eines angeklickten Rufzeichens. Mehrere möglich.",
+  "cfg.mypota.h": "Deine POTA-Bilanz", "cfg.mypota.p": "Bei pota.app anmelden, in den eigenen Statistiken die Park-Listen als Jäger und Aktivierer (CSV) herunterladen und hier importieren. Noch nicht gejagte Parks erhalten ein „New“, und bei Eingabe eines Parks steht, die wievielte Aktivierung es wäre. Nach dem Import wächst die Bilanz mit dem Log dieser App und deinem pota.app-Jägerlog weiter.", "cfg.mypota.pick": "CSV importieren", "cfg.mypota.none": "Noch nicht importiert", "cfg.mypota.hunter": "{n} Parks gejagt (importiert {at})", "cfg.mypota.activator": "{n} Parks aktiviert (importiert {at})", "cfg.mypota.done": "POTA-Bilanz importiert", "api.mypotaBad": "{file} ist keine pota.app-Parkliste (CSV)", "spots.newOnly": "Nur nicht gejagte", "tag.new": "New", "park.first": "Erste Aktivierung", "park.nth": "Aktivierung Nr. {n} (bisher {done} gültig, {qsos} QSOs)", "hunted.sub": "Neuer Park gejagt",
   "cfg.p2p.h": "P2P",
   "cfg.p2p.auto": "Wenn ein Spot den Park der Gegenstation zeigt, ohne Rückfrage als P2P eintragen",
   "cfg.p2p.p": "Aus: jedes QSO fragt Ja / Nein. In beiden Fällen gewinnt beim Erstellen der Datei der Upload der Gegenstation (Hunter-Log), wenn er bekannt ist.",
