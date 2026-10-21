@@ -34,7 +34,7 @@ from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, base_call, data
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import (SESSION_MARGIN, SpotLogger, clear_records, common_locations, countries, example_parks, history_parks,
-                   park_info, shipped_parks, summarize, tag_candidate)
+                   park_info, park_status, shipped_parks, summarize, tag_candidate)
 from window import BarMode
 
 SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "p2p_auto", "lookup", "on_top")   # "live" is set by start_live/finish_live only
@@ -381,11 +381,10 @@ class Api:
         days = [(d, per) for d, _, _, per, _ in list_activations(recs=recs)]
         rec, parks = mypota.record(recs, days), shipped_parks()
         for row in rec["hunted"] + rec["activated"]:
-            hit = parks.get(row["ref"])
-            name, _, grid, at, active = hit or ("", "", "", None, True)
+            name, _, grid, at, _ = parks.get(row["ref"]) or ("", "", "", None, True)
             # [lat, lon] for the map: the park's own position, else the middle of its grid square
             row["name"], row["at"] = name, at or grid_center(grid)
-            row["listed"] = "no" if not hit else "active" if active else "retired"   # in pota.app's park list?
+            row["listed"] = park_status(row["ref"])          # active / retired / no
         return rec
 
     def import_mypota(self):
@@ -505,8 +504,11 @@ class Api:
         return {"ok": True, "n": n, "log_count": qsolog.count()}
 
     def qso_history(self):
-        """履歴 page: every QSO the app has received, newest first (qsolog.history); read-only."""
-        return qsolog.history()
+        """履歴 page: every QSO the app has received, newest first (qsolog.history), and
+        {park: "retired" | "no"} for the parks in it that are not active in pota.app's list."""
+        rows = qsolog.history()
+        refs = {p for r in rows for p in r["my"] + r["their"]}
+        return {"rows": rows, "parks": {p: s for p in refs if (s := park_status(p)) != "active"}}
 
     def clear_app_data(self):
         """設定 → アプリ: delete the app's own QSO log, P2P decisions, session windows and spot recordings.

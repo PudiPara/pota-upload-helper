@@ -60,6 +60,9 @@
   const plate = (ref, isNew) => `<span class="plate${isNew ? " is-new" : ""}" data-ref="${esc(ref)}">${refInner(ref)}</span>`;
   const JOIN = '<span class="plate-join" aria-hidden="true">+</span>';
   const plates = (refs, fresh) => (refs || []).map((r) => plate(r, fresh && fresh.includes(r))).join(JOIN);
+  // a park that is not active in pota.app's list: "POTA で終了" or "リストにない" (record and history pages)
+  const statusTag = (s) => s === "retired" ? `<span class="rec-tag" title="${esc(t("rec.retiredTip"))}">${esc(t("rec.retired"))}</span>`
+    : s === "no" ? `<span class="rec-tag" title="${esc(t("rec.unlistedTip"))}">${esc(t("rec.unlisted"))}</span>` : "";
   const newTag = (fresh) => (fresh && fresh.length ? `<span class="new-tag">${esc(t("tag.new"))}</span>` : "");
   // Country = the park prefix (ISO 3166 alpha-2, sent by Python): flag from regional indicators, name in the UI language.
   const flagOf = (cc) => /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map((c) => 0x1F1E6 + c.charCodeAt(0) - 65)) : "";
@@ -93,8 +96,8 @@
         el.textContent = i.name || "";
         el.parentElement.querySelectorAll(`.park-retired[data-for="${CSS.escape(ref)}"]`).forEach((x) => x.remove());
         const after = el.nextElementSibling && el.nextElementSibling.classList.contains("park-act") ? el.nextElementSibling : el;
-        if (i.active === false)               // pota.app retired this park: say so, details on pota.app
-          after.insertAdjacentHTML("afterend", `<span class="park-retired" data-for="${esc(ref)}">${esc(t("park.retired"))}
+        if (i.active === false || i.listed === false)   // retired, or a number nobody knows: details on pota.app
+          after.insertAdjacentHTML("afterend", `<span class="park-retired" data-for="${esc(ref)}">${esc(t(i.active === false ? "park.retired" : "park.unknown"))}
             <button type="button" class="link" data-url="https://pota.app/#/park/${esc(ref)}">${esc(t("park.retiredLink"))}</button></span>`);
       });
     } catch (e) { /* optional */ }
@@ -842,8 +845,7 @@
         `<span>${esc(t("rec.acts", { done: r.activations, n: r.attempts }))}</span><span>${esc(t("rec.qsos", { n: r.qsos }))}</span>`;
     return `<li class="rec">
       <span class="rec-date">${esc((rec.kind === "hunted" ? r.first : r.last) || "")}</span>
-      <span class="rec-park"><span class="flag">${flagOf(r.ref.split("-")[0])}</span>${plate(r.ref)}<span class="rec-name" title="${esc(r.name || "")}">${esc(r.name || "")}</span>${r.listed === "retired" ? `<span class="rec-tag" title="${esc(t("rec.retiredTip"))}">${esc(t("rec.retired"))}</span>`
-        : r.listed === "no" ? `<span class="rec-tag" title="${esc(t("rec.retiredTip"))}">${esc(t("rec.unlisted"))}</span>` : ""}</span>
+      <span class="rec-park"><span class="flag">${flagOf(r.ref.split("-")[0])}</span>${plate(r.ref)}<span class="rec-name" title="${esc(r.name || "")}">${esc(r.name || "")}</span>${statusTag(r.listed)}</span>
       <span class="rec-meta">${meta}</span></li>`;
   }
   function renderRecord() {
@@ -893,8 +895,9 @@
   $("#recReimport").addEventListener("click", importMypota);
 
   // ---------- 履歴: what the app received (qsolog.history), read-only; grouped by UTC day ----------
-  const hist = { rows: [], q: "" };
-  async function loadHistory() { hist.rows = await api.qso_history(); renderHistory(); }
+  const hist = { rows: [], parks: {}, q: "" };
+  async function loadHistory() { const r = await api.qso_history(); hist.rows = r.rows; hist.parks = r.parks; renderHistory(); }
+  const histPlates = (refs) => refs.map((p) => plate(p) + statusTag(hist.parks[p])).join(JOIN);
   function renderHistory() {
     const q = hist.q.trim().toUpperCase();
     const rows = hist.rows.filter((r) => !q || r.call.toUpperCase().includes(q) || r.my.concat(r.their).some((p) => p.includes(q)));
@@ -906,10 +909,10 @@
         day = r.date;
         html += `<li class="hist-day"><b>${esc(`${day.slice(0, 4)}-${day.slice(4, 6)}-${day.slice(6, 8)}`)}</b><span>${esc(t("rec.qsos", { n: per[day] }))}</span></li>`;
       }
-      const p2p = r.their.length ? `<span class="hist-p2p">P2P</span>${plates(r.their)}`
+      const p2p = r.their.length ? `<span class="hist-p2p">P2P</span>${histPlates(r.their)}`
         : r.p2p === "no" ? `<span class="muted">${esc(t("hist.noP2p"))}</span>` : "";
       html += `<li class="hist-row"><span class="rec-date">${hhmm(r.time)}Z</span><span class="hist-call">${esc(r.call)}</span>
-        <span class="hist-bm">${esc(r.band)} ${esc(r.mode)}</span><span class="hist-parks">${plates(r.my)}</span>
+        <span class="hist-bm">${esc(r.band)} ${esc(r.mode)}</span><span class="hist-parks">${histPlates(r.my)}</span>
         <span class="hist-their">${p2p}</span><span class="hist-src">${esc(r.source)}</span>
         <button type="button" class="link hist-del" data-uid="${esc(r.uid)}">${esc(t("ed.delete"))}</button></li>`;
     }

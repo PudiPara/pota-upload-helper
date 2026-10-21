@@ -326,14 +326,25 @@ def _locations(codes):
     return [{"code": c, "name": LOCATION_NAMES.get(c, "")} for c in (x.strip() for x in (codes or "").split(",")) if c]
 
 
+def park_status(ref):
+    """"active" | "retired" (pota.app retired it) | "no" (not in the shipped list: a mistyped or
+    long-gone number, or a park newer than the list) - by the shipped list only, no request."""
+    hit = shipped_parks().get(ref)
+    return "no" if not hit else "active" if hit[4] else "retired"
+
+
 def park_info(ref):
-    """{name, grid, locations: [{code, name}]} - pota.app's (English) park name, the same for every user;
-    locations are the prefectures / states it lies in."""
+    """{name, grid, locations: [{code, name}], active} - pota.app's (English) park name, the same for
+    every user; locations are the prefectures / states it lies in. "listed": False when neither the
+    shipped list nor pota.app knows the number (not said when pota.app could not be asked)."""
     hit = shipped_parks().get(ref)
     if hit:
         return {"name": hit[0], "grid": hit[2], "locations": _locations(hit[1]), "active": hit[4]}
     p = _park_record(ref)
-    return {"name": p.get("name") or "", "grid": p.get("grid6") or "", "locations": _locations(p.get("locationDesc"))}
+    out = {"name": p.get("name") or "", "grid": p.get("grid6") or "", "locations": _locations(p.get("locationDesc"))}
+    if ref in _fetched and not p.get("name"):        # pota.app answered and has no such park
+        out["listed"] = False
+    return out
 
 
 def park_comments(ref):
