@@ -14,7 +14,7 @@
   "cfg.calls.err": "呼号只能包含字母、数字和 /。",
   "cfg.calls.last": "最后一个呼号不能删除。",
   "cfg.lang.h": "语言", "cfg.tab.general": "常规", "cfg.tab.qso": "通联", "cfg.country.h": "所在国家/地区",
-  "cfg.app.h": "应用",
+  "cfg.app.h": "应用", "cfg.log.open": "打开日志", "cfg.log.p": "出现问题时，请点击“打开日志”查看记录，并附在报告中（其中包含呼号和公园编号）。",
   "cfg.look.h": "显示", "cfg.look.size": "文字大小", "cfg.look.s1": "标准", "cfg.look.s2": "较大", "cfg.look.s3": "特大", "cfg.look.theme": "配色", "cfg.look.auto": "跟随系统", "cfg.look.light": "浅色", "cfg.look.dark": "深色", "cfg.look.p": "文字大小和配色也会用于运行栏。", "cfg.window.h": "窗口",
   "cfg.window.ontop": "主窗口始终显示在其他窗口之前", "cfg.window.barTop": "运行栏始终显示在其他窗口之前",
   "cfg.window.p": "运行栏是运行时打开的小窗口，放在日志软件上方使用。",

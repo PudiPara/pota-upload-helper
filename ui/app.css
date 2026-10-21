@@ -293,7 +293,7 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .sign-park .plate { font-size: 24px; padding: 3px 14px 4px; border-radius: 8px; }
 .sign-park .name { font-size: 15px; color: var(--ink-2); }
 .dash-foot { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); }
-.clock { font-size: 30px; font-weight: 700; letter-spacing: .03em; font-variant-numeric: tabular-nums; line-height: 1; }
+.clock { font-size: 30px; font-weight: 700; letter-spacing: .03em; font-variant-numeric: tabular-nums; line-height: 1; position: relative; top: -.07em; }   /* big digits draw low in their box */
 .dash-actions { display: flex; gap: 8px; margin-left: auto; }
 
 /* the numbers under the dashboard */

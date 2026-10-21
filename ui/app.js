@@ -1085,6 +1085,11 @@
   }, true);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") { $("#pop").hidden = true; hideCelebrations(); } });
   $("#openData").addEventListener("click", () => api.open_data());
+  $("#openLog").addEventListener("click", () => api.open_log());
+  // the page's own errors go to potaroo.log too (Api.log_js): there is no console in the installed app
+  const logJs = (what) => { try { if (api) api.log_js(what); } catch (e) { /* nothing else to tell */ } };
+  window.addEventListener("error", (e) => logJs(`${e.message} @ ${e.filename}:${e.lineno}:${e.colno}${e.error && e.error.stack ? "\n" + e.error.stack : ""}`));
+  window.addEventListener("unhandledrejection", (e) => logJs("unhandled rejection: " + (e.reason && (e.reason.stack || e.reason.message) || e.reason)));
   // 設定 tabs: one group of blocks at a time
   function cfgTab(tab) {
     segSet(".cfg-tabs", "tab", tab);

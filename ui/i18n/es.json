@@ -14,7 +14,7 @@
   "cfg.calls.err": "Un indicativo solo tiene letras, números y /.",
   "cfg.calls.last": "No se puede quitar el último indicativo.",
   "cfg.lang.h": "Idioma", "cfg.tab.general": "General", "cfg.tab.qso": "QSO", "cfg.country.h": "País",
-  "cfg.app.h": "Aplicación",
+  "cfg.app.h": "Aplicación", "cfg.log.open": "Abrir el registro", "cfg.log.p": "Si algo falla, abre el registro, revísalo y adjúntalo a tu informe (contiene indicativos y referencias de parques).",
   "cfg.look.h": "Pantalla", "cfg.look.size": "Tamaño del texto", "cfg.look.s1": "Normal", "cfg.look.s2": "Grande", "cfg.look.s3": "Muy grande", "cfg.look.theme": "Colores", "cfg.look.auto": "Como el sistema", "cfg.look.light": "Claro", "cfg.look.dark": "Oscuro", "cfg.look.p": "El tamaño del texto y los colores también se aplican a la barra.", "cfg.window.h": "Ventana",
   "cfg.window.ontop": "Mantener la ventana principal siempre delante", "cfg.window.barTop": "Mantener la barra siempre delante",
   "cfg.window.p": "La barra es la ventana pequeña que se abre durante la activación, sobre el programa de log.",

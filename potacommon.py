@@ -14,7 +14,7 @@ API = "https://api.pota.app"
 PARK_RE = re.compile(r"\b([A-Z0-9]{1,4}-\d{4,5})\b")
 APP_NAME = "Potaroo"
 OLD_NAME = "POTA Upload Helper"      # the name until 2.0.0: its data folder is moved over on first start
-VERSION = "2.0.34"
+VERSION = "2.0.35"
 
 
 def _moved(new, old):
@@ -85,6 +85,41 @@ def data_version():
             return fh.read().strip()
     except OSError:
         return ""
+
+
+LOG_NAME = "potaroo.log"
+
+
+def setup_log():
+    """potaroo.log in the data folder (1 MB, one older copy): warnings and errors from Python (stderr too:
+    the installed app has no console), uncaught exceptions in any thread, the page's JavaScript errors
+    (Api.log_js), and one line per start. For bug reports: the operator looks at it and sends it."""
+    import logging
+    import logging.handlers
+    import platform
+    os.makedirs(data_path(), exist_ok=True)
+    h = logging.handlers.RotatingFileHandler(data_path(LOG_NAME), maxBytes=1_000_000, backupCount=1, encoding="utf-8")
+    h.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    root = logging.getLogger()
+    root.addHandler(h)
+    root.setLevel(logging.WARNING)                       # pywebview's own INFO lines stay out
+    log = logging.getLogger("potaroo")
+    log.setLevel(logging.INFO)
+
+    class _Stderr:                                       # print(..., file=sys.stderr) -> the log
+        def write(self, s):
+            if s.strip():
+                logging.getLogger("stderr").warning(s.rstrip())
+
+        def flush(self):
+            pass
+    if sys.stderr is None or getattr(sys, "frozen", False):
+        sys.stderr = _Stderr()
+    sys.excepthook = lambda t, v, tb: logging.getLogger("crash").error("uncaught", exc_info=(t, v, tb))
+    threading.excepthook = lambda a: logging.getLogger("crash").error(
+        "uncaught in thread %s", a.thread.name if a.thread else "?", exc_info=(a.exc_type, a.exc_value, a.exc_traceback))
+    log.info("start %s (data %s) on %s %s (%s), Python %s", VERSION, data_version(), platform.system(), platform.release(), platform.version(),
+             platform.python_version())
 
 
 def data_path(name=""):

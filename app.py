@@ -12,6 +12,7 @@ JSON-able data. Rules of the house:
 """
 import copy
 import json
+import logging
 import os
 import re
 import subprocess
@@ -31,7 +32,7 @@ from i18n import t
 from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, base_call, data_path, data_version, fetch_json, grid_center,
                         iso_date,
                         iso_minutes, load_settings, lock_instance, mode_of, my_call, read_adif, rec_minutes, resource,
-                        save_settings, split_parks)
+                        save_settings, split_parks, LOG_NAME, setup_log)
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import (SESSION_MARGIN, SpotLogger, clear_records, common_locations, countries, example_parks, history_parks,
@@ -609,6 +610,16 @@ class Api:
         os.makedirs(data_path(), exist_ok=True)
         open_path(data_path())
 
+    def open_log(self):
+        """設定 → アプリ → ログを開く: potaroo.log (potacommon.setup_log)."""
+        p = data_path(LOG_NAME)
+        open_path(p if os.path.exists(p) else data_path())
+
+    def log_js(self, msg):
+        """A JavaScript error in the page (window error / unhandled rejection) -> potaroo.log."""
+        logging.getLogger("page").error(str(msg)[:4000])
+        return True
+
     def open_url(self, url):
         if url.startswith("https://"):
             webbrowser.open(url)
@@ -651,6 +662,7 @@ def main():
         from window import focus_running
         focus_running(APP_NAME)
         return
+    setup_log()
     updater.cleanup()
     i18n.set_lang(load_settings().get("lang") or "ja")
     i18n.examples = example_parks(load_settings().get("country") or "")
