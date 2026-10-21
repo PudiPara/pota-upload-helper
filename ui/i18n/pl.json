@@ -14,7 +14,7 @@
   "cfg.calls.err": "Znak wywoławczy to tylko litery, cyfry i /.",
   "cfg.calls.last": "Ostatniego znaku nie można usunąć.",
   "cfg.lang.h": "Język", "cfg.tab.general": "Ogólne", "cfg.tab.qso": "QSO", "cfg.country.h": "Kraj",
-  "cfg.app.h": "Aplikacja", "cfg.log.open": "Otwórz dziennik", "cfg.log.p": "Gdy coś nie działa, otwórz dziennik, przejrzyj go i dołącz do zgłoszenia (zawiera znaki wywoławcze i numery parków).",
+  "cfg.app.h": "Aplikacja", "cfg.log.open": "Otwórz dziennik", "cfg.log.p": "Gdy coś nie działa, otwórz dziennik, przejrzyj go i dołącz do zgłoszenia (zawiera znaki wywoławcze i numery parków).", "report.open": "Zgłoś problem", "report.title": "Zgłoś problem", "report.p": "Sprawdź tekst poniżej i opisz, co się stało, zanim go wyślesz. Dziennik zawiera znaki wywoławcze i numery parków; możesz usunąć, co chcesz. „Zgłoś na GitHubie” wymaga konta GitHub, a zgłoszenie jest publiczne. Bez konta skopiuj je i wyślij autorowi.", "report.copy": "Kopiuj", "report.github": "Zgłoś na GitHubie", "report.h.what": "Co się stało", "report.h.env": "Środowisko", "report.h.log": "Dziennik (ostatnie {n} wierszy)", "report.issue": "Zgłoszenie problemu",
   "cfg.look.h": "Wygląd", "cfg.look.size": "Rozmiar tekstu", "cfg.look.s1": "Standardowy", "cfg.look.s2": "Większy", "cfg.look.s3": "Największy", "cfg.look.theme": "Kolory", "cfg.look.auto": "Jak w systemie", "cfg.look.light": "Jasny", "cfg.look.dark": "Ciemny", "cfg.look.p": "Rozmiar tekstu i kolory dotyczą też paska.", "cfg.window.h": "Okno",
   "cfg.window.ontop": "Główne okno zawsze na wierzchu", "cfg.window.barTop": "Pasek zawsze na wierzchu",
   "cfg.window.p": "Pasek to małe okno otwierane podczas aktywacji, nad programem do logowania.",

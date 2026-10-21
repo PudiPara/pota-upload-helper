@@ -1086,6 +1086,22 @@
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") { $("#pop").hidden = true; hideCelebrations(); } });
   $("#openData").addEventListener("click", () => api.open_data());
   $("#openLog").addEventListener("click", () => api.open_log());
+  // 不具合を報告 (half automatic): the operator reads and edits the report, then copies it or opens a
+  // prefilled GitHub issue. Nothing is sent by the app itself.
+  $("#report").addEventListener("click", async () => {
+    const r = await api.report_info();
+    $("#reportText").value = `## ${t("report.h.what")}\n\n\n## ${t("report.h.env")}\nPotaroo ${r.version} / ${t("ver.data", { v: r.data_version || "-" })} / ${r.os}\n\n` +
+      `## ${t("report.h.log", { n: r.lines })}\n\`\`\`\n${r.log}\n\`\`\`\n`;
+    $("#reportModal").hidden = false; $("#reportText").focus(); $("#reportText").setSelectionRange(0, 0);
+  });
+  $("#reportClose").addEventListener("click", () => ($("#reportModal").hidden = true));
+  $("#reportCopy").addEventListener("click", () => copyText($("#reportText").value));
+  $("#reportGithub").addEventListener("click", () => {
+    // a URL of about 6000 characters still opens: drop the log's oldest lines, never what the operator wrote
+    const text = $("#reportText").value, cut = text.indexOf("```\n") + 4;
+    const body = text.length <= 6000 || cut < 4 ? text.slice(0, 6000) : text.slice(0, cut) + text.slice(cut).slice(-(6000 - cut));
+    api.open_url("https://github.com/PudiPara/potaroo/issues/new?title=" + encodeURIComponent(t("report.issue")) + "&body=" + encodeURIComponent(body));
+  });
   // the page's own errors go to potaroo.log too (Api.log_js): there is no console in the installed app
   const logJs = (what) => { try { if (api) api.log_js(what); } catch (e) { /* nothing else to tell */ } };
   window.addEventListener("error", (e) => logJs(`${e.message} @ ${e.filename}:${e.lineno}:${e.colno}${e.error && e.error.stack ? "\n" + e.error.stack : ""}`));

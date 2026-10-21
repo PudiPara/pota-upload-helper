@@ -149,6 +149,8 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .modal-body p { margin: 0 0 10px; }
 .modal-body ul { margin: 0; padding-left: 1.2em; }
 .modal-body li + li { margin-top: 6px; }
+.report-text { width: 100%; height: 46vh; resize: vertical; font: 12px/1.5 ui-monospace, Consolas, Menlo, monospace;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--paper); color: var(--ink); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 22px 18px; }
 .update { font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: var(--r-sm); background: var(--surface); border: 1px solid var(--line); max-width: 32em; margin-bottom: 12px; }
 .update-text { color: var(--rail-dim); word-break: break-all; }

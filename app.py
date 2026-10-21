@@ -615,6 +615,18 @@ class Api:
         p = data_path(LOG_NAME)
         open_path(p if os.path.exists(p) else data_path())
 
+    def report_info(self, lines=60):
+        """設定 → アプリ → 不具合を報告: what the report starts with - versions, the OS, the end of potaroo.log.
+        Nothing is sent from here: the page shows it for the operator to read, edit, copy or open on GitHub."""
+        import platform
+        tail = []
+        p = data_path(LOG_NAME)
+        if os.path.exists(p):
+            with open(p, encoding="utf-8", errors="replace") as fh:
+                tail = fh.read().splitlines()[-int(lines):]
+        return {"version": VERSION, "data_version": data_version(), "lines": len(tail), "log": "\n".join(tail),
+                "os": "%s %s (%s)" % (platform.system(), platform.release(), platform.version())}
+
     def log_js(self, msg):
         """A JavaScript error in the page (window error / unhandled rejection) -> potaroo.log."""
         logging.getLogger("page").error(str(msg)[:4000])

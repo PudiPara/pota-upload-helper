@@ -17,7 +17,7 @@
   "cfg.calls.err": "コールサインは英数字と / だけで入力してください。",
   "cfg.calls.last": "最後の 1 つは削除できません。",
   "cfg.lang.h": "言語", "cfg.tab.general": "基本", "cfg.tab.qso": "交信", "cfg.country.h": "所在国",
-  "cfg.app.h": "アプリ", "cfg.log.open": "ログを開く", "cfg.log.p": "不具合があったときは「ログを開く」で記録を確認し、報告に添えてください（コールサインや公園番号が含まれます）。",
+  "cfg.app.h": "アプリ", "cfg.log.open": "ログを開く", "cfg.log.p": "不具合があったときは「ログを開く」で記録を確認し、報告に添えてください（コールサインや公園番号が含まれます）。", "report.open": "不具合を報告", "report.title": "不具合の報告", "report.p": "下の内容を確認し、「何が起きたか」を書いてから送ってください。ログにはコールサインや公園番号が含まれます。消したい部分は編集できます。「GitHub で報告」は GitHub のアカウントが必要で、報告は公開されます。アカウントがない場合は「コピー」して作者に送ってください。", "report.copy": "コピー", "report.github": "GitHub で報告", "report.h.what": "何が起きたか", "report.h.env": "環境", "report.h.log": "ログ（最後の {n} 行）", "report.issue": "不具合の報告",
   "cfg.look.h": "表示", "cfg.look.size": "文字の大きさ", "cfg.look.s1": "標準", "cfg.look.s2": "大きめ", "cfg.look.s3": "特大", "cfg.look.theme": "配色", "cfg.look.auto": "OS に合わせる", "cfg.look.light": "ライト", "cfg.look.dark": "ダーク", "cfg.look.p": "文字の大きさと配色はバーにも反映されます。", "cfg.window.h": "ウインドウ",
   "cfg.window.ontop": "本体のウインドウを常にほかのウインドウより手前に表示する", "cfg.window.barTop": "バーを常にほかのウインドウより手前に表示する",
   "cfg.window.p": "バーは運用中に開く小さなウインドウです。ロガーの上に重ねて使います。",

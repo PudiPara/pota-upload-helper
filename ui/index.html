@@ -393,6 +393,7 @@
             <button class="link" id="checkUpdate" data-i18n="rail.checkUpdate">アップデートを確認</button>
             <button class="link" id="openData" data-i18n="rail.openData">データの保存場所を開く</button>
             <button class="link" id="openLog" data-i18n="cfg.log.open">ログを開く</button>
+            <button class="link" id="report" data-i18n="report.open">不具合を報告</button>
             <button class="link" id="termsLink" data-i18n="terms.link">利用規約と免責事項</button>
           </div>
         </section>
@@ -437,6 +438,20 @@
     <div class="modal-actions">
       <button class="btn" id="closeCancel" data-i18n="close.cancel">キャンセル</button>
       <button class="btn btn-primary" id="closeGo" data-i18n="close.go">閉じる</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="reportModal" hidden role="dialog" aria-modal="true">
+  <div class="modal-card modal-wide">
+    <h2 data-i18n="report.title">不具合の報告</h2>
+    <div class="modal-body">
+      <p data-i18n="report.p"></p>
+      <textarea class="report-text" id="reportText" spellcheck="false"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="reportClose" data-i18n="done.close">閉じる</button>
+      <button class="btn" id="reportCopy" data-i18n="report.copy">コピー</button>
+      <button class="btn btn-primary" id="reportGithub" data-i18n="report.github">GitHub で報告</button>
     </div>
   </div>
 </div>
