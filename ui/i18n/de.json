@@ -35,7 +35,7 @@
   "region.sa": "Südamerika",
   "region.af": "Afrika",
   "region.oc": "Ozeanien",
-  "live.call": "Rufzeichen",
+  "live.call": "Rufzeichen", "live.parksLabel": "Parks",
   "rail.openData": "Datenordner öffnen", "rail.checkUpdate": "Nach Updates suchen",   "live.title": "Welcher Park heute?",
   "live.lede": "Starte die Aufzeichnung, wenn du anfängst. Stationen, die aus Parks gespottet werden, werden jede Minute notiert – P2P und 2fer lassen sich so auch nach deren QRT noch bestimmen.",
   "live.parks.ph": "{park}", "live.start": "Aufzeichnung starten",

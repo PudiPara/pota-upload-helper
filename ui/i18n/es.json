@@ -35,7 +35,7 @@
   "region.sa": "América del Sur",
   "region.af": "África",
   "region.oc": "Oceanía",
-  "live.call": "Indicativo",
+  "live.call": "Indicativo", "live.parksLabel": "Parques",
   "rail.openData": "Abrir carpeta de datos", "rail.checkUpdate": "Buscar actualizaciones",   "live.title": "¿Qué parque hoy?",
   "live.lede": "Empieza a grabar cuando salgas al aire. Las estaciones spoteadas desde parques se anotan cada minuto, así el P2P y el 2fer se pueden determinar aunque hagan QRT.",
   "live.parks.ph": "{park}", "live.start": "Empezar a grabar",

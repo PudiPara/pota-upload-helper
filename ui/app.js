@@ -181,7 +181,8 @@
   $("#parkAdd").addEventListener("click", () => addParkRow("").focus());
   function renderPreview() {
     const parks = splitParks(parkValue());
-    $("#parksPreview").innerHTML = parks.map((p) => `${plate(p)}<span class="park-name" data-ref="${esc(p)}"></span><span class="park-act" data-act="${esc(p)}"></span>`).join("");
+    // one line per park: plate, name, which activation it would be (and a retired / unknown note)
+    $("#parksPreview").innerHTML = parks.map((p) => `<div class="pv">${plate(p)}<span class="park-name" data-ref="${esc(p)}"></span><span class="park-act" data-act="${esc(p)}"></span></div>`).join("");
     clearTimeout(renderPreview.h);
     if (parks.length) renderPreview.h = setTimeout(async () => {
       fillParkNames("#parksPreview", parks);

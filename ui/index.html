@@ -75,20 +75,32 @@
     <!-- ======================= live ======================= -->
     <section class="view" id="view-live">
       <div class="trailhead" id="liveIdle">
-        <h1 data-i18n="live.title">今日の公園は？</h1>
-        <p class="lede" data-i18n="live.lede">運用を始めたら記録を開始してください。</p>
-        <div class="park-input">
-          <select id="liveCall" class="call-select" data-i18n-title="live.call"></select>
-          <input id="parks" placeholder="JP-1266" data-i18n-ph="live.parks.ph" spellcheck="false" autocomplete="off">
-          <button class="btn btn-primary" id="startLive" data-i18n="live.start">記録を始める</button>
+        <div class="start">
+          <div class="start-head">
+            <h1 data-i18n="live.title">今日の公園は？</h1>
+            <p class="lede" data-i18n="live.lede">運用を始めたら記録を開始してください。</p>
+          </div>
+          <div class="start-body">
+            <div class="start-field">
+              <label class="start-label" for="liveCall" data-i18n="live.call">コールサイン</label>
+              <select id="liveCall" class="call-select" data-i18n-title="live.call"></select>
+            </div>
+            <div class="start-field">
+              <label class="start-label start-label-top" for="parks" data-i18n="live.parksLabel">公園</label>
+              <div class="start-parks">
+                <div class="park-input"><input id="parks" placeholder="JP-1266" data-i18n-ph="live.parks.ph" spellcheck="false" autocomplete="off"></div>
+                <div class="park-extra" id="parkExtra"></div>
+                <button class="link park-add" id="parkAdd" data-i18n="live.addPark">＋ 公園を追加（2fer・3fer）</button>
+              </div>
+            </div>
+            <div class="park-preview" id="parksPreview"></div>
+            <div class="park-loc" id="parkLoc" hidden></div>
+            <p class="park-apart" id="parkApart" hidden></p>
+            <p class="park-spread" id="parkSpread" hidden></p>
+            <p class="error" id="liveError" hidden></p>
+            <div class="start-actions"><button class="btn btn-primary" id="startLive" data-i18n="live.start">記録を始める</button></div>
+          </div>
         </div>
-        <div class="park-extra" id="parkExtra"></div>
-        <button class="link park-add" id="parkAdd" data-i18n="live.addPark">＋ 公園を追加（2fer・3fer）</button>
-        <div class="plates plates-lg" id="parksPreview"></div>
-        <div class="park-loc" id="parkLoc" hidden></div>
-        <p class="park-apart" id="parkApart" hidden></p>
-        <p class="park-spread" id="parkSpread" hidden></p>
-        <p class="error" id="liveError" hidden></p>
 
         <section class="done" id="doneCard" hidden aria-live="polite">
           <div class="done-head">

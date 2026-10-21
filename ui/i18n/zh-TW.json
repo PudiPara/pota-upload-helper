@@ -35,7 +35,7 @@
   "region.sa": "南美洲",
   "region.af": "非洲",
   "region.oc": "大洋洲",
-  "live.call": "呼號",
+  "live.call": "呼號", "live.parksLabel": "公園",
   "rail.openData": "開啟資料夾", "rail.checkUpdate": "檢查更新",   "live.title": "今天在哪個公園？",
   "live.lede": "開始運用時請開始記錄。每分鐘記下從公園發射的電台，即使對方 QRT 也能事後判斷 P2P 與 2fer。",
   "live.parks.ph": "{park}", "live.start": "開始記錄",

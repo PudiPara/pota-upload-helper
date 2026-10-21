@@ -38,7 +38,7 @@
   "region.sa": "South America",
   "region.af": "Africa",
   "region.oc": "Oceania",
-  "live.call": "Callsign",
+  "live.call": "Callsign", "live.parksLabel": "Parks",
   "rail.openData": "Open data folder",
  "rail.checkUpdate": "Check for updates",
   "live.title": "Which park today?",

@@ -35,7 +35,7 @@
   "region.sa": "Ameryka Południowa",
   "region.af": "Afryka",
   "region.oc": "Oceania",
-  "live.call": "Znak wywoławczy",
+  "live.call": "Znak wywoławczy", "live.parksLabel": "Parki",
   "rail.openData": "Otwórz folder danych", "rail.checkUpdate": "Sprawdź aktualizacje",   "live.title": "Jaki park dzisiaj?",
   "live.lede": "Włącz zapis, gdy zaczynasz pracę. Stacje spotowane z parków są notowane co minutę, więc P2P i 2fer da się ustalić nawet po ich QRT.",
   "live.parks.ph": "{park}", "live.start": "Zacznij zapis",

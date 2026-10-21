@@ -258,10 +258,33 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .mypota-files .is-missing span { color: var(--amber-ink); font-weight: 600; }
 
 /* ---------- live: idle ---------- */
-.trailhead { max-width: 640px; padding-top: 22px; }
-.trailhead h1 { font-size: 26px; font-weight: 700; }
+.trailhead { max-width: 720px; padding-top: 8px; }
+/* the start card, in the 運用中 page's look: a green head, then one labelled row per field */
+.start { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: 0 6px 24px rgba(0, 0, 0, .12); }
+.start-head { background: var(--sign-bg); color: #F4F7F1; padding: 22px 26px 20px; }
+.start-head h1 { font-size: 26px; font-weight: 700; }
+.start-head .lede { color: #CFE0D3; margin: 8px 0 0; }
+.start-body { display: flex; flex-direction: column; gap: 14px; padding: 22px 26px 20px; }
+.start-field { display: grid; grid-template-columns: 8em minmax(0, 1fr); align-items: center; gap: 12px; }
+.start-label { font-size: 12.5px; font-weight: 700; color: var(--ink-2); }
+.start-label-top { align-self: start; padding-top: 14px; }
+.start-parks { display: flex; flex-direction: column; align-items: flex-start; }
+.park-preview { display: flex; flex-direction: column; gap: 8px; }
+.park-preview:empty { display: none; }
+.pv { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+.pv .plate { font-size: 16px; padding: 3px 12px 4px; border-radius: 7px; }
+.pv .park-name { font-size: 13.5px; color: var(--ink-2); }
+.pv .park-act { font-size: 12.5px; color: var(--amber-ink); font-weight: 700; margin-left: auto; }
+.pv .park-act:empty { display: none; }
+.pv .park-retired { flex-basis: 100%; }
+.start .call-select { height: 46px; min-width: 140px; }
+.start-body .park-loc { display: grid; grid-template-columns: 8em minmax(0, 1fr); gap: 12px; margin: 0; }   /* in the label column */
+.start-body .park-loc .loc-label { font-size: 12.5px; font-weight: 700; color: var(--ink-2); }
+.start-body .park-loc select { justify-self: start; }
+.start-actions { display: flex; justify-content: flex-end; padding-top: 16px; border-top: 1px solid var(--line); }
+.start-actions .btn { font-size: 15px; padding: 11px 28px; border-radius: var(--r-md); }
 .lede { color: var(--ink-2); font-size: 14px; margin: 10px 0 22px; max-width: 40em; text-wrap: pretty; }
-.park-input { display: flex; gap: 10px; }
+.park-input { display: flex; gap: 10px; width: 300px; max-width: 100%; }
 .call-select { padding: 0 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); color: var(--ink); font-weight: 700; font-size: 15px; letter-spacing: .04em; }
 .park-input input {
   flex: 1; font-size: 20px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
@@ -670,10 +693,10 @@ body.is-bar .cheer-hunt .plate { font-size: 15px; padding: 2px 9px 3px; }
 
 /* ---------- one input per park ---------- */
 .call-select { width: 110px; }
-.park-extra { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; margin-left: 120px; }   /* under the first park, past the call */
-.park-add { margin-left: 120px; }
+.park-extra { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.park-extra:empty { display: none; }
 .park-row { display: flex; align-items: center; gap: 10px; }
-.park-row input { width: 14em; font-size: 17px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 9px 12px;
+.park-row input { width: 300px; max-width: 100%; font-size: 20px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 9px 14px;
   border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); color: var(--ink); }
 .park-row input:focus { border-color: var(--pine-2); outline: none; box-shadow: 0 0 0 3px var(--focus); }
 .park-add { margin-top: 10px; font-size: 13px; }
