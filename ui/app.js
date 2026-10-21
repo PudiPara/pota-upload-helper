@@ -217,7 +217,7 @@
     st.spots.clear(); st.qsos.clear(); st.lastAt = 0; st.start = utcMs(start); st.cheered = false; st.parks = parks; st.seq = 0;
     $("#liveIdle").hidden = true; $("#liveRun").hidden = false; $("#liveDot").hidden = false;
     $("#signParks").innerHTML = parks.map((p) =>
-      `<div class="sign-park">${refHtml(p)}<span class="name" data-ref="${esc(p)}"></span></div>`).join("");
+      `<div class="sign-park">${plate(p)}<span class="name" data-ref="${esc(p)}"></span></div>`).join("");
     $("#barParks").innerHTML = parks.map(refHtml).join(JOIN);
     $("#liveStatus").textContent = t("live.status.first");
     for (const q of await api.session_qsos(start, parks.join(","))) { q.seq = ++st.seq; st.qsos.set(q.uid, q); huntedNow(q).forEach((p) => st.huntedShown.add(p)); }
@@ -229,12 +229,23 @@
     if (!BAR) setBar(true);
     fillParkNames("#signParks", parks);
   }
+  // the strip under the dashboard: QSOs in the last hour and the newest QSO (ts = UTC YYYYMMDDhhmmss)
+  const tsMs = (ts) => Date.UTC(+ts.slice(0, 4), +ts.slice(4, 6) - 1, +ts.slice(6, 8), +ts.slice(8, 10), +ts.slice(10, 12), +ts.slice(12, 14) || 0);
+  function renderStats() {
+    const times = [...st.qsos.values()].filter((q) => q.ts && q.ts.length >= 12).map((q) => tsMs(q.ts));
+    const now = Date.now(), last = times.length ? Math.max(...times) : 0;
+    $("#statRate").textContent = times.filter((x) => now - x < 3600e3).length;
+    $("#statLast").textContent = last ? new Date(last).toISOString().slice(11, 16) + "Z" : "–";
+    const ago = last ? Math.floor((now - last) / 60000) : -1;
+    $("#statAgo").textContent = ago < 0 ? "" : ago < 1 ? t("live.stat.now") : t("live.stat.ago", { n: ago });
+  }
   function tick() {
     const ms = Date.now() - st.start, s = Math.max(0, Math.floor(ms / 1000));
     clearTimeout(st.timer); st.timer = setTimeout(tick, 1000 - (((ms % 1000) + 1000) % 1000) + 20);   // the next whole second
     const p = (n) => String(n).padStart(2, "0");
     const tm = `${p(Math.floor(s / 3600))}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}`;
     $("#elapsed").textContent = tm; $("#barElapsed").textContent = tm;
+    if (!BAR && s % 15 === 0) renderStats();      // "N 分前" and the last hour move on with the clock
   }
   async function poll() {
     const r = await api.poll_live(st.lastAt, st.lastQ);
@@ -342,10 +353,11 @@
     const pending = list.filter((q) => !q.decision && q.candidate.length).length;
     $("#qsoCount").textContent = n; $("#barCount").textContent = n; $("#barPer").textContent = breakdown;
     const pct = Math.min(100, (n / 10) * 100);
-    $("#qsoBar").style.width = pct + "%"; $("#barRing").style.setProperty("--p", pct);
-    $(".tally").classList.toggle("is-done", n >= 10); $("#barRing").classList.toggle("is-done", n >= 10);
+    for (const id of ["#dashRing", "#barRing"]) { $(id).style.setProperty("--p", pct); $(id).classList.toggle("is-done", n >= 10); }
     $("#qsoNote").textContent = (breakdown ? breakdown + " — " : "") + (n >= 10 ? t("live.qsoNote.done", { n: uniq }) : t("live.qsoNote.left", { n: 10 - n }));
-    $("#p2pCount").textContent = [p2p ? t("live.p2pCount", { n: p2p }) : "", pending ? t("live.pendingCount", { n: pending }) : ""].filter(Boolean).join(" · ");
+    $("#statP2p").textContent = p2p; $("#statPending").textContent = pending;
+    $("#statPendingBox").classList.toggle("is-alert", pending > 0);
+    renderStats();
     if (st.editing) { const el = $(`[data-in="${CSS.escape(st.editing)}"]`); if (el) el.focus(); }
     if (n >= 10 && !st.cheered) { st.cheered = true; cheer(); }
   }

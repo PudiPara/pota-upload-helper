@@ -113,28 +113,37 @@
           <button class="bar-close" id="barClose" data-i18n-title="bar.close">&times;</button>
         </div>
 
-        <header class="sign">
-          <div class="sign-parks" id="signParks"></div>
-          <div class="sign-side">
-            <div class="clock" id="elapsed">00:00:00</div>
-            <div class="sign-status" id="liveStatus"></div>
-            <div class="sign-actions">
-              <button class="btn btn-quiet" id="toBar" data-i18n="live.toBar">バー表示にする</button>
-              <button class="btn btn-finish" id="finishLive" data-i18n="live.finish">この公園での運用を終了</button>
+        <header class="dash">
+          <div class="dash-tile" aria-live="polite">
+            <div class="dash-ring" id="dashRing"><strong id="qsoCount">0</strong><span>/10 QSO</span></div>
+            <div class="dash-note" id="qsoNote"></div>
+          </div>
+          <div class="dash-main">
+            <div class="dash-head">
+              <span class="dash-onair"><i class="bar-live"></i><span data-i18n="bar.title">運用中</span></span>
+              <span class="dash-status" id="liveStatus"></span>
+            </div>
+            <div class="dash-parks" id="signParks"></div>
+            <div class="dash-foot">
+              <div class="clock" id="elapsed">00:00:00</div>
+              <div class="dash-actions">
+                <button class="btn" id="toBar" data-i18n="live.toBar">バー表示にする</button>
+                <button class="btn btn-finish" id="finishLive" data-i18n="live.finish">この公園での運用を終了</button>
+              </div>
             </div>
           </div>
-          <div class="tally" aria-live="polite">
-            <div class="tally-n"><strong id="qsoCount">0</strong><span>QSO</span></div>
-            <div class="tally-bar"><i id="qsoBar"></i></div>
-            <div class="tally-note" id="qsoNote"></div>
-          </div>
         </header>
+        <div class="stats">
+          <div class="stat"><span>P2P</span><strong id="statP2p">0</strong></div>
+          <div class="stat" id="statPendingBox"><span data-i18n="live.stat.pending">確認待ち</span><strong id="statPending">0</strong></div>
+          <div class="stat"><span data-i18n="live.stat.rate">ペース</span><strong id="statRate">0</strong><small data-i18n="live.stat.perHour">/時</small></div>
+          <div class="stat"><span data-i18n="live.stat.last">最後の交信</span><strong id="statLast">–</strong><small id="statAgo"></small></div>
+        </div>
 
         <div class="live-grid">
           <section class="panel">
             <div class="panel-head">
               <h2 data-i18n="live.qsos">交信</h2>
-              <span class="count" id="p2pCount"></span>
             </div>
             <ol class="qsos" id="qsos"></ol>
             <div class="empty" id="qsosEmpty">
