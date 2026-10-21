@@ -1,4 +1,4 @@
-# CLAUDE.md — POTA Upload Helper
+# CLAUDE.md — Potaroo (formerly POTA Upload Helper)
 
 Talk to the owner in Japanese. UI copy is in `ui/i18n/*.json` (ja is the master). Personal and
 station details are in `CLAUDE.local.md` (git-ignored); keep them out of this file.
@@ -120,6 +120,11 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
   sent by `spots.summarize` with `region` (continent from `spots.continent_of`) for the region filter. The
   UI draws the flag from regional indicators with `ui/fonts/TwemojiCountryFlags.woff2` (78 KB, flags only:
   Windows has no flag glyphs) and names the country with `Intl.DisplayNames` in the UI language.
+- **Name**: Potaroo since 2.0.0 (was POTA Upload Helper; POTA did not answer whether "POTA" may be in the
+  name, so it is not). Kept on purpose: the macOS bundle id `com.jl1fva.pota-upload-helper` (Local Network
+  permission is tied to it), the Inno Setup AppId (installing over 1.x upgrades it), the GitHub repo name,
+  and release copies named `POTA-Upload-Helper-*.zip` (1.x's updater looks for them). An update keeps the
+  installed file name (`POTA Upload Helper.exe/.app`) so shortcuts keep working.
 - **Example park references** in copy: JP-1266, and JP-1266,JP-1206 for a 2fer.
 
 ## Design system (keep it)
@@ -129,12 +134,12 @@ plates (`plate()` in app.js); 2fer = plates joined by an amber `+`. Type scale 1
 17 / 20 / 26. Rows: line 1 who/where, line 2 details. Escape every network/user string with `esc()`.
 
 ## Data and files
-macOS `~/Library/Application Support/POTA Upload Helper/`, Windows `%APPDATA%\POTA Upload Helper\`
-(override `POTA_HELPER_DATA`): `qsolog.db`, `spots-YYYYMMDD.jsonl`, `sessions.json`, `hunter.json`,
+macOS `~/Library/Application Support/Potaroo/`, Windows `%APPDATA%\Potaroo\`
+(override `POTAROO_DATA`; until 2.0.0 the folder was `POTA Upload Helper`, `potacommon._moved` renames it on first start): `qsolog.db`, `spots-YYYYMMDD.jsonl`, `sessions.json`, `hunter.json`,
 `settings.json`. Output: `CALL@PARK-YYYYMMDD.adi` + `report.txt` in the chosen folder. Never commit data.
 
 ## Working on it
-- `scripts/dev.sh [--debug]` runs from source with `POTA_HELPER_DATA=./data`; tests are offline.
+- `scripts/dev.sh [--debug]` runs from source with `POTAROO_DATA=./data`; tests are offline.
 - `scripts/dev_web.py` serves ui/ at http://127.0.0.1:8765/ and forwards `pywebview.api` calls to a real
   `Api` over HTTP (no listeners, no window): check UI changes there in a browser. Computer use only for
   sending QSOs from loggers and for freezes. Keep the dev desktop app (./data, port 22237) running.

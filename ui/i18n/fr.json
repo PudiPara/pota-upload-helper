@@ -1,6 +1,6 @@
 {
   "_name": "Français",
-  "app.name": "POTA Upload Helper",
+  "app.name": "Potaroo",
   "nav.live": "En activation", "nav.live.sub": "Enregistrer les spots",
   "nav.spots": "Activations en cours", "nav.spots.sub": "Qui émet depuis un parc",
   "nav.build": "Fichiers d’envoi", "nav.build.sub": "Fichiers pour pota.app",

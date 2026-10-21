@@ -1,11 +1,11 @@
-; Inno Setup script for POTA Upload Helper (Windows).
+; Inno Setup script for Potaroo (Windows).
 ; Built by CI:  iscc /DMyAppVersion=1.2.3 installer\windows.iss
 ; Per-user install (no admin prompt) so the in-app updater can replace the exe.
 #ifndef MyAppVersion
   #define MyAppVersion "0.0.0"
 #endif
-#define MyAppName "POTA Upload Helper"
-#define MyAppExe "POTA Upload Helper.exe"
+#define MyAppName "Potaroo"
+#define MyAppExe "Potaroo.exe"
 
 [Setup]
 AppId={{7E2D4C3A-5B6F-4F0E-9B8A-2C1D0E9F7A51}
@@ -18,7 +18,7 @@ DefaultGroupName={#MyAppName}
 PrivilegesRequired=lowest
 DisableProgramGroupPage=yes
 OutputDir=..\
-OutputBaseFilename=POTA-Upload-Helper-Setup
+OutputBaseFilename=Potaroo-Setup
 SetupIconFile=..\assets\icon.ico
 UninstallDisplayIcon={app}\{#MyAppExe}
 Compression=lzma2

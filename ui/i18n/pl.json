@@ -1,6 +1,6 @@
 {
   "_name": "Polski",
-  "app.name": "POTA Upload Helper",
+  "app.name": "Potaroo",
   "nav.live": "Aktywacja", "nav.live.sub": "Zapisuj spoty",
   "nav.spots": "Aktywni teraz", "nav.spots.sub": "Kto nadaje z parku",
   "nav.build": "Pliki do wysłania", "nav.build.sub": "Pliki dla pota.app",

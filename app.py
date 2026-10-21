@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""POTA Upload Helper - desktop app (pywebview: WebKit on macOS, Edge WebView2 on Windows).
+"""Potaroo - desktop app (pywebview: WebKit on macOS, Edge WebView2 on Windows).
 
 This file is the bridge between the UI (ui/) and the modules that do the work. Every public
 method of Api is callable from JavaScript as window.pywebview.api.<name>() and returns plain
@@ -545,7 +545,7 @@ def main():
     api._window = win
     api._bar = BarMode(win, keep_on_top=bool(load_settings().get("on_top")))
     win.events.closing += api.shutdown
-    webview.start(debug=bool(os.environ.get("POTA_HELPER_DEBUG")))
+    webview.start(debug=bool(os.environ.get("POTAROO_DEBUG")))
 
 
 if __name__ == "__main__":

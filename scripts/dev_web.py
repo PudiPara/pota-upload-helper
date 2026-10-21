@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the UI in a normal browser for development checks (no pywebview window).
 
-    POTA_HELPER_DATA=./data python scripts/dev_web.py [port]      -> http://127.0.0.1:8765/
+    POTAROO_DATA=./data python scripts/dev_web.py [port]      -> http://127.0.0.1:8765/
 
 Serves ui/ and answers POST /api/<method> with the JSON result of the real app.Api method, so the page
 behaves like the desktop app. A small script injected into index.html defines window.pywebview.api.
@@ -13,7 +13,7 @@ import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-os.environ.setdefault("POTA_HELPER_DATA", os.path.join(ROOT, "data"))
+os.environ.setdefault("POTAROO_DATA", os.path.join(ROOT, "data"))
 sys.path.insert(0, ROOT)
 import app  # noqa: E402
 
@@ -69,5 +69,5 @@ class Handler(SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
-    print("http://127.0.0.1:%d/  (data: %s)" % (port, os.environ["POTA_HELPER_DATA"]), flush=True)
+    print("http://127.0.0.1:%d/  (data: %s)" % (port, os.environ["POTAROO_DATA"]), flush=True)
     ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()

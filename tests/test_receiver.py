@@ -5,7 +5,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-os.environ.setdefault("POTA_HELPER_DATA", tempfile.mkdtemp())
+os.environ.setdefault("POTAROO_DATA", tempfile.mkdtemp())
 
 from receiver import parse_packet  # noqa: E402
 import qsolog  # noqa: E402

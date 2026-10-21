@@ -1,4 +1,6 @@
-# POTA Upload Helper
+# Potaroo
+
+*Antes POTA Upload Helper*
 
 [日本語](README.md) · [English](README.en.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Italiano](README.it.md) · [Português (Brasil)](README.pt-BR.md) · [한국어](README.ko.md) · [Polski](README.pl.md)
 
@@ -36,10 +38,10 @@ Coge la última versión en [Releases](../../releases).
 
 | SO | Archivo | Cómo |
 |---|---|---|
-| macOS (Apple Silicon) | `POTA-Upload-Helper-macOS.dmg` | Ábrelo y arrastra `POTA Upload Helper` a `Applications` |
-| Windows 10 / 11 | `POTA-Upload-Helper-Setup.exe` | Instala por usuario (sin permisos de administrador) y crea una entrada en el menú Inicio |
+| macOS (Apple Silicon) | `Potaroo-macOS.dmg` | Ábrelo y arrastra `Potaroo` a `Applications` |
+| Windows 10 / 11 | `Potaroo-Setup.exe` | Instala por usuario (sin permisos de administrador) y crea una entrada en el menú Inicio |
 
-También se adjuntan los zip (`POTA-Upload-Helper-macOS.zip` / `POTA-Upload-Helper-Windows.zip`); la actualización interna los usa, no los borres de una Release.
+También se adjuntan los zip (`Potaroo-macOS.zip` / `Potaroo-Windows.zip`); la actualización interna los usa, no los borres de una Release.
 
 La app no está firmada, así que la primera vez aparece un aviso.
 
@@ -72,8 +74,8 @@ Para pasar los mismos datos a otro programa (OpsLog…), pon su dirección y pue
 
 | SO | Ubicación |
 |---|---|
-| macOS | `~/Library/Application Support/POTA Upload Helper/` |
-| Windows | `%APPDATA%\POTA Upload Helper\` |
+| macOS | `~/Library/Application Support/Potaroo/` |
+| Windows | `%APPDATA%\Potaroo\` |
 
 `qsolog.db` (QSO recibidos), `spots-YYYYMMDD.jsonl` (spots), `sessions.json` (tus activaciones y parques), `hunter.json` (copia del log de cazador), `settings.json`.
 El perfil público de pota.app solo muestra los últimos 25 QSO de cazador; la app añade a `hunter.json` mientras graba y en cada generación para conservar el historial.

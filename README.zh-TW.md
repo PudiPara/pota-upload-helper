@@ -1,4 +1,6 @@
-# POTA Upload Helper
+# Potaroo
+
+*舊名：POTA Upload Helper*
 
 [日本語](README.md) · [English](README.en.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Italiano](README.it.md) · [Português (Brasil)](README.pt-BR.md) · [한국어](README.ko.md) · [Polski](README.pl.md)
 
@@ -36,10 +38,10 @@
 
 | 系統 | 檔案 | 用法 |
 |---|---|---|
-| macOS（Apple Silicon） | `POTA-Upload-Helper-macOS.dmg` | 開啟後把 `POTA Upload Helper` 拖到 `Applications` |
-| Windows 10 / 11 | `POTA-Upload-Helper-Setup.exe` | 執行後安裝到目前使用者（不需管理員權限），並加入開始功能表 |
+| macOS（Apple Silicon） | `Potaroo-macOS.dmg` | 開啟後把 `Potaroo` 拖到 `Applications` |
+| Windows 10 / 11 | `Potaroo-Setup.exe` | 執行後安裝到目前使用者（不需管理員權限），並加入開始功能表 |
 
-同時附有 zip 版（`POTA-Upload-Helper-macOS.zip` / `POTA-Upload-Helper-Windows.zip`）。程式內更新使用這些 zip，請勿從 Release 刪除。
+同時附有 zip 版（`Potaroo-macOS.zip` / `Potaroo-Windows.zip`）。程式內更新使用這些 zip，請勿從 Release 刪除。
 
 程式未簽署，首次開啟會有警告。
 
@@ -72,8 +74,8 @@
 
 | 系統 | 位置 |
 |---|---|
-| macOS | `~/Library/Application Support/POTA Upload Helper/` |
-| Windows | `%APPDATA%\POTA Upload Helper\` |
+| macOS | `~/Library/Application Support/Potaroo/` |
+| Windows | `%APPDATA%\Potaroo\` |
 
 `qsolog.db`（收到的 QSO）、`spots-YYYYMMDD.jsonl`（spot 記錄）、`sessions.json`（自己的運用時段與公園）、`hunter.json`（獵人日誌副本）、`settings.json`。
 pota.app 公開資料只顯示最近 25 筆獵人日誌，因此程式在記錄中與每次產生時附加到 `hunter.json` 以累積歷史。
