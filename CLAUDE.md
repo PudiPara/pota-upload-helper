@@ -134,6 +134,10 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
 mark); surfaces neutral. Tokens in `ui/app.css :root` (light and dark). Park references are always
 plates (`plate()` in app.js); 2fer = plates joined by an amber `+`. Type scale 11.5 / 12.5 / 13.5 / 15 /
 17 / 20 / 26. Rows: line 1 who/where, line 2 details. Escape every network/user string with `esc()`.
+Icon (`assets/icon.svg`, same shapes as the rail's `brand-mark` in index.html): one flat cream potoroo
+silhouette sitting up on its haunches on the green plate, its raised tail as the antenna with amber arcs;
+no character details (eye and nose dots only). Rebuild: SVG -> transparent 1024 PNG (headless Edge
+`--default-background-color=00000000 --screenshot`) -> `scripts/make_icons.py`.
 
 ## Data and files
 macOS `~/Library/Application Support/Potaroo/`, Windows `%APPDATA%\Potaroo\`
