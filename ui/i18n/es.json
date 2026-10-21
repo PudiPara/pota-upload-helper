@@ -34,6 +34,7 @@
   "live.loc.pick": "Elige la prefectura / el estado",
   "live.err.loc": "Este parque abarca varias prefecturas / estados. Elige dónde estás.",
   "live.err.noLoc": "Estos parques no comparten prefectura / estado.",
+  "live.warn.apart": "Según pota.app, {a} y {b} no se superponen. Comprueba que este 2fer sea posible.",
   "live.toBar": "Modo barra", "live.finish": "Terminar este parque", "live.finishArmed": "Terminar con {n} sin confirmar",
   "live.working": "Escribiendo…",
   "live.qsoNote.done": "Activación completada ({n} combinaciones estación/banda/modo)", "live.qsoNote.left": "Faltan {n} QSO para completar la activación",

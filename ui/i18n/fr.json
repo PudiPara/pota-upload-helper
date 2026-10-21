@@ -34,6 +34,7 @@
   "live.loc.pick": "Choisissez la préfecture / l’État",
   "live.err.loc": "Ce parc s’étend sur plusieurs préfectures / États. Choisissez où vous êtes.",
   "live.err.noLoc": "Ces parcs n’ont aucune préfecture / aucun État en commun.",
+  "live.warn.apart": "Selon pota.app, {a} et {b} ne se chevauchent pas. Vérifiez que ce 2fer est possible.",
   "live.toBar": "Mode barre", "live.finish": "Terminer ce parc", "live.finishArmed": "Terminer avec {n} non confirmé(s)",
   "live.working": "Écriture…",
   "live.qsoNote.done": "Activation validée ({n} combinaisons station/bande/mode)", "live.qsoNote.left": "Encore {n} QSO pour valider l’activation",

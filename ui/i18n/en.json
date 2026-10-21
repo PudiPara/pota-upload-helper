@@ -40,6 +40,7 @@
  "live.loc.pick": "Choose the prefecture / state",
  "live.err.loc": "This park spans several prefectures / states. Choose where you are.",
  "live.err.noLoc": "These parks do not share a prefecture / state.",
+ "live.warn.apart": "pota.app says {a} and {b} do not overlap. Check that this 2fer is possible.",
  "live.toBar": "Switch to bar",
  "live.finish": "Finish this park",
  "live.finishArmed": "Finish with {n} unconfirmed",

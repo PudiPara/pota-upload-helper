@@ -34,6 +34,7 @@
   "live.loc.pick": "Präfektur / Bundesstaat wählen",
   "live.err.loc": "Dieser Park liegt in mehreren Präfekturen / Bundesstaaten. Wähle, wo du bist.",
   "live.err.noLoc": "Diese Parks haben keine Präfektur / keinen Bundesstaat gemeinsam.",
+  "live.warn.apart": "Laut pota.app überschneiden sich {a} und {b} nicht. Prüfe, ob dieses 2fer möglich ist.",
   "live.toBar": "Als Leiste", "live.finish": "Diesen Park beenden", "live.finishArmed": "Mit {n} unbestätigten beenden",
   "live.working": "Schreibe…",
   "live.qsoNote.done": "Aktivierung geschafft ({n} Kombinationen Station/Band/Mode)", "live.qsoNote.left": "Noch {n} QSOs bis zur Aktivierung",

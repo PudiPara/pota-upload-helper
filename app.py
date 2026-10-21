@@ -29,7 +29,7 @@ from i18n import t
 from potacommon import (APP_NAME, DATA_DIR, DEFAULT_OUT, VERSION, base_call, fetch_json, iso_minutes,
                         load_settings, lock_instance, read_adif, save_settings, split_parks)
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
-from spots import SpotLogger, candidate_for, history_parks, summarize
+from spots import SpotLogger, candidate_for, history_parks, says_no_overlap, summarize
 from window import BarMode
 
 SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted", "p2p_auto")   # "live" is set by start_live/finish_live only
@@ -324,6 +324,7 @@ class Api:
                     codes = [c.strip() for c in (p.get("locationDesc") or "").split(",") if c.strip()]
                     names = [n.strip() for n in (p.get("locationName") or "").split(",")]
                     self._parks[ref] = {"name": p.get("name") or "", "local": local, "grid": p.get("grid6") or "",
+                                        "comments": p.get("parkComments") or "",
                                         "locations": [{"code": c, "name": names[i] if i < len(names) else ""} for i, c in enumerate(codes)]}
                 except Exception:
                     self._parks[ref] = {"name": "", "local": "", "grid": "", "locations": []}
@@ -343,8 +344,11 @@ class Api:
                 continue                      # unknown to pota.app: no constraint from it
             common = codes if common is None else [c for c in common if c in codes]
         names = {l["code"]: l["name"] for ref in parks for l in info[ref].get("locations") or []}
+        # pota.app's own note that two of these parks don't overlap (JP-0016 says so about JP-1296)
+        apart = [[a, b] for i, a in enumerate(parks) for b in parks[i + 1:]
+                 if says_no_overlap(info[a].get("comments"), b) or says_no_overlap(info[b].get("comments"), a)]
         return {"options": [{"code": c, "name": names.get(c, "")} for c in (common or [])],
-                "multi": [ref for ref in parks if len(info[ref].get("locations") or []) > 1]}
+                "multi": [ref for ref in parks if len(info[ref].get("locations") or []) > 1], "apart": apart}
 
     def _locs_for(self, parks, loc):
         """{park: location} for the parks that span several locations - what the upload file needs."""
