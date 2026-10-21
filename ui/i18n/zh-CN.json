@@ -15,7 +15,7 @@
   "cfg.calls.last": "最后一个呼号不能删除。",
   "cfg.lang.h": "语言", "cfg.tab.general": "常规", "cfg.tab.qso": "通联", "cfg.country.h": "所在国家/地区",
   "cfg.app.h": "应用", "cfg.log.open": "打开日志", "cfg.log.p": "出现问题时，请点击“打开日志”查看记录，并附在报告中（其中包含呼号和公园编号）。", "report.open": "报告问题", "report.title": "报告问题", "report.p": "请确认下面的内容，并写下“发生了什么”后再发送。日志中包含呼号和公园编号，可以删改。“在 GitHub 报告”需要 GitHub 账号，报告会公开。没有账号时，请“复制”后发送给作者。", "report.copy": "复制", "report.github": "在 GitHub 报告", "report.h.what": "发生了什么", "report.h.env": "环境", "report.h.log": "日志（最后 {n} 行）", "report.issue": "问题报告",
-  "cfg.look.h": "显示", "cfg.look.size": "文字大小", "cfg.look.s1": "标准", "cfg.look.s2": "较大", "cfg.look.s3": "特大", "cfg.look.theme": "配色", "cfg.look.auto": "跟随系统", "cfg.look.light": "浅色", "cfg.look.dark": "深色", "cfg.look.p": "文字大小和配色也会用于运行栏。", "cfg.window.h": "窗口",
+  "cfg.look.h": "显示", "cfg.look.size": "文字大小", "cfg.look.s1": "标准", "cfg.look.s2": "较大", "cfg.look.s3": "特大", "dist.about": "约 {d} {u}", "cfg.look.unit": "距离单位", "cfg.look.mi": "英里", "cfg.look.theme": "配色", "cfg.look.auto": "跟随系统", "cfg.look.light": "浅色", "cfg.look.dark": "深色", "cfg.look.p": "文字大小和配色也会用于运行栏。", "cfg.window.h": "窗口",
   "cfg.window.ontop": "主窗口始终显示在其他窗口之前", "cfg.window.barTop": "运行栏始终显示在其他窗口之前",
   "cfg.window.p": "运行栏是运行时打开的小窗口，放在日志软件上方使用。",
   "pop.copy": "复制 {text}",

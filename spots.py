@@ -18,6 +18,7 @@ import datetime as dt
 import glob
 import gzip
 import json
+import math
 import os
 import re
 import threading
@@ -27,7 +28,7 @@ from urllib.parse import quote
 
 from i18n import t
 from locations import NAMES as LOCATION_NAMES
-from potacommon import (band_from_khz, base_call, data_path, fetch_json, iso_minutes, mode_group, parks_in,
+from potacommon import (band_from_khz, base_call, data_path, fetch_json, grid_center, iso_minutes, mode_group, parks_in,
                         read_json, rec_minutes, resource, split_parks, utc_minutes, utc_stamp, write_json)
 
 SPOT_BEFORE = 30       # minutes
@@ -324,6 +325,46 @@ def _locations(codes):
     # names from locations.py: pota.app sorts locationDesc by code and locationName by name, so pairing
     # them by position mixes them up (US-4239: US-ND would be "New York")
     return [{"code": c, "name": LOCATION_NAMES.get(c, "")} for c in (x.strip() for x in (codes or "").split(",")) if c]
+
+
+def park_at(ref):
+    """(lat, lon) of a park: the shipped list's position (a grid square, ~9 x 4.6 km, only when the list has
+    none), or pota.app's record of a park newer than the list when park_info already fetched it. None when
+    unknown. Never asks pota.app itself."""
+    hit = shipped_parks().get(ref)
+    if hit:
+        return hit[3] or grid_center(hit[2])
+    p = _fetched.get(ref) or {}
+    try:
+        return (float(p["latitude"]), float(p["longitude"]))
+    except (KeyError, TypeError, ValueError):
+        return grid_center(p.get("grid6") or p.get("grid4"))
+
+
+def middle(points):
+    """The point between (lat, lon) points (a 2fer's parks): their average as vectors from the earth's
+    centre, so it is right across the 180th meridian too. None for no points."""
+    v = [(math.cos(math.radians(la)) * math.cos(math.radians(lo)), math.cos(math.radians(la)) * math.sin(math.radians(lo)),
+          math.sin(math.radians(la))) for la, lo in points]
+    if not v:
+        return None
+    x, y, z = (sum(c) / len(v) for c in zip(*v))
+    return (math.degrees(math.atan2(z, math.hypot(x, y))), math.degrees(math.atan2(y, x)))
+
+
+def great_circle_km(a, b):
+    """Distance over the earth's surface between two (lat, lon) points (haversine, mean radius)."""
+    la1, lo1, la2, lo2 = map(math.radians, (a[0], a[1], b[0], b[1]))
+    h = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
+    return 2 * 6371.0088 * math.asin(min(1.0, math.sqrt(h)))
+
+
+def distance_km(mine, theirs):
+    """From the middle of my parks to the middle of theirs (each side a 2fer/3fer = the point between its
+    parks), rounded to 0.1 km; None when a side has no known position. Parks are one point for a whole
+    park, so the UI always says "about"."""
+    a, b = middle([p for p in map(park_at, mine) if p]), middle([p for p in map(park_at, theirs) if p])
+    return round(great_circle_km(a, b), 1) if a and b else None
 
 
 def park_status(ref):

@@ -36,10 +36,10 @@ from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, base_call, data
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import (SESSION_MARGIN, SpotLogger, clear_records, common_locations, countries, example_parks, history_parks,
-                   park_info, park_status, shipped_parks, summarize, tag_candidate)
+                   distance_km, park_info, park_status, shipped_parks, summarize, tag_candidate)
 from window import BarMode, set_zoom
 
-SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "p2p_auto", "lookup", "on_top", "font_scale", "theme")   # "live" is set by start_live/finish_live only
+SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "p2p_auto", "lookup", "on_top", "font_scale", "theme", "dist_unit")   # "live" is set by start_live/finish_live only
 DATE_RE = re.compile(r"\d{8}")
 LOOK_SCALES = (1, 1.15, 1.3)            # 設定 → 表示 → 文字の大きさ
 LOOK_THEMES = ("", "light", "dark")     # 設定 → 表示 → 配色 ("" = the OS)
@@ -81,7 +81,9 @@ def qso_event(rec, uid=None, hunted=None):
             "new": mypota.new_parks(list(dict.fromkeys(theirs)), hunted, ts),
             "mode": mode_of(rec), "decision": rec.get("P2P_DECISION") or "", "parks": decided_parks(rec)[1],
             "candidate": split_parks(rec.get("P2P_CANDIDATE")), "my": split_parks(rec.get("MY_SIG_INFO")),
-            "note": rec.get("P2P_NOTE") or ""}
+            "note": rec.get("P2P_NOTE") or "",
+            # to their parks (the decided ones, else the spot's candidate) from mine
+            "km": distance_km(split_parks(rec.get("MY_SIG_INFO")), decided_parks(rec)[1] or split_parks(rec.get("P2P_CANDIDATE")))}
 
 
 class Api:
@@ -152,7 +154,7 @@ class Api:
                 "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
                 "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
                 "country": s.get("country") or "", "countries": countries(),
-                "terms_accepted": s.get("terms_accepted") or "", "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")), **self._look(s), "bar_on_top": s.get("bar_on_top", True) is not False,
+                "terms_accepted": s.get("terms_accepted") or "", "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")), **self._look(s), "dist_unit": s.get("dist_unit") or "", "bar_on_top": s.get("bar_on_top", True) is not False,
                 "lookup": lookup if isinstance(lookup, list) else [lookup],
                 "log_count": qsolog.count(), "receiver": self._receiver_texts(), "mypota": mypota.status()}
 
@@ -173,6 +175,8 @@ class Api:
             self._bar.set_zoom(keep["font_scale"])            # both windows, now
         if "theme" in keep and keep["theme"] not in LOOK_THEMES:
             keep.pop("theme")
+        if "dist_unit" in keep and keep["dist_unit"] not in ("km", "mi"):
+            keep.pop("dist_unit")
         if "calls" in keep or "call" in keep:
             s = load_settings()
             calls = clean_calls(keep.get("calls", s.get("calls")), keep.get("call", s.get("call")))
@@ -283,7 +287,8 @@ class Api:
     def _on_spot(self, tm, act, parks, freq, mode, twofer):
         with self._lock:
             self._events.append({"time": tm, "call": act, "parks": parks, "freq": freq, "mode": mode,
-                                "twofer": twofer, "at": time.time()})
+                                "twofer": twofer, "at": time.time(),
+                                "km": distance_km(self._logger.parks, parks) if self._logger else None})
 
     def _on_status(self, msg):
         with self._lock:

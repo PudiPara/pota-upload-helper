@@ -354,6 +354,7 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .p2p-in input { width: 150px; padding: 3px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 12.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .p2p-in input::placeholder { text-transform: none; font-weight: 500; letter-spacing: 0; color: var(--ink-3); }
 .p2p-in input:focus { outline: none; border-color: var(--pine-2); box-shadow: 0 0 0 3px var(--focus); }
+.dist { font-size: 12px; color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .qso-none { font-size: 12px; color: var(--ink-2); }
 .qso .link { font-size: 12px; }
 
