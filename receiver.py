@@ -8,7 +8,9 @@ Formats are detected per packet, whatever the listener is labelled:
 Every listener can also forward the raw packet to another host:port, so the
 app can sit between your logger and another program (e.g. RUMlog -> here -> OpsLog).
 """
+import datetime as dt
 import html
+import json
 import os
 import re
 import socket
@@ -17,7 +19,7 @@ import threading
 import xml.etree.ElementTree as ET
 
 from i18n import t
-from potacommon import FIELD_RE, band_from_mhz
+from potacommon import FIELD_RE, adif_mode, band_from_mhz
 
 WSJTX_MAGIC = 0xADBCCBDA
 N1MM_BANDS = {"1.8": "160m", "3.5": "80m", "5": "60m", "7": "40m", "10": "30m", "14": "20m", "18": "17m",
@@ -61,13 +63,7 @@ def parse_n1mm(root):
             pass
     if not rec.get("BAND") and g("band"):
         rec["BAND"] = N1MM_BANDS.get(g("band"), g("band") + "m" if g("band").isdigit() else g("band"))
-    mode = g("mode").upper()
-    if mode in ("FT8", "FT4", "JS8", "JT65", "JT9", "PSK31", "RTTY", "CW", "SSB", "USB", "LSB", "FM", "AM"):
-        rec["MODE"] = {"USB": "SSB", "LSB": "SSB"}.get(mode, mode)
-        if mode == "FT4":
-            rec.update({"MODE": "MFSK", "SUBMODE": "FT4"})
-    elif mode:
-        rec["MODE"] = mode
+    rec.update(adif_mode(g("mode")))
     for src, dst in (("snt", "RST_SENT"), ("rcv", "RST_RCVD"), ("gridsquare", "GRIDSQUARE"),
                      ("mycall", "STATION_CALLSIGN"), ("operator", "OPERATOR"), ("name", "NAME"),
                      ("comment", "COMMENT")):
@@ -89,7 +85,6 @@ def parse_qlog(text):
     {"appid": "QLog", "msgtype": "QSO", "logid": ..., "data": {"operation": insert|update|delete,
     "rowid": N, "type": "adif", "value": "<call:6>..."}}. rowid (per log) keeps edits and deletes on
     the same QSO; QLog sends one update per edited field."""
-    import json
     try:
         msg = json.loads(text)
     except ValueError:
@@ -141,7 +136,7 @@ def bind_address(group, windows=None):
       multicast, Windows   127.0.0.1 - Windows can't bind a multicast address, so the socket
                            binds loopback and joins the group there; WSJT-X must send on the
                            loopback interface (Settings → Reporting → Outgoing interfaces).
-                           Not tested on a Windows machine yet."""
+                           Verified on Windows 11 with WSJT-X, QLog and N1MM on the same group."""
     windows = os.name == "nt" if windows is None else windows
     if not group or windows:
         return LOOPBACK
@@ -184,6 +179,12 @@ class Receiver:
         self._threads = []
         self.state = {}
 
+    def _set(self, name, state):
+        """A listener's new state: kept in self.state, and on_status told when it changed."""
+        if self.state.get(name) != state:
+            self.state[name] = state
+            self.on_status(name, state)
+
     def start(self):
         self._stop.clear()
         for cfg in self.listeners:
@@ -225,15 +226,11 @@ class Receiver:
         """Turbo HAMLOG sends nothing out: ask it for its record count every HAMLOG_POLL seconds and
         fetch the new records (hamlog.py). Old records are not imported, except the last HAMLOG_BACK
         minutes when we first find HAMLOG (the app may have been started after the first QSOs)."""
-        import hamlog
+        import hamlog                        # Windows only (ctypes.windll)
         name = cfg["name"]
-        base = {"port": "", "multicast": "", "where": "HAMLOG"}
 
         def status(code, **kw):
-            st = dict(base, code=code, **kw)
-            if self.state.get(name) != st:
-                self.state[name] = st
-                self.on_status(name, st)
+            self._set(name, dict({"port": "", "multicast": "", "where": "HAMLOG"}, code=code, **kw))
 
         try:
             client = hamlog.Client()
@@ -246,7 +243,6 @@ class Receiver:
             client.close()
 
     def _poll_hamlog(self, client, name, status):
-        import datetime as dt
         last = None
         back_to = 0              # records up to here were read back on (re)contact, not logged just now
         seen = []                # the QSOs taken from HAMLOG this run, to notice deletions
@@ -303,19 +299,16 @@ class Receiver:
         try:
             sock = self._open(cfg)
         except OSError as e:
-            self.state[name] = dict(base, code="error", err=str(e.strerror or e))
-            self.on_status(name, self.state[name])
+            self._set(name, dict(base, code="error", err=str(e.strerror or e)))
             return
-        self.state[name] = dict(base, code="listening")
-        self.on_status(name, self.state[name])
+        self._set(name, dict(base, code="listening"))
         fwd = None
         if cfg.get("forward"):
             try:
                 h, p = cfg["forward"].rsplit(":", 1)
-                fwd = (h.strip() or "127.0.0.1", int(p))
+                fwd = (h.strip() or LOOPBACK, int(p))
             except ValueError:
-                self.state[name] = dict(base, code="badforward")
-                self.on_status(name, self.state[name])
+                self._set(name, dict(base, code="badforward"))
         out = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) if fwd else None
         while not self._stop.is_set():
             try:
@@ -330,6 +323,6 @@ class Receiver:
                 except OSError:
                     pass
             for action, rec, uid in parse_packet(data):
-                self.state[name] = dict(base, code="receiving")
+                self._set(name, dict(base, code="receiving"))
                 self.on_qso(action, rec, uid, name)
         sock.close()

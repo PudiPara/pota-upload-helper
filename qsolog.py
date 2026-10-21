@@ -1,32 +1,39 @@
-"""The app's own QSO log (SQLite), filled by loggers over UDP."""
+"""The app's own QSO log (SQLite), filled by loggers over UDP, and the operator's P2P decisions.
+
+One contact often arrives twice: WSJT-X reports it at its start, the logger at its end. A copy is the
+same base call, band and mode within TWIN_WINDOW minutes; reads keep one (dedupe), and a decision or a
+delete is applied to every copy.
+"""
 import json
 import os
 import sqlite3
 import threading
 import time
+from contextlib import contextmanager
 
-from potacommon import DATA_DIR
+from potacommon import base_call, data_path, minutes, mode_of, rec_minutes, split_parks
 
+TWIN_WINDOW = 3          # minutes
 _lock = threading.Lock()
 
 
-def _db():
-    os.makedirs(DATA_DIR, exist_ok=True)
-    con = sqlite3.connect(os.path.join(DATA_DIR, "qsolog.db"), check_same_thread=False)
-    con.execute("""CREATE TABLE IF NOT EXISTS qso (
-        uid TEXT PRIMARY KEY, call TEXT, qso_date TEXT, time_on TEXT, band TEXT, mode TEXT,
-        data TEXT, source TEXT, received REAL, deleted INTEGER DEFAULT 0, ext_id TEXT)""")
-    cols = [r[1] for r in con.execute("PRAGMA table_info(qso)")]
-    if "ext_id" not in cols:
-        con.execute("ALTER TABLE qso ADD COLUMN ext_id TEXT")
-    con.execute("CREATE INDEX IF NOT EXISTS qso_date ON qso(qso_date)")
-    return con
-
-
-def mode_of(rec):
-    """The mode pota.app will store: SUBMODE when present (FT4), else MODE. Part of what makes
-    a QSO distinct there (CALL, MODE, QSO_DATE, BAND, parks), so part of our duplicate key too."""
-    return (rec.get("SUBMODE") or rec.get("MODE") or "").upper()
+@contextmanager
+def _conn():
+    """A connection under the module lock, committed and closed on the way out."""
+    with _lock:
+        os.makedirs(data_path(), exist_ok=True)
+        con = sqlite3.connect(data_path("qsolog.db"), check_same_thread=False)
+        try:
+            con.execute("""CREATE TABLE IF NOT EXISTS qso (
+                uid TEXT PRIMARY KEY, call TEXT, qso_date TEXT, time_on TEXT, band TEXT, mode TEXT,
+                data TEXT, source TEXT, received REAL, deleted INTEGER DEFAULT 0, ext_id TEXT)""")
+            if "ext_id" not in [r[1] for r in con.execute("PRAGMA table_info(qso)")]:
+                con.execute("ALTER TABLE qso ADD COLUMN ext_id TEXT")
+            con.execute("CREATE INDEX IF NOT EXISTS qso_date ON qso(qso_date)")
+            yield con
+            con.commit()
+        finally:
+            con.close()
 
 
 def make_uid(rec):
@@ -34,11 +41,29 @@ def make_uid(rec):
                                rec.get("TIME_ON", "")[:4], (rec.get("BAND") or "").lower(), mode_of(rec))
 
 
+def _twins(con, date, call, time_on, band=None, mode=None):
+    """uids of the live rows of that day that are the same contact (band/mode only when given)."""
+    try:
+        tm = minutes(date, time_on or "0000")
+    except ValueError:
+        return []
+    out = []
+    for uid, c2, t2, b2, m2 in con.execute("SELECT uid, call, time_on, band, mode FROM qso WHERE qso_date=? AND deleted=0",
+                                           (date,)).fetchall():
+        try:
+            near = abs(minutes(date, t2 or "0000") - tm) <= TWIN_WINDOW
+        except ValueError:
+            continue
+        if near and base_call(c2) == base_call(call) and band in (None, b2) and mode in (None, m2):
+            out.append(uid)
+    return out
+
+
+# ---------------------------------------------------------------- storing
 def upsert(rec, ext_id=None, source=""):
     """Same QSO (call, date, minute, band, mode) from two programs is stored once."""
     uid = make_uid(rec)
-    with _lock:
-        con = _db()
+    with _conn() as con:
         if ext_id:   # an edit in the logger (time/band changed) replaces the old row
             con.execute("UPDATE qso SET deleted=1 WHERE ext_id=? AND uid<>?", (ext_id, uid))
         if not rec.get("P2P_DECISION"):   # WSJT-X and the logger both send it: keep what the operator decided
@@ -54,20 +79,30 @@ def upsert(rec, ext_id=None, source=""):
                     (uid, rec.get("CALL", "").upper(), rec.get("QSO_DATE", ""), rec.get("TIME_ON", ""),
                      (rec.get("BAND") or "").lower(), mode_of(rec), json.dumps(rec, ensure_ascii=False),
                      source, time.time(), ext_id))
-        con.commit()
-        con.close()
+    return uid
+
+
+def received(rec, ext_id=None, source="", accept=None):
+    """A QSO a logger sent. Their park typed in the logger (SIG_INFO / POTA_REF) is the decision
+    "log"; a decision made on the other copy is kept; accept = spot candidate parks to record as "yes"
+    without asking (設定 → P2P). -> uid. rec is updated in place."""
+    logged = split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO"))
+    if logged and not rec.get("P2P_DECISION"):
+        apply_decision(rec, "log", logged)
+    uid = upsert(rec, ext_id, source)
+    if accept and not rec.get("P2P_DECISION"):
+        set_p2p(uid, "yes", accept)
+        apply_decision(rec, "yes", split_parks(accept))
     return uid
 
 
 def known(uid):
     """True when this QSO was ever stored (deleted ones too)."""
-    with _lock:
-        con = _db()
-        row = con.execute("SELECT 1 FROM qso WHERE uid=?", (uid,)).fetchone()
-        con.close()
-    return bool(row)
+    with _conn() as con:
+        return con.execute("SELECT 1 FROM qso WHERE uid=?", (uid,)).fetchone() is not None
 
 
+# ---------------------------------------------------------------- the operator's P2P decision
 P2P_KEYS = ("P2P_DECISION", "P2P_CANDIDATE", "SIG", "SIG_INFO", "POTA_REF")
 
 
@@ -82,7 +117,8 @@ def _carry_decision(src, dst):
 
 
 def apply_decision(rec, decision, parks):
-    """decision: 'yes' (spot candidate accepted), 'manual' (typed), 'no', or '' (undecided)."""
+    """decision: 'yes' (spot candidate accepted), 'manual' (typed), 'log' (typed in the logger), 'no',
+    or '' (undecided)."""
     for k in ("SIG", "SIG_INFO", "POTA_REF"):
         rec.pop(k, None)
     if decision in ("yes", "manual", "log") and parks:
@@ -94,70 +130,48 @@ def apply_decision(rec, decision, parks):
     return rec
 
 
-def set_p2p(uid, decision, parks, window=3):
-    """Record the operator's P2P decision for a QSO - and for the copy another
-    program may have reported for the same contact (WSJT-X vs the logger).
-    -> list of updated records."""
-    from potacommon import base_call, minutes, split_parks
+def decided_parks(rec):
+    """-> (decided, parks): the decision recorded for this QSO. decided=False when nobody has said
+    anything yet; "no" = decided, no parks."""
+    dec = rec.get("P2P_DECISION")
+    if not dec:
+        return False, []
+    if dec == "no":
+        return True, []
+    return True, split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO"))
+
+
+def set_p2p(uid, decision, parks):
+    """Record the operator's P2P decision for a QSO and its copies. -> the updated records."""
     parks = split_parks(parks)
     updated = []
-    with _lock:
-        con = _db()
+    with _conn() as con:
         row = con.execute("SELECT call, qso_date, time_on, band, mode FROM qso WHERE uid=? AND deleted=0", (uid,)).fetchone()
         if not row:
-            con.close()
             return []
         c, d, t, band, mode = row
-        try:
-            tm = minutes(d, t or "0000")
-        except ValueError:
-            tm = None
-        for u2, c2, t2, b2, m2, data in con.execute("SELECT uid, call, time_on, band, mode, data FROM qso WHERE qso_date=? AND deleted=0",
-                                                  (d,)).fetchall():
-            if u2 != uid:
-                try:
-                    near = tm is not None and abs(minutes(d, t2 or "0000") - tm) <= window
-                except ValueError:
-                    near = False
-                if not (near and base_call(c2) == base_call(c) and b2 == band and m2 == mode):
-                    continue
-            rec = apply_decision(json.loads(data), decision, parks)
-            con.execute("UPDATE qso SET data=? WHERE uid=?", (json.dumps(rec, ensure_ascii=False), u2))
+        uids = _twins(con, d, c, t, band, mode)
+        for u in ([uid] if uid not in uids else []) + uids:
+            rec = apply_decision(json.loads(con.execute("SELECT data FROM qso WHERE uid=?", (u,)).fetchone()[0]), decision, parks)
+            con.execute("UPDATE qso SET data=? WHERE uid=?", (json.dumps(rec, ensure_ascii=False), u))
             updated.append(rec)
-        con.commit()
-        con.close()
     return updated
 
 
-def delete(ext_id=None, call=None, qso_date=None, time_on=None, window=3):
-    """Delete a QSO the logger deleted - and the copy another program (WSJT-X)
-    may have reported for the same contact."""
-    from potacommon import base_call, minutes
-    with _lock:
-        con = _db()
+# ---------------------------------------------------------------- edits and deletes
+def delete(ext_id=None, call=None, qso_date=None, time_on=None):
+    """Delete a QSO the logger deleted (by its id there, else call/date/time) and its copies. -> how many."""
+    n = 0
+    with _conn() as con:
         targets = []
         if ext_id:
             targets = con.execute("SELECT call, qso_date, time_on, band, mode FROM qso WHERE ext_id=? AND deleted=0",
                                   (ext_id,)).fetchall()
         if not targets and call:
-            targets = [((call or "").upper(), qso_date, time_on or "", None, None)]
-        n = 0
+            targets = [(call.upper(), qso_date, time_on or "", None, None)]
         for c, d, t, band, mode in targets:
-            try:
-                tm = minutes(d, (t or "0000"))
-            except ValueError:
-                continue
-            for uid, c2, t2, b2, m2 in con.execute("SELECT uid, call, time_on, band, mode FROM qso WHERE qso_date=? AND deleted=0",
-                                               (d,)).fetchall():
-                try:
-                    near = abs(minutes(d, t2 or "0000") - tm) <= window
-                except ValueError:
-                    near = False
-                if near and base_call(c2) == base_call(c) and (band is None or b2 == band) and (mode is None or m2 == mode):
-                    con.execute("UPDATE qso SET deleted=1 WHERE uid=?", (uid,))
-                    n += 1
-        con.commit()
-        con.close()
+            for uid in _twins(con, d, c, t, band, mode):
+                n += con.execute("UPDATE qso SET deleted=1 WHERE uid=? AND deleted=0", (uid,)).rowcount
     return n
 
 
@@ -165,11 +179,8 @@ def update(uid, fields):
     """Edit one stored QSO: CALL, TIME_ON, BAND, MODE and/or "parks" (their park, the operator's
     decision). The key may change, so the old row is retired and the record stored again.
     -> the new uid, or None when the QSO is gone."""
-    from potacommon import split_parks
-    with _lock:
-        con = _db()
+    with _conn() as con:
         row = con.execute("SELECT data, ext_id, source FROM qso WHERE uid=? AND deleted=0", (uid,)).fetchone()
-        con.close()
     if not row:
         return None
     rec, ext_id, source = json.loads(row[0]), row[1], row[2]
@@ -181,83 +192,54 @@ def update(uid, fields):
     if "parks" in fields:
         parks = split_parks(fields["parks"])
         apply_decision(rec, "manual" if parks else "no", parks)
-    new_uid = make_uid(rec)
-    if new_uid != uid:
-        with _lock:
-            con = _db()
-            con.execute("UPDATE qso SET deleted=1 WHERE uid=?", (uid,))
-            con.commit()
-            con.close()
+    if make_uid(rec) != uid:
+        delete_uid(uid)
     return upsert(rec, ext_id, source)
 
 
 def delete_uid(uid):
     """Soft-delete one stored QSO. -> True when it existed."""
-    with _lock:
-        con = _db()
-        n = con.execute("UPDATE qso SET deleted=1 WHERE uid=? AND deleted=0", (uid,)).rowcount
-        con.commit()
-        con.close()
-    return n > 0
+    with _conn() as con:
+        return con.execute("UPDATE qso SET deleted=1 WHERE uid=? AND deleted=0", (uid,)).rowcount > 0
 
 
-def delete_activation(qso_date):
-    """Drop (soft-delete) the activation QSOs of one UTC day - those with my park in them, which is
-    what the アップロード作成 list shows. -> how many."""
-    n = 0
-    with _lock:
-        con = _db()
-        for uid, data in con.execute("SELECT uid, data FROM qso WHERE qso_date=? AND deleted=0", (qso_date,)).fetchall():
-            if json.loads(data).get("MY_SIG_INFO"):
-                con.execute("UPDATE qso SET deleted=1 WHERE uid=?", (uid,))
-                n += 1
-        con.commit()
-        con.close()
-    return n
-
-
+# ---------------------------------------------------------------- reading
 def records(dates=None):
-    con = _db()
-    if dates:
-        q = "SELECT data FROM qso WHERE deleted=0 AND qso_date IN (%s) ORDER BY qso_date, time_on" % ",".join("?" * len(dates))
-        rows = con.execute(q, list(dates)).fetchall()
-    else:
-        rows = con.execute("SELECT data FROM qso WHERE deleted=0 ORDER BY qso_date, time_on").fetchall()
-    con.close()
+    """The live records (of these QSO_DATEs), oldest first, one per contact."""
+    with _conn() as con:
+        if dates:
+            q = "SELECT data FROM qso WHERE deleted=0 AND qso_date IN (%s) ORDER BY qso_date, time_on" % ",".join("?" * len(dates))
+            rows = con.execute(q, list(dates)).fetchall()
+        else:
+            rows = con.execute("SELECT data FROM qso WHERE deleted=0 ORDER BY qso_date, time_on").fetchall()
     return dedupe([json.loads(r[0]) for r in rows])
 
 
-def between(t0, t1):
-    """Records whose time is within [t0, t1] (minutes, see potacommon.minutes), deduped."""
-    from potacommon import minutes
+def between(t0, t1=None):
+    """Records whose time is within [t0, t1] (minutes, see potacommon.minutes; t1=None: up to now)."""
     out = []
     for r in records():
-        try:
-            t = minutes(r.get("QSO_DATE", ""), r.get("TIME_ON") or "0000")
-        except ValueError:
-            continue
-        if t0 <= t <= t1:
+        t = rec_minutes(r)
+        if t is not None and t0 <= t and (t1 is None or t <= t1):
             out.append(r)
     return out
 
 
-def dedupe(recs, window=3):
-    """Drop a QSO that another program already reported within a few minutes
-    (e.g. WSJT-X logs the start time, the logger the end time)."""
-    from potacommon import base_call, minutes
+def dedupe(recs):
+    """Keep one record per contact: a copy another program reported within TWIN_WINDOW minutes is
+    dropped, the richer record (one with a decision, then more fields) kept."""
     kept, last = [], {}
     for r in recs:
-        try:
-            t = minutes(r.get("QSO_DATE", ""), (r.get("TIME_ON") or "0000"))
-        except ValueError:
+        t = rec_minutes(r)
+        if t is None:
             kept.append(r)
             continue
         # my parks are part of the key: the same station worked again minutes later from another
         # park is a second QSO, not the logger's copy of the first one
         k = (base_call(r.get("CALL")), (r.get("BAND") or "").lower(), mode_of(r), r.get("MY_SIG_INFO") or "")
-        if k in last and t - last[k][0] <= window:
+        if k in last and t - last[k][0] <= TWIN_WINDOW:
             prev = last[k][1]
-            if (bool(r.get("P2P_DECISION")), len(r)) > (bool(prev.get("P2P_DECISION")), len(prev)):   # keep the richer record
+            if (bool(r.get("P2P_DECISION")), len(r)) > (bool(prev.get("P2P_DECISION")), len(prev)):
                 kept[kept.index(prev)] = r
                 last[k] = (last[k][0], r)
             continue
@@ -266,17 +248,6 @@ def dedupe(recs, window=3):
     return kept
 
 
-def recent(limit=200, since_date=None):
-    con = _db()
-    rows = con.execute("SELECT uid, data, source, received FROM qso WHERE deleted=0 %s ORDER BY qso_date DESC, time_on DESC LIMIT ?"
-                       % ("AND qso_date>=?" if since_date else ""),
-                       ([since_date] if since_date else []) + [limit]).fetchall()
-    con.close()
-    return [{"uid": u, "rec": json.loads(d), "source": s, "received": t} for u, d, s, t in rows]
-
-
 def count():
-    con = _db()
-    n = con.execute("SELECT COUNT(*) FROM qso WHERE deleted=0").fetchone()[0]
-    con.close()
-    return n
+    with _conn() as con:
+        return con.execute("SELECT COUNT(*) FROM qso WHERE deleted=0").fetchone()[0]

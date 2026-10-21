@@ -17,7 +17,7 @@ import urllib.request
 import zipfile
 
 from i18n import t
-from potacommon import APP_NAME, USER_AGENT, VERSION, fetch_json
+from potacommon import USER_AGENT, VERSION, fetch_json
 
 REPO = "PudiPara/potaroo"
 LATEST = "https://api.github.com/repos/%s/releases/latest" % REPO

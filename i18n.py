@@ -52,10 +52,6 @@ def set_lang(lang):
     return _lang
 
 
-def get_lang():
-    return _lang
-
-
 def t(key, **kw):
     s = load(_lang).get(key) or load("en").get(key) or load("ja").get(key) or key
     if kw:

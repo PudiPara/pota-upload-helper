@@ -2,11 +2,13 @@
 
   parks_of(spot)              the park(s) a spot announces: its reference plus references in the comment
   their_parks_at(spots, t)    which park(s) a station was at around minute t, and whether that is certain
-  candidate_for(rec)          the P2P candidate for a QSO record, from the spots recorded on disk
+  candidate_info(rec)         the P2P candidate for a QSO record (recorded spots + pota.app spot history)
+  tag_candidate(rec)          puts that candidate on the record (P2P_CANDIDATE / P2P_NOTE)
+  park_info(ref), common_locations(refs)   a park as pota.app describes it; where several parks meet
   summarize(spots)            one row per station for the アクティベート中 page (2fer, band, mode group)
   SpotLogger                  records spots every minute while activating (spots-YYYYMMDD.jsonl) and the
                               session window (sessions.json) that the builder uses to find activation QSOs
-  load_spots(), load_sessions()   those files, parsed
+  load_spots(), load_sessions()   those files, parsed; SESSION_MARGIN widens each session window
 
 Time rules live here and nowhere else:
   SPOT_BEFORE / SPOT_AFTER   a spot this long before / after a QSO still describes the station
@@ -23,11 +25,13 @@ from collections import defaultdict
 from urllib.parse import quote
 
 from i18n import t
-from potacommon import DATA_DIR, band_from_khz, base_call, fetch_json, iso_minutes, minutes, mode_group, parks_in, split_parks
+from potacommon import (band_from_khz, base_call, data_path, fetch_json, iso_minutes, mode_group, parks_in,
+                        read_json, rec_minutes, split_parks, utc_minutes, utc_stamp, write_json)
 
 SPOT_BEFORE = 30       # minutes
 SPOT_AFTER = 10        # minutes
 TWOFER_GAP = 15        # minutes
+SESSION_MARGIN = 5     # minutes a QSO may fall before a session's start or after its end
 
 
 def now_utc():
@@ -73,10 +77,6 @@ FRESH = 10                # minutes: a spot this close to the QSO means they are
 QRT = re.compile(r"\bQRT\b", re.I)
 
 
-def candidate_for(rec):
-    return candidate_info(rec)["parks"]
-
-
 def candidate_info(rec):
     """The P2P candidate for a QSO that just arrived, and whether it is safe to accept without asking.
     -> {"parks": [...], "auto": bool, "note": "" | "qrt" | "stale" | "unsure"}
@@ -84,9 +84,8 @@ def candidate_info(rec):
     auto only when nothing is doubtful: no QRT from the activator before the QSO (they may be calling
     from home now), a spot within FRESH minutes, and the parks not pieced together from separate spots."""
     out = {"parks": [], "auto": False, "note": ""}
-    try:
-        t_min = minutes(rec.get("QSO_DATE", ""), rec.get("TIME_ON") or "0000")
-    except ValueError:
+    t_min = rec_minutes(rec)
+    if t_min is None:
         return out
     recorded = load_spots().get(base_call(rec.get("CALL")), [])
     parks, sure = their_parks_at(recorded, t_min)
@@ -106,6 +105,17 @@ def candidate_info(rec):
     out.update(parks=parks, auto=not qrt and fresh and sure,
                note="qrt" if qrt else "stale" if not fresh else "unsure" if not sure else "")
     return out
+
+
+def tag_candidate(rec):
+    """Put the P2P candidate on a received record (P2P_CANDIDATE, and P2P_NOTE when it is doubtful).
+    -> candidate_info(rec)."""
+    info = candidate_info(rec)
+    if info["parks"]:
+        rec["P2P_CANDIDATE"] = ",".join(info["parks"])
+        if info["note"]:
+            rec["P2P_NOTE"] = info["note"]          # why this one is asked even with 自動 on
+    return info
 
 
 def _by_activator(raw):
@@ -177,7 +187,7 @@ def _digest(hist, activator, reference):
         tm = spot_time(x)
         if tm:
             own = base_call(x.get("spotter")) == base_call(activator)
-            times.append((iso_minutes(tm.strftime("%Y-%m-%dT%H:%M:%S")), bool(own and QRT.search(x.get("comments") or ""))))
+            times.append((utc_minutes(tm), bool(own and QRT.search(x.get("comments") or ""))))
     return {"parks": parks_from_history(hist, activator, reference), "times": times}
 
 
@@ -227,26 +237,64 @@ def _drain_history():
 def load_spots():
     """{base call: [(minute, [parks], raw)]} from every spots-*.jsonl in the data dir."""
     out = defaultdict(list)
-    for f in sorted(glob.glob(os.path.join(DATA_DIR, "spots-*.jsonl"))):
-        for line in open(f, encoding="utf-8"):
-            try:
-                s = json.loads(line)
-                m = iso_minutes(s.get("spotTime") or s["seen"])
-            except Exception:
-                continue
-            if s.get("parks"):
-                out[s["base"]].append((m, s["parks"], s))
+    for f in sorted(glob.glob(data_path("spots-*.jsonl"))):
+        with open(f, encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    s = json.loads(line)
+                    m = iso_minutes(s.get("spotTime") or s["seen"])
+                except Exception:
+                    continue
+                if s.get("parks"):
+                    out[s["base"]].append((m, s["parks"], s))
     return out
 
 
 def load_sessions():
-    """[(start minute - 5, end minute + 5, [my parks])] - the activation windows, from sessions.json."""
-    path = os.path.join(DATA_DIR, "sessions.json")
-    try:
-        data = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else []
-    except ValueError:
-        data = []
-    return [(iso_minutes(s["start"]) - 5, iso_minutes(s["end"]) + 5, s["parks"]) for s in data if s.get("start") and s.get("end")]
+    """[(start minute - SESSION_MARGIN, end minute + SESSION_MARGIN, [my parks])] from sessions.json."""
+    return [(iso_minutes(s["start"]) - SESSION_MARGIN, iso_minutes(s["end"]) + SESSION_MARGIN, s["parks"])
+            for s in read_json(data_path("sessions.json"), []) if s.get("start") and s.get("end")]
+
+
+# ---------------------------------------------------------------- a park as pota.app describes it
+_parks = {}                # reference -> park_info, for the run of the app
+
+
+def park_info(ref):
+    """{name, local, grid, comments, locations: [{code, name}]} - local is the Japanese name when the
+    park's pota.app comment is one; locations are the prefectures / states it lies in."""
+    if ref not in _parks:
+        try:
+            p = fetch_json("park/%s" % ref, timeout=8) or {}
+        except Exception:
+            return {"name": "", "local": "", "grid": "", "comments": "", "locations": []}     # asked again next time
+        local = (p.get("parkComments") or "").strip()
+        if not re.search(r"[぀-ヿ一-鿿]", local) or len(local) > 40:
+            local = ""
+        codes = [c.strip() for c in (p.get("locationDesc") or "").split(",") if c.strip()]
+        names = [n.strip() for n in (p.get("locationName") or "").split(",")]
+        _parks[ref] = {"name": p.get("name") or "", "local": local, "grid": p.get("grid6") or "",
+                       "comments": p.get("parkComments") or "",
+                       "locations": [{"code": c, "name": names[i] if i < len(names) else ""} for i, c in enumerate(codes)]}
+    return _parks[ref]
+
+
+def common_locations(refs):
+    """Where the operator can stand for these parks together: {"options": [{code, name}] the locations
+    every park has in common (one = fixed, several = the operator picks, none = they don't overlap),
+    "multi": parks spanning several locations, "apart": [[a, b]] pairs pota.app says don't overlap}."""
+    parks = split_parks(refs)
+    info = {ref: park_info(ref) for ref in parks}
+    common = None
+    for ref in parks:
+        codes = [loc["code"] for loc in info[ref]["locations"]]
+        if codes:                          # unknown to pota.app: no constraint from it
+            common = codes if common is None else [c for c in common if c in codes]
+    names = {loc["code"]: loc["name"] for ref in parks for loc in info[ref]["locations"]}
+    apart = [[a, b] for i, a in enumerate(parks) for b in parks[i + 1:]
+             if says_no_overlap(info[a]["comments"], b) or says_no_overlap(info[b]["comments"], a)]
+    return {"options": [{"code": c, "name": names.get(c, "")} for c in (common or [])],
+            "multi": [ref for ref in parks if len(info[ref]["locations"]) > 1], "apart": apart}
 
 
 # ---------------------------------------------------------------- who is on the air now
@@ -304,13 +352,6 @@ def summarize(spots, now=None, history=None):
 
 
 # ---------------------------------------------------------------- recording while activating
-def _save_json(path, obj):
-    tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as fh:
-        json.dump(obj, fh, ensure_ascii=False, indent=1)
-    os.replace(tmp, path)
-
-
 class SpotLogger:
     """Polls api.pota.app/spot/activator every `interval` seconds while you activate, so the other
     station's park(s) are still known after they QRT. Callbacks run on the worker thread:
@@ -318,7 +359,7 @@ class SpotLogger:
          on_status(message)
     Also keeps the session window (start/end, my parks) in sessions.json and refreshes hunter.json."""
 
-    def __init__(self, parks, call="JL1FVA", interval=60, on_activator=None, on_status=None):
+    def __init__(self, parks, call, interval=60, on_activator=None, on_status=None):
         self.parks = split_parks(parks)
         if not self.parks:
             raise ValueError(t("spot.badPark"))
@@ -331,28 +372,23 @@ class SpotLogger:
         self.session = None
 
     # ----- session bookkeeping -----
-    def _sessions_path(self):
-        return os.path.join(DATA_DIR, "sessions.json")
-
     def _update_session(self):
-        try:
-            sessions = json.load(open(self._sessions_path(), encoding="utf-8"))
-        except (OSError, ValueError):
-            sessions = []
+        path = data_path("sessions.json")
+        sessions = read_json(path, [])
         for s in sessions:
             if s.get("id") == self.session["id"]:
                 s.update(self.session)
                 break
         else:
             sessions.append(dict(self.session))
-        _save_json(self._sessions_path(), sessions)
+        write_json(path, sessions)
 
     # ----- control -----
     def start(self, resume=None):
         """resume: {"id", "start"} of the session this app was recording before it was closed or
         crashed - the same session goes on (same id in sessions.json, the clock keeps its start)."""
-        os.makedirs(DATA_DIR, exist_ok=True)
-        stamp = now_utc().strftime("%Y-%m-%dT%H:%M:%S")      # seconds: the elapsed clock starts at 0
+        os.makedirs(data_path(), exist_ok=True)
+        stamp = utc_stamp()      # seconds: the elapsed clock starts at 0
         self.session = {"id": (resume or {}).get("id") or now_utc().strftime("%Y%m%d%H%M%S"), "call": self.call,
                         "parks": self.parks, "start": (resume or {}).get("start") or stamp, "end": stamp}
         self._update_session()
@@ -365,7 +401,7 @@ class SpotLogger:
         if self._thread:
             self._thread.join(timeout=5)
         if self.session:
-            self.session["end"] = now_utc().strftime("%Y-%m-%dT%H:%M:%S")
+            self.session["end"] = utc_stamp()
             self._update_session()
 
     def running(self):
@@ -384,7 +420,7 @@ class SpotLogger:
             except Exception as e:
                 spots = []
                 self.on_status(t("spot.fetchFail", time=now.strftime("%H:%M"), err=e))
-            path = os.path.join(DATA_DIR, "spots-%s.jsonl" % now.strftime("%Y%m%d"))
+            path = data_path("spots-%s.jsonl" % now.strftime("%Y%m%d"))
             with open(path, "a", encoding="utf-8") as fh:
                 for s in spots:
                     key = s.get("spotId")
@@ -395,7 +431,7 @@ class SpotLogger:
                     if act == mine:
                         continue
                     refs = parks_of(s)
-                    rec = {"seen": now.strftime("%Y-%m-%dT%H:%M:%S"), "spotTime": s.get("spotTime"),
+                    rec = {"seen": utc_stamp(now), "spotTime": s.get("spotTime"),
                            "activator": s.get("activator"), "base": act, "parks": refs,
                            "frequency": s.get("frequency"), "mode": s.get("mode"),
                            "comments": s.get("comments"), "spotId": key}
@@ -406,7 +442,7 @@ class SpotLogger:
                         before.update(added)
                         self.on_activator(now.strftime("%H:%M"), s.get("activator"), sorted(before),
                                           s.get("frequency"), s.get("mode"), len(before) > 1)
-            self.session["end"] = now.strftime("%Y-%m-%dT%H:%M:%S")
+            self.session["end"] = utc_stamp(now)
             self._update_session()
             if polls % 10 == 0:
                 try:
