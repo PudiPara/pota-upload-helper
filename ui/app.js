@@ -88,7 +88,15 @@
   async function fillParkNames(sel, parks) {
     try {
       const info = await api.park_info(parks.join(","));
-      $$(sel + " [data-ref].park-name, " + sel + " .name[data-ref]").forEach((el) => { const i = info[el.dataset.ref] || {}; el.textContent = i.name || ""; });
+      $$(sel + " [data-ref].park-name, " + sel + " .name[data-ref]").forEach((el) => {
+        const ref = el.dataset.ref, i = info[ref] || {};
+        el.textContent = i.name || "";
+        el.parentElement.querySelectorAll(`.park-retired[data-for="${CSS.escape(ref)}"]`).forEach((x) => x.remove());
+        const after = el.nextElementSibling && el.nextElementSibling.classList.contains("park-act") ? el.nextElementSibling : el;
+        if (i.active === false)               // pota.app retired this park: say so, details on pota.app
+          after.insertAdjacentHTML("afterend", `<span class="park-retired" data-for="${esc(ref)}">${esc(t("park.retired"))}
+            <button type="button" class="link" data-url="https://pota.app/#/park/${esc(ref)}">${esc(t("park.retiredLink"))}</button></span>`);
+      });
     } catch (e) { /* optional */ }
   }
   // A destructive button needs a second press (window.confirm is unavailable in the web view): the first
@@ -757,6 +765,7 @@
     if ($("#terms").hidden) show(); else st.afterTerms = show;
   }
   $("#updModalLater").addEventListener("click", () => ($("#updModal").hidden = true));
+  document.addEventListener("click", (e) => { const b = e.target.closest(".park-retired [data-url]"); if (b) api.open_url(b.dataset.url); });
   $("#dataUpd").addEventListener("click", () => { show("config"); cfgTab("app"); $("#update").hidden = false; showUpdate($("#updateText"), $("#updateGo")); });
   $("#updModalGo").addEventListener("click", () => installUpdate($("#updModalGo"), $("#updModalText")));
 
@@ -833,7 +842,8 @@
         `<span>${esc(t("rec.acts", { done: r.activations, n: r.attempts }))}</span><span>${esc(t("rec.qsos", { n: r.qsos }))}</span>`;
     return `<li class="rec">
       <span class="rec-date">${esc((rec.kind === "hunted" ? r.first : r.last) || "")}</span>
-      <span class="rec-park"><span class="flag">${flagOf(r.ref.split("-")[0])}</span>${plate(r.ref)}<span class="rec-name" title="${esc(r.name || "")}">${esc(r.name || "")}</span></span>
+      <span class="rec-park"><span class="flag">${flagOf(r.ref.split("-")[0])}</span>${plate(r.ref)}<span class="rec-name" title="${esc(r.name || "")}">${esc(r.name || "")}</span>${r.listed === "retired" ? `<span class="rec-tag" title="${esc(t("rec.retiredTip"))}">${esc(t("rec.retired"))}</span>`
+        : r.listed === "no" ? `<span class="rec-tag" title="${esc(t("rec.retiredTip"))}">${esc(t("rec.unlisted"))}</span>` : ""}</span>
       <span class="rec-meta">${meta}</span></li>`;
   }
   function renderRecord() {
@@ -867,7 +877,9 @@
     for (const r of [...rows].sort((a, b) => a.added - b.added)) {     // green on top of grey
       if (!r.at) continue;
       pts.push(r.at);
-      Lf.circleMarker(r.at, { radius: 5, weight: 1, color: "#fff", fillOpacity: .9, fillColor: r.added ? "#2F9E6B" : "#7D8A83" })
+      const c = r.added ? "#2F9E6B" : "#7D8A83";     // a park pota.app retired: a hollow ring
+      Lf.circleMarker(r.at, r.listed === "retired" ? { radius: 5, weight: 2, color: c, fillOpacity: 0 }
+                                                   : { radius: 5, weight: 1, color: "#fff", fillOpacity: .9, fillColor: c })
         .bindTooltip(`${esc(r.ref)} ${esc(r.name || "")}`).addTo(rec.dots);
     }
     // frame the dots when the list changes kind or filter, not on every redraw of the same list
