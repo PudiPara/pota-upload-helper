@@ -1,5 +1,6 @@
 "use strict";
 (function () {
+  const BAR = location.hash === "#bar";      // this window is the bar (window.py BarMode)
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   let api = null;
@@ -225,7 +226,7 @@
     renderSpots(); renderQsos();
     tick(); clearInterval(st.timer); st.timer = setInterval(tick, 1000);
     poll(); clearInterval(st.poll); st.poll = setInterval(poll, 2500);
-    setBar(true);
+    if (!BAR) setBar(true);
     fillParkNames("#signParks", parks);
   }
   function tick() {
@@ -236,6 +237,8 @@
   }
   async function poll() {
     const r = await api.poll_live(st.lastAt, st.lastQ);
+    if (r.action === "finish" && !BAR) { finishLive(null); return; }   // the bar's 運用を終了
+    if (BAR && !r.running) { api.set_bar(false); return; }             // finished in the main window
     if (r.status) $("#liveStatus").textContent = r.status;
     updateReceiver(r.receiver);
     const freshS = new Set(), freshQ = new Set();
@@ -248,6 +251,11 @@
       if (q.action === "delete") {                 // Python sends every copy it deleted
         (q.uids || []).forEach((u) => { removed = st.qsos.delete(u) || removed; });
         toast(t("live.deleted", { call: q.call }));
+        continue;
+      }
+      if (q.action === "update") {                 // a P2P answer given in the other window (main / bar)
+        const old = st.qsos.get(q.uid);
+        if (old) { st.qsos.set(q.uid, { ...old, ...q, at: old.at, seq: old.seq }); removed = true; }
         continue;
       }
       if (!q.live) continue;                       // Python: not this session's (another park, before the start)
@@ -428,13 +436,14 @@
   }
   for (const id of ["#qsos", "#barQsos"]) { $(id).addEventListener("click", onQsoClick); $(id).addEventListener("keydown", onQsoKey); }
 
-  // ---- bar mode: the window shrinks to a strip kept above the logger
+  // ---- the bar: a second small window (this page with #bar) kept above the logger; the main window stays
   async function setBar(on) {
-    document.body.classList.toggle("is-bar", on); $("#bar").hidden = !on; st.bar = on;
     try { await api.set_bar(on); } catch (e) { /* window control is best effort */ }
   }
   $("#toBar").addEventListener("click", () => setBar(true));
-  $("#barExpand").addEventListener("click", () => setBar(false));
+  $("#barExpand").addEventListener("click", () => setBar(false));     // close the bar, the main window comes up
+  // the main window may have been in the background (timers slowed down): catch up when it comes back
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && st.start && !BAR) poll(); });
 
   $$("#liveRun .seg button").forEach((b) => b.addEventListener("click", () => {
     st.prefix = b.dataset.prefix; segSet("#liveRun .seg", "prefix", st.prefix); api.save({ prefix: st.prefix }); renderSpots();
@@ -445,7 +454,7 @@
   async function finishLive(e) {
     const pending = [...st.qsos.values()].filter((q) => !q.decision && q.candidate.length).length;
     const btns = [$("#finishLive"), $("#barFinish")];
-    if (pending && !secondPress(e.currentTarget, t("live.finishArmed", { n: pending }), finishLabels, 6000)) {
+    if (pending && e && !secondPress(e.currentTarget, t("live.finishArmed", { n: pending }), finishLabels, 6000)) {
       toast(t("live.finishPending", { n: pending }));
       return;
     }
@@ -471,7 +480,15 @@
     $("#parks").focus();
   }
   $("#finishLive").addEventListener("click", finishLive);
-  $("#barFinish").addEventListener("click", finishLive);
+  // the bar hands 運用を終了 to the main window (the results are shown there)
+  $("#barFinish").addEventListener("click", (e) => {
+    const pending = [...st.qsos.values()].filter((q) => !q.decision && q.candidate.length).length;
+    if (pending && !secondPress(e.currentTarget, t("live.finishArmed", { n: pending }), finishLabels, 6000)) {
+      toast(t("live.finishPending", { n: pending }));
+      return;
+    }
+    api.set_bar(false, "finish");
+  });
   $("#doneClose").addEventListener("click", () => ($("#doneCard").hidden = true));
   $("#doneOpen").addEventListener("click", () => api.open_out(st.outDir || st.out));
   $("#donePota").addEventListener("click", () => api.open_url("https://pota.app/"));
@@ -1040,6 +1057,11 @@
     segSet("#liveRun .seg", "prefix", st.prefix);
     renderListeners(); updateReceiver(s.receiver);
     setSource(st.source);
+    if (BAR) {                                      // the bar window: the running activation only
+      document.body.classList.add("is-bar"); $("#bar").hidden = false;
+      if (s.live) enterRunning(s.live.parks, s.live.start); else api.set_bar(false);
+      return;
+    }
     if (s.live) enterRunning(s.live.parks, s.live.start);
     if (st.termsAccepted !== TERMS_VERSION) showTerms(true);
     setTimeout(promptUpdate, 1500);                 // the first thing after the window is up

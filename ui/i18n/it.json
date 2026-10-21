@@ -59,7 +59,7 @@
   "live.recorded": "{call} registrato come P2P ({parks})",
   "live.stopped": "Registrazione fermata ({start}–{end} UTC)",
   "live.finishPending": "{n} QSO potrebbero essere P2P e non sono confermati. Premi di nuovo per scriverli senza P2P",
-  "bar.expand": "Espandi", "bar.finish": "Termina",
+  "bar.expand": "Espandi", "bar.title": "In attività", "bar.finish": "Termina",
   "bar.empty": "In attesa dei QSO dal log. Quando compare un possibile P2P, rispondi sì / no qui o digita il riferimento del parco.",
   "row.ask": "Possibile P2P",
   "row.note.qrt": "dopo il loro QRT",

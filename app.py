@@ -87,6 +87,7 @@ class Api:
     def __init__(self):
         self._window = None
         self._bar = None               # BarMode, once the window exists
+        self._bar_action = ""          # "finish": the bar asked the main window to finish (poll_live hands it over)
         self._logger = None            # SpotLogger while an activation is being recorded
         self._receiver = None
         self._events = []              # spots seen while recording, for the live view
@@ -279,10 +280,11 @@ class Api:
 
     def poll_live(self, since, qsince):
         with self._lock:
+            action, self._bar_action = self._bar_action, ""
             return {"events": [e for e in self._events if e["at"] > since],
                     "qsos": [e for e in self._qso_events if e["at"] > qsince],
                     "status": self._status, "receiver": self._receiver_texts(),
-                    "running": self._recording()}
+                    "running": self._recording(), "action": action}
 
     def session_qsos(self, start_iso, parks=""):
         """The live list when a session starts or the window reopens: today's QSOs at any of these
@@ -306,7 +308,11 @@ class Api:
         if not updated:
             return {"ok": False, "error": t("api.qsoNotFound")}
         self._hunted = (0, None)                 # a P2P hunts their park
-        return {"ok": True, "events": [self._event(r) for r in updated]}
+        events = [self._event(r) for r in updated]
+        with self._lock:                         # the other window (main / bar) picks the answer up in poll_live
+            self._qso_events += [dict(e, action="update", at=time.time()) for e in events]
+            self._qso_events = self._qso_events[-500:]
+        return {"ok": True, "events": events}
 
     def finish_live(self, online=True):
         """End the activation at this park: stop recording, write the upload file(s) for the
@@ -333,7 +339,15 @@ class Api:
         sess = self._stop_logger()
         return {"ok": True, "start": sess["start"], "end": sess["end"]} if sess else {"ok": True}
 
-    def set_bar(self, on):
+    def set_bar(self, on, action=""):
+        """Open or close the bar window. Closing it from the bar brings the main window to the front;
+        action "finish" (the bar's 運用を終了) is done by the main window, which shows the results."""
+        if not on:
+            if action == "finish":
+                with self._lock:
+                    self._bar_action = action
+            from window import focus_running
+            focus_running(APP_NAME)
         return self._bar.set(on) if self._bar else False
 
     def set_on_top(self, on):
@@ -602,7 +616,8 @@ def main():
     win = webview.create_window(APP_NAME, resource("ui", "index.html"), js_api=api,
                                 width=1180, height=800, min_size=(BAR_W, 160), on_top=bool(load_settings().get("on_top")))
     api._window = win
-    api._bar = BarMode(win, keep_on_top=bool(load_settings().get("on_top")))
+    api._bar = BarMode(win, resource("ui", "index.html"), api, APP_NAME + " - " + t("bar.title"),
+                       keep_on_top=bool(load_settings().get("on_top")))
     win.events.closing += api.shutdown
     webview.start(debug=bool(os.environ.get("POTAROO_DEBUG")))
 

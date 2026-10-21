@@ -59,7 +59,7 @@
   "live.recorded": "{call}을(를) P2P({parks})로 기록했습니다",
   "live.stopped": "기록을 멈췄습니다 ({start}–{end} UTC)",
   "live.finishPending": "P2P 가능성이 있는 QSO {n}건이 미확인 상태입니다. 한 번 더 누르면 P2P 없이 기록합니다",
-  "bar.expand": "펼치기", "bar.finish": "운용 종료",
+  "bar.expand": "펼치기", "bar.title": "운용 중", "bar.finish": "운용 종료",
   "bar.empty": "로거에서 오는 QSO를 기다리는 중입니다. P2P 후보가 나오면 여기서 예 / 아니오를 누르거나 공원 번호를 입력하세요.",
   "row.ask": "P2P 가능성",
   "row.note.qrt": "상대 QRT 이후",

@@ -3,13 +3,16 @@
 //   node scripts/cdp.mjs eval "document.title"
 //   node scripts/cdp.mjs click "#startLive"          (a CSS selector)
 //   node scripts/cdp.mjs shot out.png
-// Needs Node 22+ (built-in WebSocket). Window-level things (bar mode, on-top, file dialogs) still need
+//   CDP_TARGET=bar node scripts/cdp.mjs shot bar.png   (the bar window)
+// Needs Node 22+ (built-in WebSocket). Window-level things (bar size/position, on-top, file dialogs) still need
 // a real desktop check.
 import { writeFileSync } from "node:fs";
 
 const [cmd, arg] = process.argv.slice(2);
 const port = process.env.CDP_PORT || 9333;
-const page = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find((t) => t.type === "page");
+// CDP_TARGET=bar: the bar window (index.html#bar); otherwise the main window
+const bar = process.env.CDP_TARGET === "bar";
+const page = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find((t) => t.type === "page" && t.url.endsWith("#bar") === bar);
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((r) => (ws.onopen = r));
 let id = 0;

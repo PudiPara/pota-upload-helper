@@ -59,7 +59,7 @@
   "live.recorded": "已将 {call} 记录为 P2P（{parks}）",
   "live.stopped": "已停止记录（{start}–{end} UTC）",
   "live.finishPending": "有 {n} 个可能是 P2P 的 QSO 尚未确认。再按一次将按非 P2P 写出",
-  "bar.expand": "展开", "bar.finish": "结束运用",
+  "bar.expand": "展开", "bar.title": "运行中", "bar.finish": "结束运用",
   "bar.empty": "等待日志软件发来的 QSO。出现 P2P 候选时，请在这里按“是”“否”或输入公园编号。",
   "row.ask": "可能是 P2P",
   "row.note.qrt": "对方 QRT 之后",

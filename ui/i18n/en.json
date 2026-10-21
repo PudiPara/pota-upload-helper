@@ -74,7 +74,7 @@
  "live.recorded": "{call} recorded as P2P ({parks})",
  "live.stopped": "Recording stopped ({start}–{end} UTC)",
  "live.finishPending": "{n} QSOs may be P2P and are unconfirmed. Press again to write them without P2P",
- "bar.expand": "Expand",
+ "bar.expand": "Expand", "bar.title": "On the air",
  "bar.finish": "Finish",
  "bar.empty": "Waiting for QSOs from the logger. When a P2P candidate shows up, answer yes / no here or type the park reference.",
  "row.ask": "Possible P2P",

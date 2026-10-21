@@ -59,7 +59,7 @@
   "live.recorded": "{call} gravado como P2P ({parks})",
   "live.stopped": "Gravação parada ({start}–{end} UTC)",
   "live.finishPending": "{n} QSOs podem ser P2P e não foram confirmados. Pressione de novo para gravá-los sem P2P",
-  "bar.expand": "Expandir", "bar.finish": "Encerrar",
+  "bar.expand": "Expandir", "bar.title": "No ar", "bar.finish": "Encerrar",
   "bar.empty": "Aguardando QSOs do log. Quando aparecer um possível P2P, responda sim / não aqui ou digite a referência do parque.",
   "row.ask": "Possível P2P",
   "row.note.qrt": "depois do QRT deles",

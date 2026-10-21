@@ -74,7 +74,7 @@
  "live.recorded": "{call} を P2P（{parks}）として記録しました",
  "live.stopped": "記録を止めました（{start}〜{end} UTC）",
  "live.finishPending": "P2P の可能性がある QSO が {n} 件、未確認です。もう一度押すと P2P なしで書き出します",
- "bar.expand": "広げる",
+ "bar.expand": "広げる", "bar.title": "運用中",
  "bar.finish": "運用を終了",
  "bar.empty": "ロガーからの QSO を待っています。P2P の候補が出たら、ここで「はい」「いいえ」を押すか公園番号を入力してください。",
  "row.ask": "P2P の可能性",
