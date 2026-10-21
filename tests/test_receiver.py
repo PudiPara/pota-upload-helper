@@ -90,3 +90,18 @@ class BindTest(unittest.TestCase):
             self.assertEqual(got, ["JA1AAA"])
         finally:
             rx.stop()
+
+
+class QLogNotifications(unittest.TestCase):
+    def test_insert_update_delete(self):
+        import json
+        def msg(op):
+            return json.dumps({"appid": "QLog", "msgtype": "QSO", "time": 1, "logid": "{abc}",
+                               "data": {"operation": op, "rowid": 355, "type": "adif",
+                                        "value": "<call:6>OK1ABC<qso_date:8:D>20220320<time_on:6>101500<band:3>30m<mode:2>CW<eor>"}}).encode()
+        (a, r, uid), = parse_packet(msg("insert"))
+        self.assertEqual((a, r["CALL"], r["QSO_DATE"], r["BAND"], r["MODE"], uid), ("upsert", "OK1ABC", "20220320", "30m", "CW", "qlog:{abc}:355"))
+        self.assertEqual(parse_packet(msg("update"))[0][0], "upsert")
+        self.assertEqual(parse_packet(msg("delete"))[0][0], "delete")
+        self.assertEqual(parse_packet(b'{"appid": "Other", "msgtype": "QSO"}'), [])
+
