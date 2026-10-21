@@ -110,7 +110,7 @@
   "res.qso": "QSOs", "res.qsoShort": "QSOs · unter 10", "res.noP2P": "Kein P2P",
   "res.lines": "{n} Zeilen für POTA",
   "res.unique": "{n} bei pota.app",
-  "res.p2pOnly": "Nur P2P", "res.notes": "Bitte prüfen",
+  "res.p2pOnly": "Nur P2P", "res.notes": "Bitte prüfen", "res.hours": "Bitte nicht zwischen {from} und {to} (03-11 UTC) zu pota.app hochladen. POTA bittet darum, um Fehler bei der Logverarbeitung zu vermeiden.", "res.hours.now": "Es ist gerade zwischen {from} und {to} (03-11 UTC). POTA bittet, erst danach zu pota.app hochzuladen.",
   "src.hunter": "bestätigt", "src.confirmed": "bestätigt", "src.manual": "eingetippt", "src.spot": "Spot", "src.log": "Log", "src.logspot": "Log+Spot",
   "set.title": "Logger-Anbindung",
   "set.lede": "QSOs aus deinem Logger kommen per UDP an. Formate: N1MM (RUMlogNG, N1MM Logger+, DXLog …), WSJT-X (WSJT-X, JTDX), ADIF (JTAlert, GridTracker, Log4OM …). Die App erkennt das Format jedes Pakets.",

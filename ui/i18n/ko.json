@@ -110,7 +110,7 @@
   "res.qso": "QSO", "res.qsoShort": "QSO · 10 미만", "res.noP2P": "P2P 없음",
   "res.lines": "POTA에 {n}행",
   "res.unique": "pota.app 기준 {n}",
-  "res.p2pOnly": "P2P만", "res.notes": "확인하세요",
+  "res.p2pOnly": "P2P만", "res.notes": "확인하세요", "res.hours": "{from}~{to}(UTC 3~11시)에는 pota.app 업로드를 피해 주세요. 로그 처리 오류를 줄이기 위한 POTA의 요청입니다.", "res.hours.now": "지금은 {from}~{to}(UTC 3~11시)입니다. POTA의 요청에 따라 이 시간대가 지난 뒤 pota.app에 업로드해 주세요.",
   "src.hunter": "확정", "src.confirmed": "확인됨", "src.manual": "직접 입력", "src.spot": "스팟", "src.log": "로그", "src.logspot": "로그+스팟",
   "set.title": "로거 연결",
   "set.lede": "로거가 기록한 QSO를 UDP로 받습니다. 형식: N1MM(RUMlogNG, N1MM Logger+, DXLog 등), WSJT-X(WSJT-X, JTDX), ADIF(JTAlert, GridTracker, Log4OM 등). 패킷 형식은 앱이 자동으로 판별합니다.",
