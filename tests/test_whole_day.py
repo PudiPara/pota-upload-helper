@@ -54,3 +54,22 @@ class ResumeAfterRestart(unittest.TestCase):
         fresh.stop_live()
         self.assertIsNone(potacommon.load_settings().get("live"))
 
+
+class DeleteWhatTheListShows(unittest.TestCase):
+    def test_qsos_counted_by_the_session_window_are_deleted_too(self):
+        import json
+        sess = os.path.join(potacommon.DATA_DIR, "sessions.json")
+        old = open(sess, encoding="utf-8").read() if os.path.exists(sess) else None
+        json.dump([{"id": "w", "call": "JL1FVA", "parks": ["JP-0016"], "start": "2026-01-11T01:00:00", "end": "2026-01-11T02:00:00"}],
+                  open(sess, "w", encoding="utf-8"))
+        try:
+            qsolog.upsert({"CALL": "JA1WIN", "QSO_DATE": "20260111", "TIME_ON": "013000", "BAND": "40m", "MODE": "CW"}, None, "x")
+            api = app.Api.__new__(app.Api)
+            self.assertEqual(api.delete_activation("20260111")["n"], 1)
+            self.assertEqual([r for r in qsolog.records(["20260111"]) if r["CALL"] == "JA1WIN"], [])
+        finally:
+            if old is None:
+                os.remove(sess)
+            else:
+                open(sess, "w", encoding="utf-8").write(old)
+

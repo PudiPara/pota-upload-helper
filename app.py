@@ -450,7 +450,11 @@ class Api:
         """Remove one UTC day's activation QSOs from the app's own log (the list on アップロード作成)."""
         if not re.fullmatch(r"\d{8}", str(date or "")):
             return {"ok": False, "error": t("api.badDate")}
-        n = qsolog.delete_activation(str(date))
+        # exactly what the list counted: QSOs with my park recorded, and QSOs inside a recording window
+        # (builder.find_activation_qsos); each with the twin copy another program sent
+        n = 0
+        for r, _, _ in find_activation_qsos(qsolog.records([str(date)]), dates=[str(date)]):
+            n += 1 if qsolog.delete(None, r.get("CALL"), r.get("QSO_DATE"), r.get("TIME_ON")) else 0
         return {"ok": True, "n": n, "log_count": qsolog.count()}
 
     def pick_out(self):
