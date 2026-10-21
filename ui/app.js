@@ -95,6 +95,8 @@
       $$(sel + " [data-ref].park-name, " + sel + " .name[data-ref]").forEach((el) => {
         const ref = el.dataset.ref, i = info[ref] || {};
         el.textContent = i.name || "";
+        const locs = el.parentElement.querySelector(".pv-locs");          // the start screen: the park's prefectures / states
+        if (locs) { locs.innerHTML = (i.locations || []).map((l) => `<span class="loc-tag" data-code="${esc(l.code)}" title="${esc(l.name || "")}">${esc(l.code)}</span>`).join(""); markShared(); }
         el.parentElement.querySelectorAll(`.park-retired[data-for="${CSS.escape(ref)}"]`).forEach((x) => x.remove());
         const after = el.nextElementSibling && el.nextElementSibling.classList.contains("park-act") ? el.nextElementSibling : el;
         if (i.active === false || i.listed === false)   // retired, or a number nobody knows: details on pota.app
@@ -182,7 +184,7 @@
   function renderPreview() {
     const parks = splitParks(parkValue());
     // one line per park: plate, name, which activation it would be (and a retired / unknown note)
-    $("#parksPreview").innerHTML = parks.map((p) => `<div class="pv">${plate(p)}<span class="park-name" data-ref="${esc(p)}"></span><span class="park-act" data-act="${esc(p)}"></span></div>`).join("");
+    $("#parksPreview").innerHTML = parks.map((p) => `<div class="pv">${plate(p)}<span class="park-name" data-ref="${esc(p)}"></span><span class="pv-locs"></span><span class="park-act" data-act="${esc(p)}"></span></div>`).join("");
     clearTimeout(renderPreview.h);
     if (parks.length) renderPreview.h = setTimeout(async () => {
       fillParkNames("#parksPreview", parks);
@@ -199,6 +201,8 @@
   }
   // Where I stand: the prefecture/state the parks have in common - fixed when there is one, a choice
   // when a park spans several (JP-0016 = Kanagawa, Shizuoka, Tokyo, Yamanashi). Python computes it.
+  // a 2fer / 3fer: the prefectures / states every park has, marked on each park's line
+  function markShared() { $$("#parksPreview .loc-tag").forEach((e) => e.classList.toggle("is-shared", (st.sharedLocs || []).includes(e.dataset.code))); }
   function renderLoc(r) {
     const box = $("#parkLoc"); st.locOptions = r ? r.options : [];
     const warn = $("#parkApart");
@@ -209,6 +213,9 @@
     spread.hidden = !(r && r.spread_km != null) || !!r.none;   // no shared prefecture/state already says they can't
     if (!spread.hidden) spread.textContent = t("live.note.spread", { d: fmtDist(r.spread_km) });
     st.noOverlap = !!(r && r.none);           // no prefecture/state in common: they can't be a 2fer
+    $("#startLive").disabled = st.noOverlap; $("#startLive").classList.toggle("is-blocked", st.noOverlap);
+    st.sharedLocs = r && splitParks(parkValue()).length > 1 ? r.options.map((o) => o.code) : [];
+    markShared();
     if (!r || (!r.options.length && !r.multi.length && !r.none)) { box.hidden = true; st.loc = ""; return; }
     box.hidden = false;
     const label = (o) => `${esc(o.code)}${o.name ? " " + esc(o.name) : ""}`;

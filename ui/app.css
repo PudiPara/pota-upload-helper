@@ -274,6 +274,12 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .pv { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
 .pv .plate { font-size: 16px; padding: 3px 12px 4px; border-radius: 7px; }
 .pv .park-name { font-size: 13.5px; color: var(--ink-2); }
+.pv-locs { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.loc-tag { font-size: 11px; font-weight: 700; letter-spacing: .02em; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--ink-3); }
+.loc-tag.is-shared { border-color: var(--pine-2); color: var(--pine-2); background: rgba(47, 122, 91, .12); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .loc-tag.is-shared { border-color: var(--moss); color: var(--moss); } }
+:root[data-theme="dark"] .loc-tag.is-shared { border-color: var(--moss); color: var(--moss); }
+.btn.is-blocked:disabled { opacity: .35; cursor: not-allowed; }   /* the parks can't be one activation */
 .pv .park-act { font-size: 12.5px; color: var(--amber-ink); font-weight: 700; margin-left: auto; }
 .pv .park-act:empty { display: none; }
 .pv .park-retired { flex-basis: 100%; }
