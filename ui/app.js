@@ -206,9 +206,10 @@
     if (!warn.hidden) warn.textContent = r.apart.map(([a, b]) => t("live.warn.apart", { a, b })).join(" ");
     // a note, not a warning: a park is one point here, so how far apart they are can't say whether they overlap
     const spread = $("#parkSpread");
-    spread.hidden = !(r && r.spread_km != null);
+    spread.hidden = !(r && r.spread_km != null) || !!r.none;   // no shared prefecture/state already says they can't
     if (!spread.hidden) spread.textContent = t("live.note.spread", { d: fmtDist(r.spread_km) });
-    if (!r || (!r.options.length && !r.multi.length)) { box.hidden = true; st.loc = ""; return; }
+    st.noOverlap = !!(r && r.none);           // no prefecture/state in common: they can't be a 2fer
+    if (!r || (!r.options.length && !r.multi.length && !r.none)) { box.hidden = true; st.loc = ""; return; }
     box.hidden = false;
     const label = (o) => `${esc(o.code)}${o.name ? " " + esc(o.name) : ""}`;
     if (!r.options.length) { box.innerHTML = `<span class="loc-label">${esc(t("live.loc"))}</span><span class="error">${esc(t("live.err.noLoc"))}</span>`; st.loc = ""; return; }
@@ -231,6 +232,7 @@
     const parks = splitParks(parkValue());
     const err = $("#liveError");
     if (!parks.length) return showError(err, t("live.err.park"));
+    if (parks.length > 1 && st.noOverlap) { $("#parkLoc").scrollIntoView({ block: "nearest" }); return; }   // its row says why
     if ((st.locOptions || []).length > 1 && !st.loc) return showError(err, t("live.err.loc"));
     showError(err, ""); $("#doneCard").hidden = true;
     const r = await api.start_live(parks.join(","), st.call, st.loc || "");

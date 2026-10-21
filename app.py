@@ -262,6 +262,8 @@ class Api:
         call = (call or "").strip().upper()
         if not CALL_RE.fullmatch(call):
             return {"ok": False, "error": t("api.noCall")}
+        if len(parks) > 1 and common_locations(parks)["none"]:   # no prefecture/state in common: no 2fer
+            return {"ok": False, "error": t("live.err.noLoc")}
         locs = self._locs_for(parks, loc)
         self._stop_logger()
         with self._lock:
