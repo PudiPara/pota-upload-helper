@@ -22,3 +22,4 @@ Potaroo-*
 
 # Notes for Claude Code: local only (GitHub cannot show a file of a public repo to its owner only)
 CLAUDE.md
+.git-claude/
