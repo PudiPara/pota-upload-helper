@@ -73,3 +73,27 @@ class DeleteWhatTheListShows(unittest.TestCase):
             else:
                 open(sess, "w", encoding="utf-8").write(old)
 
+
+
+class AppDataDeletes(unittest.TestCase):
+    def setUp(self):
+        self.api = app.Api.__new__(app.Api)
+        self.api._logger = None; self.api._hunted = (0, None)
+        qsolog.clear()
+
+    def test_a_contact_goes_with_its_copy(self):
+        uid = qsolog.upsert({"CALL": "JA1DUP", "QSO_DATE": "20260104", "TIME_ON": "010000", "BAND": "40m", "MODE": "FT8",
+                             "MY_SIG_INFO": "JP-1206"}, None, "WSJT-X")
+        qsolog.upsert({"CALL": "JA1DUP", "QSO_DATE": "20260104", "TIME_ON": "010100", "BAND": "40m", "MODE": "FT8",
+                       "MY_SIG_INFO": "JP-1206"}, "x1", "logger")
+        self.assertTrue(self.api.delete_qso(uid)["ok"])
+        self.assertEqual(qsolog.history(), [])                     # the logger's copy does not come back
+
+    def test_no_wipe_while_a_session_is_open(self):
+        qsolog.upsert({"CALL": "JA1KEEP", "QSO_DATE": "20260104", "TIME_ON": "020000", "BAND": "40m", "MODE": "CW"}, None, "x")
+        potacommon.save_settings({"live": {"parks": ["JP-1206"], "start": "2026-01-04T00:00:00"}})   # spot thread gone
+        self.assertFalse(self.api.clear_app_data()["ok"])
+        self.assertEqual(qsolog.count(), 1)
+        potacommon.save_settings({"live": None})
+        self.assertTrue(self.api.clear_app_data()["ok"])
+        self.assertEqual(qsolog.count(), 0)

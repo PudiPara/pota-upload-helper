@@ -54,6 +54,19 @@ class P2PDecisionTest(unittest.TestCase):
         qsolog.upsert(rec("JS6UHQ/6", "040828"), None, "WSJT-X")
         self.assertEqual(qsolog.records()[0].get("SIG_INFO"), "JP-0157,JP-1788")
 
+    def test_history_then_clear(self):
+        uid = qsolog.upsert(rec("JS6UHQ/6", "040828", MY_SIG_INFO="JP-1281"), None, "WSJT-X")
+        qsolog.upsert(rec("JS6UHQ/6", "040915", MY_SIG_INFO="JP-1281"), "id-1", "RUMlog")   # the logger's copy
+        qsolog.upsert(rec("JA1AAA", "050000"), None, "WSJT-X")
+        qsolog.set_p2p(uid, "yes", "JP-0157")
+        h = qsolog.history()
+        self.assertEqual([r["call"] for r in h], ["JA1AAA", "JS6UHQ/6"])     # one per contact, newest first
+        self.assertEqual((h[1]["my"], h[1]["their"], h[1]["p2p"]), (["JP-1281"], ["JP-0157"], "yes"))
+        self.assertEqual(qsolog.clear(), 3)
+        self.assertEqual((qsolog.history(), qsolog.count()), ([], 0))
+        self.assertEqual(spots.clear_records(), 1)                              # the spots file of setUp
+        self.assertFalse(os.path.exists(os.path.join(potacommon.DATA_DIR, "spots-20261020.jsonl")))
+
     def test_no_and_manual(self):
         uid = qsolog.upsert(rec("JA1AAA", "041000", P2P_CANDIDATE="JP-0001"), None, "x")
         qsolog.set_p2p(uid, "no", "")

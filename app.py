@@ -32,8 +32,8 @@ from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, base_call, data
                         save_settings, split_parks)
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
-from spots import (SESSION_MARGIN, SpotLogger, common_locations, countries, example_parks, history_parks, park_info,
-                   shipped_parks, summarize, tag_candidate)
+from spots import (SESSION_MARGIN, SpotLogger, clear_records, common_locations, countries, example_parks, history_parks,
+                   park_info, shipped_parks, summarize, tag_candidate)
 from window import BarMode
 
 SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "p2p_auto", "lookup", "on_top")   # "live" is set by start_live/finish_live only
@@ -479,8 +479,12 @@ class Api:
         return {"ok": True, "uid": new_uid}
 
     def delete_qso(self, uid):
+        """Delete one contact (the editor, the 履歴 page) with the copy another program sent of it."""
+        twins = qsolog.twins(uid)
         if not qsolog.delete_uid(uid):
             return {"ok": False, "error": t("api.qsoNotFound")}
+        for u in twins:
+            qsolog.delete_uid(u)
         return {"ok": True, "log_count": qsolog.count()}
 
     def delete_activation(self, date):
@@ -493,6 +497,21 @@ class Api:
         n = 0
         for r, _, _ in find_activation_qsos(qsolog.records([date]), dates=[date]):
             n += 1 if qsolog.delete(None, r.get("CALL"), r.get("QSO_DATE"), r.get("TIME_ON")) else 0   # a QSO, not its copies
+        return {"ok": True, "n": n, "log_count": qsolog.count()}
+
+    def qso_history(self):
+        """履歴 page: every QSO the app has received, newest first (qsolog.history); read-only."""
+        return qsolog.history()
+
+    def clear_app_data(self):
+        """設定 → アプリ: delete the app's own QSO log, P2P decisions, session windows and spot recordings.
+        Not while a session is open (it lives in them) - settings.live, not the spot thread, which may have
+        stopped while the session goes on. Settings, imported CSVs and hunter.json stay."""
+        if self._recording() or load_settings().get("live"):
+            return {"ok": False, "error": t("api.clearRecording")}
+        n = qsolog.clear()
+        clear_records()
+        self._hunted = (0, None)
         return {"ok": True, "n": n, "log_count": qsolog.count()}
 
     def pick_out(self):

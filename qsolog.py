@@ -224,6 +224,31 @@ def records(dates=None):
     return dedupe([json.loads(r[0]) for r in rows])
 
 
+def history():
+    """Every live contact, newest first, one per contact, for the 履歴 page:
+    [{uid, date, time, call, band, mode, my: [parks], their: [parks], p2p, source}] - their parks only
+    once the operator decided (decided_parks)."""
+    with _conn() as con:
+        rows = con.execute("SELECT uid, source, data FROM qso WHERE deleted=0 ORDER BY qso_date, time_on").fetchall()
+    recs = []
+    for uid, source, data in rows:
+        r = json.loads(data)
+        r["_uid"], r["_source"] = uid, source or ""
+        recs.append(r)
+    out = [{"uid": r["_uid"], "date": r.get("QSO_DATE", ""), "time": (r.get("TIME_ON") or "")[:4],
+            "call": r.get("CALL", ""), "band": r.get("BAND", ""), "mode": mode_of(r),
+            "my": split_parks(r.get("MY_SIG_INFO") or r.get("MY_POTA_REF") or ""),
+            "their": decided_parks(r)[1], "p2p": r.get("P2P_DECISION") or "", "source": r["_source"]}
+           for r in dedupe(recs)]
+    return out[::-1]
+
+
+def clear():
+    """Delete every stored QSO for good (設定 → このアプリの内部データを削除). -> how many rows went."""
+    with _conn() as con:
+        return con.execute("DELETE FROM qso").rowcount
+
+
 def between(t0, t1=None):
     """Records whose time is within [t0, t1] (minutes, see potacommon.minutes; t1=None: up to now)."""
     out = []

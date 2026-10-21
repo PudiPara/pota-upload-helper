@@ -52,6 +52,10 @@
         <span data-i18n="nav.build">アップロード作成</span>
         <small data-i18n="nav.build.sub">pota.app 用ファイル</small>
       </button>
+      <button class="nav-item" data-view="history">
+        <span data-i18n="nav.history">履歴</span>
+        <small data-i18n="nav.history.sub">このアプリが受け取った交信</small>
+      </button>
       <button class="nav-item" data-view="record">
         <span data-i18n="cfg.mypota.h">POTA の実績</span>
         <small data-i18n="nav.record.sub">ハント・アクティベートした公園</small>
@@ -247,6 +251,18 @@
       </section>
     </section>
 
+    <!-- ======================= history (履歴) ======================= -->
+    <section class="view" id="view-history" hidden>
+      <h1 class="view-title" data-i18n="hist.title">交信の履歴</h1>
+      <p class="hint hist-lede" data-i18n="hist.lede"></p>
+      <div class="filters">
+        <input id="histSearch" placeholder="コール・公園番号で絞る" data-i18n-ph="spots.search.ph" spellcheck="false" autocomplete="off">
+        <span class="muted" id="histCount"></span>
+      </div>
+      <ol class="recs hist" id="histList"></ol>
+      <div class="empty" id="histNone" hidden><p data-i18n="hist.none">まだ交信がありません。</p></div>
+    </section>
+
     <!-- ======================= record (実績) ======================= -->
     <section class="view" id="view-record" hidden>
       <h1 class="view-title" data-i18n="cfg.mypota.h">POTA の実績</h1>
@@ -349,6 +365,11 @@
             <button class="link" id="openData" data-i18n="rail.openData">データの保存場所を開く</button>
             <button class="link" id="termsLink" data-i18n="terms.link">利用規約と免責事項</button>
           </div>
+        </section>
+        <section class="cfg-block" data-tab="app">
+          <h2 data-i18n="cfg.data.h">内部データ</h2>
+          <p class="cfg-help" data-i18n="cfg.data.p"></p>
+          <button class="btn btn-danger" id="clearData" data-i18n="cfg.data.clear">内部データを削除</button>
         </section>
       </div>
     </section>

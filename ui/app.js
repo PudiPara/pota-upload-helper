@@ -41,6 +41,7 @@
     if (!$("#liveRun").hidden) { renderQsos(); renderSpots(); }
     if (!$("#view-spots").hidden) { spotsOptions(); renderSpotsPage(); }
     if (!$("#view-record").hidden) renderRecord();
+    if (!$("#view-history").hidden) renderHistory();
     if (st.source) renderActs({ items: st.acts, path: st.adif }, st.source === "adif" && !st.adif);
   }
 
@@ -105,12 +106,13 @@
   // ---------- navigation ----------
   function show(view) {
     $$(".nav-item").forEach((b) => b.classList.toggle("is-active", b.dataset.view === view));
-    ["live", "spots", "build", "record", "config"].forEach((v) => ($("#view-" + v).hidden = v !== view));
+    ["live", "spots", "build", "history", "record", "config"].forEach((v) => ($("#view-" + v).hidden = v !== view));
     $(".main").scrollTo(0, 0);
     if (view === "build" && st.source === "app") loadActs();
     if (view === "config") api.poll_live(1e12, 1e12).then((r) => updateReceiver(r.receiver));
     if (view === "spots") loadSpotsPage();
     if (view === "record") loadRecord();
+    if (view === "history") loadHistory();
   }
   $$(".nav-item").forEach((b) => b.addEventListener("click", () => show(b.dataset.view)));
 
@@ -824,7 +826,7 @@
       : (r.added ? "" : src("rec.src.csv", false)) + (r.app ? src("rec.appDays", true, { n: r.app }) : "") +
         `<span>${esc(t("rec.acts", { done: r.activations, n: r.attempts }))}</span><span>${esc(t("rec.qsos", { n: r.qsos }))}</span>`;
     return `<li class="rec">
-      <span class="rec-date">${esc(r.first || "")}</span>
+      <span class="rec-date">${esc((rec.kind === "hunted" ? r.first : r.last) || "")}</span>
       <span class="rec-park"><span class="flag">${flagOf(r.ref.split("-")[0])}</span>${plate(r.ref)}<span class="rec-name" title="${esc(r.name || "")}">${esc(r.name || "")}</span></span>
       <span class="rec-meta">${meta}</span></li>`;
   }
@@ -846,6 +848,49 @@
   $("#recAdded").addEventListener("change", (e) => { rec.added = e.target.checked; renderRecord(); });
   $("#recPick").addEventListener("click", importMypota);
   $("#recReimport").addEventListener("click", importMypota);
+
+  // ---------- 履歴: what the app received (qsolog.history), read-only; grouped by UTC day ----------
+  const hist = { rows: [], q: "" };
+  async function loadHistory() { hist.rows = await api.qso_history(); renderHistory(); }
+  function renderHistory() {
+    const q = hist.q.trim().toUpperCase();
+    const rows = hist.rows.filter((r) => !q || r.call.toUpperCase().includes(q) || r.my.concat(r.their).some((p) => p.includes(q)));
+    const per = {};
+    rows.forEach((r) => (per[r.date] = (per[r.date] || 0) + 1));
+    let day = "", html = "";
+    for (const r of rows) {
+      if (r.date !== day) {
+        day = r.date;
+        html += `<li class="hist-day"><b>${esc(`${day.slice(0, 4)}-${day.slice(4, 6)}-${day.slice(6, 8)}`)}</b><span>${esc(t("rec.qsos", { n: per[day] }))}</span></li>`;
+      }
+      const p2p = r.their.length ? `<span class="hist-p2p">P2P</span>${plates(r.their)}`
+        : r.p2p === "no" ? `<span class="muted">${esc(t("hist.noP2p"))}</span>` : "";
+      html += `<li class="hist-row"><span class="rec-date">${hhmm(r.time)}Z</span><span class="hist-call">${esc(r.call)}</span>
+        <span class="hist-bm">${esc(r.band)} ${esc(r.mode)}</span><span class="hist-parks">${plates(r.my)}</span>
+        <span class="hist-their">${p2p}</span><span class="hist-src">${esc(r.source)}</span>
+        <button type="button" class="link hist-del" data-uid="${esc(r.uid)}">${esc(t("ed.delete"))}</button></li>`;
+    }
+    $("#histList").innerHTML = html;
+    $("#histList").hidden = !rows.length; $("#histNone").hidden = rows.length > 0;
+    $("#histCount").textContent = t("hist.count", { n: rows.length });
+  }
+  $("#histSearch").addEventListener("input", (e) => { hist.q = e.target.value; renderHistory(); });
+  $("#histList").addEventListener("click", async (e) => {         // one contact, with its copies (two presses)
+    const b = e.target.closest(".hist-del");
+    if (!b || !secondPress(b, t("build.deleteArmed"), t("ed.delete"))) return;
+    const r = await api.delete_qso(b.dataset.uid);
+    if (!r.ok) { toast(r.error); return; }
+    hist.rows = hist.rows.filter((x) => x.uid !== b.dataset.uid); renderHistory();
+    setLogCount(r.log_count); toast(t("ed.deleted"));
+  });
+
+  // 設定 → アプリ → 内部データ: the app's QSO log, decisions, sessions and spot recordings (two presses)
+  $("#clearData").addEventListener("click", async (e) => {
+    if (!secondPress(e.currentTarget, t("cfg.data.armed"), t("cfg.data.clear"), 6000)) return;
+    const r = await api.clear_app_data();
+    if (!r.ok) { toast(r.error); return; }
+    setLogCount(r.log_count); toast(t("cfg.data.done", { n: r.n }));
+  });
   $("#onTop").addEventListener("change", (e) => api.set_on_top(e.target.checked));
 
   // ---------- click a park plate or a callsign: copy, or open it on the web ----------

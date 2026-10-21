@@ -109,24 +109,28 @@ def new_parks(parks, first, at=None):
 
 # ---------------------------------------------------------------- activated
 def _activated(app_days=()):
-    """{ref: {first, qsos, attempts, activations, added, app}}: activator_parks.csv plus the app log's
-    activation days after the import day (the CSV already counts the rest; every day without a CSV).
-    app_days: [(YYYYMMDD, {park: qsos})]; added = a park the CSV does not have, app = days added."""
+    """{ref: {first, last, qsos, attempts, activations, added, app}}: activator_parks.csv plus the app
+    log's activation days after the import day (the CSV already counts the rest; every day without a CSV).
+    app_days: [(YYYYMMDD, {park: qsos})]; added = a park the CSV does not have, app = days added,
+    last = the latest day known (the app log, any day; the CSV has only the first)."""
     data = _load().get("activator") or {}
     since = (data.get("at") or "")[:10].replace("-", "")
-    out = {ref: dict(r, added=False, app=0) for ref, r in (data.get("parks") or {}).items()}
+    out = {ref: dict(r, added=False, app=0, last=r["first"]) for ref, r in (data.get("parks") or {}).items()}
     per_day = {}
     for day, per in app_days:                      # one activation per park and UTC day
         for ref, n in per.items():
             per_day[(day, ref)] = per_day.get((day, ref), 0) + n
     for (day, ref), n in sorted(per_day.items()):
+        iso = "%s-%s-%s" % (day[:4], day[4:6], day[6:])
+        if n and ref in out:
+            out[ref]["last"] = max(out[ref]["last"], iso)
         if n and day > since:
-            r = out.setdefault(ref, {"first": "", "qsos": 0, "attempts": 0, "activations": 0, "added": True, "app": 0})
+            r = out.setdefault(ref, {"first": "", "last": iso, "qsos": 0, "attempts": 0, "activations": 0, "added": True, "app": 0})
             r["attempts"] += 1
             r["activations"] += 1 if n >= ACTIVATED_MIN else 0
             r["qsos"] += n
             r["app"] += 1
-            r["first"] = r["first"] or "%s-%s-%s" % (day[:4], day[4:6], day[6:])
+            r["first"] = r["first"] or iso
     return out
 
 
@@ -141,14 +145,14 @@ def activations(ref, app_days=()):
 
 # ---------------------------------------------------------------- the 実績 page
 def record(app_records=(), app_days=()):
-    """{"hunted": [{ref, first, source, qsos, added}], "activated": [{ref, first, attempts, activations,
-    qsos, added, app}], "imported": status()} - newest first. added = not in the imported CSV: hunted
+    """{"hunted": [{ref, first, source, qsos, added}], "activated": [{ref, first, last, attempts,
+    activations, qsos, added, app}], "imported": status()} - newest first (activated: by last). added = not in the imported CSV: hunted
     or activated since, found by this app (its P2P log / activations) or pota.app's hunter log."""
     csv_hunt = (_load().get("hunter") or {}).get("parks") or {}
     hunted = [{"ref": ref, "first": "%s-%s-%s" % (ts[:4], ts[4:6], ts[6:8]), "source": src,
                "qsos": (csv_hunt.get(ref) or {}).get("qsos"), "added": ref not in csv_hunt}
               for ref, (ts, src) in _hunts(app_records).items()]
     activated = [dict(r, ref=ref) for ref, r in _activated(app_days).items()]
-    for rows in (hunted, activated):
-        rows.sort(key=lambda r: (r["first"], r["ref"]), reverse=True)
+    hunted.sort(key=lambda r: (r["first"], r["ref"]), reverse=True)
+    activated.sort(key=lambda r: (r["last"], r["ref"]), reverse=True)
     return {"hunted": hunted, "activated": activated, "imported": status()}

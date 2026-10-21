@@ -69,6 +69,9 @@ class MyPota(unittest.TestCase):
         self.assertEqual((a["JP-1281"]["attempts"], a["JP-1281"]["added"], a["JP-1281"]["app"]), (25, False, 1))
         # two entries of one day are one activation: 3 + 8 QSOs = 11, a success
         self.assertEqual((a["JP-0009"]["attempts"], a["JP-0009"]["activations"], a["JP-0009"]["added"]), (1, 1, True))
+        self.assertEqual((a["JP-1281"]["first"], a["JP-1281"]["last"]), ("2025-06-08", "2099-10-21"))
+        rec2 = mypota.record([], [("20200101", {"JP-1281": 12})])       # before the import: not counted, still the last day
+        self.assertEqual({r["ref"]: r for r in rec2["activated"]}["JP-1281"]["attempts"], 24)
 
 
 if __name__ == "__main__":

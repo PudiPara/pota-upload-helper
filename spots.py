@@ -252,6 +252,19 @@ def load_spots():
     return out
 
 
+def clear_records():
+    """Delete sessions.json and every spots-YYYYMMDD.jsonl (the recordings of past sessions). -> files removed."""
+    paths = [data_path("sessions.json")] + glob.glob(data_path("spots-*.jsonl"))
+    n = 0
+    for p in paths:
+        try:
+            os.remove(p)
+            n += 1
+        except OSError:
+            pass
+    return n
+
+
 def load_sessions():
     """[(start minute - SESSION_MARGIN, end minute + SESSION_MARGIN, [my parks])] from sessions.json."""
     return [(iso_minutes(s["start"]) - SESSION_MARGIN, iso_minutes(s["end"]) + SESSION_MARGIN, s["parks"])
