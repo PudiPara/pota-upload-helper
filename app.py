@@ -27,7 +27,7 @@ import qsolog
 import updater
 from builder import build, find_activation_qsos, list_activations
 from i18n import t
-from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, base_call, data_path, fetch_json, iso_date,
+from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, base_call, data_path, fetch_json, grid_center, iso_date,
                         iso_minutes, load_settings, lock_instance, mode_of, my_call, read_adif, rec_minutes, resource,
                         save_settings, split_parks)
 from qsolog import decided_parks
@@ -378,9 +378,10 @@ class Api:
         (no pota.app request, so a long list stays instant)."""
         recs = qsolog.records()
         days = [(d, per) for d, _, _, per, _ in list_activations(recs=recs)]
-        rec, names = mypota.record(recs, days), shipped_parks()
+        rec, parks = mypota.record(recs, days), shipped_parks()
         for row in rec["hunted"] + rec["activated"]:
-            row["name"] = (names.get(row["ref"]) or ("",))[0]
+            name, _, grid = parks.get(row["ref"]) or ("", "", "")
+            row["name"], row["at"] = name, grid_center(grid)          # at: [lat, lon] for the map, or None
         return rec
 
     def import_mypota(self):

@@ -13,7 +13,7 @@ API = "https://api.pota.app"
 PARK_RE = re.compile(r"\b([A-Z0-9]{1,4}-\d{4,5})\b")
 APP_NAME = "Potaroo"
 OLD_NAME = "POTA Upload Helper"      # the name until 2.0.0: its data folder is moved over on first start
-VERSION = "2.0.19"
+VERSION = "2.0.20"
 
 
 def _moved(new, old):
@@ -207,6 +207,20 @@ def base_call(call):
 
 def parks_in(text):
     return PARK_RE.findall((text or "").upper())
+
+
+def grid_center(grid):
+    """(lat, lon) of the middle of a Maidenhead locator ("PM95rq", 4 or 6 characters), or None."""
+    g = (grid or "").strip().upper()
+    if len(g) not in (4, 6) or not ("A" <= g[0] <= "R" and "A" <= g[1] <= "R" and g[2:4].isdigit()):
+        return None
+    lon = (ord(g[0]) - 65) * 20 - 180 + int(g[2]) * 2
+    lat = (ord(g[1]) - 65) * 10 - 90 + int(g[3])
+    if len(g) == 6:
+        if not ("A" <= g[4] <= "X" and "A" <= g[5] <= "X"):
+            return None
+        return round(lat + (ord(g[5]) - 65) / 24 + 1 / 48, 4), round(lon + (ord(g[4]) - 65) / 12 + 1 / 24, 4)
+    return lat + .5, lon + 1
 
 
 def split_parks(value):

@@ -842,6 +842,31 @@
     const rows = d[rec.kind].filter((r) => (!rec.added || r.added) && (!q || r.ref.includes(q) || (r.name || "").toUpperCase().includes(q)));
     $("#recList").innerHTML = rows.map(recRow).join("");
     $("#recList").hidden = !rows.length; $("#recNone").hidden = rows.length > 0;
+    drawRecordMap(rows);
+  }
+  // The same rows on an OpenStreetMap map (Leaflet, ui/vendor): grey = from the CSV, green = this app.
+  // Park positions come from the shipped park list (grid); only the map tiles are fetched.
+  function drawRecordMap(rows) {
+    const Lf = window.L;                      // Leaflet (L in this file is the dictionary)
+    if (!Lf) return;
+    if (!rec.map) {
+      rec.map = Lf.map("recMap", { preferCanvas: true, worldCopyJump: true, zoomControl: true }).setView([20, 0], 2);
+      Lf.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(rec.map);
+      rec.dots = Lf.layerGroup().addTo(rec.map);
+    }
+    rec.map.invalidateSize();
+    rec.dots.clearLayers();
+    const pts = [];
+    for (const r of [...rows].sort((a, b) => a.added - b.added)) {     // green on top of grey
+      if (!r.at) continue;
+      pts.push(r.at);
+      Lf.circleMarker(r.at, { radius: 5, weight: 1, color: "#fff", fillOpacity: .9, fillColor: r.added ? "#2F9E6B" : "#7D8A83" })
+        .bindTooltip(`${esc(r.ref)} ${esc(r.name || "")}`).addTo(rec.dots);
+    }
+    // frame the dots when the list changes kind or filter, not on every redraw of the same list
+    const key = rec.kind + "|" + rec.q + "|" + rec.added + "|" + pts.length;
+    if (pts.length && key !== rec.framed) { rec.map.fitBounds(pts, { padding: [24, 24], maxZoom: 9 }); rec.framed = key; }
   }
   $$(".rec-kind button").forEach((b) => b.addEventListener("click", () => { rec.kind = b.dataset.kind; segSet(".rec-kind", "kind", rec.kind); renderRecord(); }));
   $("#recSearch").addEventListener("input", (e) => { rec.q = e.target.value; renderRecord(); });

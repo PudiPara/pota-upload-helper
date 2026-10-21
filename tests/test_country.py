@@ -27,3 +27,12 @@ class CountryTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class GridTest(unittest.TestCase):
+    def test_grid_center(self):
+        from potacommon import grid_center
+        self.assertEqual(grid_center("PM95rq"), (35.6875, 139.4583))      # Fuchu, Tokyo
+        self.assertEqual(grid_center("fn54VH"), (44.3125, -68.2083))      # Acadia
+        self.assertEqual(grid_center("PM95"), (35.5, 139))
+        self.assertIsNone(grid_center("")); self.assertIsNone(grid_center("ZZ99aa")); self.assertIsNone(grid_center("PM95zz"))

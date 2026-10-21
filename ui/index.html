@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Potaroo</title>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -281,6 +282,7 @@
           <input id="recSearch" placeholder="公園番号・名前で絞る" data-i18n-ph="rec.search.ph" spellcheck="false" autocomplete="off">
           <label class="switch switch-sm"><input type="checkbox" id="recAdded"><span class="switch-ui"></span><span data-i18n="rec.addedOnly">読み込み後に増えた公園のみ</span></label>
         </div>
+        <div class="rec-map" id="recMap"></div>
         <ol class="recs" id="recList"></ol>
         <div class="empty" id="recNone" hidden><p data-i18n="rec.none">条件に合う公園がありません。</p></div>
       </div>
@@ -412,6 +414,7 @@
     <div class="modal-actions"><button class="btn btn-primary" id="termsAccept" data-i18n="terms.accept">同意して使う</button></div>
   </div>
 </div>
+<script src="vendor/leaflet/leaflet.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -197,6 +197,9 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .btn-danger { color: var(--warn); border-color: var(--warn); }
 .btn-danger.is-armed { background: var(--warn); color: #fff; }
 /* 実績 page */
+.rec-map { height: 340px; border: 1px solid var(--line); border-radius: var(--r-md); margin-bottom: 12px; overflow: hidden; z-index: 0; background: var(--surface); }
+.rec-map .leaflet-container { font: inherit; }
+@media (prefers-color-scheme: dark) { .rec-map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9); } }
 .rec-note { display: flex; gap: 14px; align-items: center; background: var(--amber-bg); border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: var(--r-md); padding: 10px 14px; margin-bottom: 14px; }
 .rec-note p { margin: 0; font-size: 12.5px; text-wrap: pretty; }
 .rec-note .btn { flex: none; padding: 6px 12px; font-size: 12.5px; }
