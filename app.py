@@ -177,6 +177,10 @@ class Api:
     def _on_qso(self, action, rec, ext_id, listener):
         """A logger reported a QSO (or deleted one). Store it, tag it with my park and the spot
         candidate, and queue an event for the live view."""
+        if action == "backfill":      # HAMLOG read back after a restart: never overwrite (parks, a delete)
+            if qsolog.known(qsolog.make_uid(rec)):
+                return
+            action = "upsert"
         if action == "delete":
             n = qsolog.delete(ext_id, rec.get("CALL"), rec.get("QSO_DATE"), rec.get("TIME_ON"))
             ev = {"action": "delete", "call": rec.get("CALL"), "date": rec.get("QSO_DATE"),

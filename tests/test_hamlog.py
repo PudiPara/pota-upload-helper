@@ -43,5 +43,47 @@ class DeletionsFollowHamlog(unittest.TestCase):
         self.assertEqual([x["CALL"] for x in seen], ["JA1AAA", "JA1CCC"])
 
 
+class ReadBackAfterRestart(unittest.TestCase):
+    def test_read_back_records_are_backfill_and_new_ones_upsert(self):
+        import datetime as dt
+        import receiver
+        now = dt.datetime.utcnow()
+        def rec(call, mins_ago):
+            t = now - dt.timedelta(minutes=mins_ago)
+            return {"CALL": call, "QSO_DATE": t.strftime("%Y%m%d"), "TIME_ON": t.strftime("%H%M%S"), "BAND": "40m", "MODE": "CW"}
+        log = [rec("JA1OLD", 60 * 24), rec("JA1AAA", 30), rec("JA1BBB", 20)]
+        got = []
+        r = receiver.Receiver([], lambda a, rc, uid, name: got.append((a, rc["CALL"])))
+        r.HAMLOG_POLL = 0
+
+        class Fake:
+            calls = 0
+            def count(self):
+                Fake.calls += 1
+                if Fake.calls == 2:
+                    log.append(rec("JA1NEW", 0))      # logged while we watch
+                if Fake.calls == 3:
+                    r._stop.set()
+                return len(log)
+            def record(self, i):
+                return log[i - 1] if 1 <= i <= len(log) else None
+        r._poll_hamlog(Fake(), "Turbo HAMLOG", lambda *a, **k: None)
+        self.assertEqual(got, [("backfill", "JA1AAA"), ("backfill", "JA1BBB"), ("upsert", "JA1NEW")])
+
+
+@unittest.skipUnless(os.name == "nt", "Windows only")
+class ClientAfterRestart(unittest.TestCase):
+    def test_a_second_client_gets_its_own_replies(self):
+        import ctypes
+        for text in ("first", "second"):          # a listener restart makes a new Client
+            c = hamlog.Client()
+            buf = ctypes.create_string_buffer(text.encode() + b"\0")
+            cds = c.CDS(0, len(buf), ctypes.cast(buf, ctypes.c_void_p))
+            res = ctypes.c_size_t(0)
+            c.u.SendMessageTimeoutW(c.hwnd, hamlog.WM_COPYDATA, 0, ctypes.addressof(cds), 2, 1000, ctypes.byref(res))
+            self.assertEqual(c._reply, text)
+            c.close()
+
+
 if __name__ == "__main__":
     unittest.main()

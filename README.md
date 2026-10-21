@@ -68,6 +68,19 @@ zip 版（`POTA-Upload-Helper-macOS.zip` / `POTA-Upload-Helper-Windows.zip`）�
 
 **Windows で WSJT-X / JTDX のマルチキャストを使う場合**：Windows ではマルチキャストの受信口もループバック（`127.0.0.1`）で待ち受けます。WSJT-X の Settings → Reporting → **Outgoing interfaces** に **loopback** を含めてください。この組み合わせは Windows 11 で動作を確認しています。届かないときは [Issue](../../issues) で知らせてもらえると助かります。マルチキャストを使わず、WSJT-X の UDP Server を `127.0.0.1` にする方法なら確実に受け取れます（ただしその場合、ほかのアプリと同時には受け取れません）。
 
+**WSJT-X と一緒に使うロガーの設定**（Windows 11 で確認。FT8 の途中に CW・SSB・FM を混ぜても、1 件ずつ正しく入ります）：
+
+| ロガー | WSJT-X からの受け取り | アプリへの渡し方 |
+|---|---|---|
+| JT_Linker + Turbo HAMLOG | JT_Linker が WSJT-X のログファイルを見て HAMLOG に登録 | 受信口「Turbo HAMLOG」 |
+| N1MM Logger+ | Config → Configure Ports → WSJT/JTDX Setup の Radio #1 を Enable（ユニキャストなら `127.0.0.1`、マルチキャストなら `224.0.0.1`、ポート 2237） | Broadcast Data → Contacts を `127.0.0.1:受信口のポート` |
+| QLog | Settings → Network の Wsjtx Port 2237（マルチキャストなら Join Multicast をオンにして Multicast Address に `224.0.0.1`） | Notifications → QSO Changes を `127.0.0.1:受信口のポート` |
+
+WSJT-X の QSO はアプリにも直接届き（WSJT-X の受信口）、ロガー経由の分と合わせて 1 件にまとまります。マルチキャストで複数のソフトに同時に配るときは、次の点に注意してください。
+
+- **QLog と N1MM は、ほかのソフトより先に起動してください。** 2237 番をほかのソフトと共有する設定で開かないため、後から起動すると「使用中」になって受け取れません。
+- **Turbo HAMLOG も 2237 番を開きます。** JT_Linker と併用すると HAMLOG が「2 回目の QSO」として登録を尋ねてくることがあります。そのときは「いいえ」にしてください。QLog・N1MM と同時には使えません（後から起動した HAMLOG がエラーになります）。
+
 ほかのアプリ（OpsLog など）にも同じデータを渡したいときは、受信口の「転送先」にそのアプリのアドレスとポートを入れます。
 
 **両方オンでも二重にはなりません**：WSJT-X の QSO は、WSJT-X から直接と、ロガーが受けて送り直した分の 2 回届きます（開始時刻と終了時刻で 1 分ほどずれます）。同じコール・同じバンドで時刻の差が 3 分以内なら同じ交信として 1 件にまとめ、P2P の判断や削除も両方に反映します。逆に、同じ局と同じバンドで 3 分以内に 2 回交信した場合も 1 件になります。

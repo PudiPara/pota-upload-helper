@@ -59,6 +59,15 @@ def upsert(rec, ext_id=None, source=""):
     return uid
 
 
+def known(uid):
+    """True when this QSO was ever stored (deleted ones too)."""
+    with _lock:
+        con = _db()
+        row = con.execute("SELECT 1 FROM qso WHERE uid=?", (uid,)).fetchone()
+        con.close()
+    return bool(row)
+
+
 P2P_KEYS = ("P2P_DECISION", "P2P_CANDIDATE", "SIG", "SIG_INFO", "POTA_REF")
 
 
