@@ -45,7 +45,7 @@
   "live.loc.pick": "Escolha a província / o estado",
   "live.err.loc": "Este parque abrange várias províncias / estados. Escolha onde você está.",
   "live.err.noLoc": "Estes parques não têm província / estado em comum.",
-  "live.warn.apart": "Segundo o pota.app, {a} e {b} não se sobrepõem. Confira se este 2fer é possível.", "live.note.spread": "Os pontos de referência dos parques estão a {d} de distância (aqui cada parque é um só ponto). Só vale como 2fer / 3fer se você estiver dentro de todos os parques ao mesmo tempo.",
+  "live.warn.apart": "Segundo as informações do pota.app, {a} e {b} não se sobrepõem, então não podem ser registrados como 2fer.", "live.note.spread": "Os pontos de referência dos parques estão a {d} de distância (aqui cada parque é um só ponto). Só vale como 2fer / 3fer se você estiver dentro de todos os parques ao mesmo tempo.",
   "live.toBar": "Modo barra", "live.finish": "Encerrar a ativação neste parque", "live.finishArmed": "Encerrar com {n} sem confirmar",
   "live.working": "Gerando…",
   "live.qsoNote.done": "Ativação concluída ({n} combinações estação/banda/modo)", "live.qsoNote.left": "Faltam {n} QSOs para concluir a ativação",
