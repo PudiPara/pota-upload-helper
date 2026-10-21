@@ -66,7 +66,7 @@
   "row.note.stale": "Spot ist älter",
   "row.note.unsure": "2fer vermutet", "row.yes": "Ja, P2P", "row.no": "Nein", "row.manual": "Eintippen", "row.change": "Ändern",
   "row.record": "Speichern", "row.cancel": "Abbrechen", "row.none": "Kein P2P", "row.ph": "Gegenpark, z. B. {cc}-0000",
-  "cheer.sub": "Aktivierung geschafft", "cheer.next": "Nächstes Ziel: {n} QSOs",
+  "cheer.sub": "Aktivierung geschafft", "cheer.next": "Nächstes Ziel: {n} QSOs", "close.title": "App schließen?", "close.live": "Eine Aktivierung läuft. Schließen beendet sie nicht: die Aufzeichnung geht beim nächsten Start weiter.", "close.edit": "Der QSO-Editor ist geöffnet.", "close.go": "Schließen", "close.cancel": "Abbrechen",
   "done.title.files": "{parks} beendet. {n} Datei(en) geschrieben", "done.title.nofiles": "{parks} beendet",
   "done.fail.title": "Aufzeichnung beendet, aber die Datei konnte nicht geschrieben werden", "done.fail.body": "Unter „Upload-Dateien“ kannst du sie neu erzeugen.",
   "done.close": "Schließen", "done.open": "Ordner öffnen", "done.pota": "pota.app öffnen",

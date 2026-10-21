@@ -66,7 +66,7 @@
   "row.note.stale": "spot 已不是最新",
   "row.note.unsure": "2fer 为推测", "row.yes": "是，P2P", "row.no": "否", "row.manual": "手动输入", "row.change": "更改",
   "row.record": "记录", "row.cancel": "取消", "row.none": "不是 P2P", "row.ph": "对方公园 {cc}-0000",
-  "cheer.sub": "激活成功", "cheer.next": "下一个目标：{n} QSO",
+  "cheer.sub": "激活成功", "cheer.next": "下一个目标：{n} QSO", "close.title": "要关闭应用吗？", "close.live": "正在运行中。关闭不会结束运行，下次启动时会继续记录。", "close.edit": "QSO 编辑界面已打开。", "close.go": "关闭", "close.cancel": "取消",
   "done.title.files": "{parks} 的运用已结束。已生成 {n} 个文件", "done.title.nofiles": "{parks} 的运用已结束",
   "done.fail.title": "记录已停止，但无法生成文件", "done.fail.body": "可以在“生成上传文件”页重新生成。",
   "done.close": "关闭", "done.open": "打开保存位置", "done.pota": "打开 pota.app",

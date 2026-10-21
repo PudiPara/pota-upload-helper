@@ -66,7 +66,7 @@
   "row.note.stale": "spot nie jest świeży",
   "row.note.unsure": "2fer to przypuszczenie", "row.yes": "Tak, P2P", "row.no": "Nie", "row.manual": "Wpisz", "row.change": "Zmień",
   "row.record": "Zapisz", "row.cancel": "Anuluj", "row.none": "Nie P2P", "row.ph": "Jego park, np. {cc}-0000",
-  "cheer.sub": "Aktywacja zaliczona", "cheer.next": "Następny cel: {n} QSO",
+  "cheer.sub": "Aktywacja zaliczona", "cheer.next": "Następny cel: {n} QSO", "close.title": "Zamknąć aplikację?", "close.live": "Trwa aktywacja. Zamknięcie jej nie kończy: zapis będzie kontynuowany przy następnym uruchomieniu.", "close.edit": "Edytor QSO jest otwarty.", "close.go": "Zamknij", "close.cancel": "Anuluj",
   "done.title.files": "{parks} zakończony. Zapisano {n} plik(ów)", "done.title.nofiles": "{parks} zakończony",
   "done.fail.title": "Zapis zatrzymany, ale nie udało się zapisać pliku", "done.fail.body": "Możesz utworzyć go ponownie w „Pliki do wysłania”.",
   "done.close": "Zamknij", "done.open": "Otwórz folder", "done.pota": "Otwórz pota.app",

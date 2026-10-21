@@ -87,7 +87,7 @@
  "row.cancel": "やめる",
  "row.none": "P2P ではない",
  "row.ph": "相手の公園 {cc}-0000",
- "cheer.sub": "アクティベーション成立", "cheer.next": "次は {n} QSO",
+ "cheer.sub": "アクティベーション成立", "cheer.next": "次は {n} QSO", "close.title": "アプリを閉じますか？", "close.live": "運用中です。閉じても運用は終了せず、次に起動したときに続きから記録します。", "close.edit": "QSO の編集画面が開いています。", "close.go": "閉じる", "close.cancel": "キャンセル",
  "done.title.files": "{parks} の運用を終了。{n} 個のファイルを作成しました",
  "done.title.nofiles": "{parks} の運用を終了しました",
  "done.fail.title": "記録は止めましたが、ファイルを作れませんでした",

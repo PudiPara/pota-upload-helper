@@ -235,7 +235,7 @@
     st.lastQ = Date.now() / 1000 - 1;
     renderSpots(); renderQsos();
     clearTimeout(st.timer); tick();
-    poll(); clearInterval(st.poll); st.poll = setInterval(poll, 2500);
+    st.pollOn = true; schedulePoll();
     if (!BAR) setBar(true);
     fillParkNames("#signParks", parks);
   }
@@ -256,6 +256,12 @@
     const tm = `${p(Math.floor(s / 3600))}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}`;
     $("#elapsed").textContent = tm; $("#barElapsed").textContent = tm;
     if (!BAR && s % 15 === 0) renderStats();      // "N 分前" and the last hour move on with the clock
+  }
+  // Poll every second on the second, in both windows: a QSO (and its celebration) shows in the main window
+  // and the bar at the same moment (separate 2.5 s timers put the bar up to 2.5 s behind)
+  function schedulePoll() {
+    clearTimeout(st.poll);
+    st.poll = setTimeout(async () => { try { await poll(); } finally { if (st.pollOn) schedulePoll(); } }, 1000 - (Date.now() % 1000) + 30);
   }
   async function poll() {
     const r = await api.poll_live(st.lastAt, st.lastQ);
@@ -529,7 +535,7 @@
     btns.forEach((b) => { b.disabled = true; b.textContent = t("live.working"); });
     const r = await api.finish_live(true);
     btns.forEach((b) => (b.disabled = false)); finishLabels();
-    clearTimeout(st.timer); clearInterval(st.poll);
+    clearTimeout(st.timer); st.pollOn = false; clearTimeout(st.poll);
     await setBar(false);
     $("#liveRun").hidden = true; $("#liveIdle").hidden = false; $("#liveDot").hidden = true;
     const card = $("#doneCard"); card.hidden = false;
@@ -661,7 +667,7 @@
   async function openEditor(date) {
     ed.date = date; ed.path = st.source === "adif" ? st.adif : null;
     $("#editorTitle").textContent = t("ed.title", { date: fmtDate(date) });
-    $("#editor").hidden = false;
+    $("#editor").hidden = false; api.set_busy("edit", true);
     await loadEditor();
   }
   async function loadEditor() {
@@ -695,7 +701,14 @@
       loadEditor();
     }));
   }
-  $("#editorClose").addEventListener("click", () => { $("#editor").hidden = true; loadActs(ed.path || undefined); });
+  $("#editorClose").addEventListener("click", () => { $("#editor").hidden = true; api.set_busy("edit", false); loadActs(ed.path || undefined); });
+  // closing the window while recording or editing: app.py's closing handler asks here first
+  window.potarooAskClose = (reasons) => {
+    $("#closeText").innerHTML = reasons.map((r) => `<p>${esc(t("close." + r))}</p>`).join("");
+    $("#closeModal").hidden = false; $("#closeCancel").focus();
+  };
+  $("#closeCancel").addEventListener("click", () => ($("#closeModal").hidden = true));
+  $("#closeGo").addEventListener("click", () => api.quit_app());
   $("#pickAdif").addEventListener("click", async () => { const r = await api.pick_adif(); if (r) renderActs(r); });
   $("#pickOut").addEventListener("click", async () => { const p = await api.pick_out(); if (p) { st.out = p; $("#outPath").textContent = p; } });
 
