@@ -17,7 +17,7 @@
   "cfg.calls.err": "A callsign is letters, digits and / only.",
   "cfg.calls.last": "The last callsign cannot be removed.",
   "cfg.lang.h": "Language", "cfg.tab.general": "General", "cfg.tab.qso": "QSOs", "cfg.country.h": "Country",
-  "cfg.app.h": "App",
+  "cfg.app.h": "App", "cfg.log.open": "Open the log", "cfg.log.p": "If something goes wrong, open the log, look it over, and attach it to your report (it contains callsigns and park references).", "report.open": "Report a problem", "report.title": "Report a problem", "report.p": "Check the text below and describe what happened before sending it. The log contains callsigns and park references; you can edit out anything. \"Report on GitHub\" needs a GitHub account, and the report is public. Without an account, copy it and send it to the author.", "report.copy": "Copy", "report.github": "Report on GitHub", "report.h.what": "What happened", "report.h.env": "Environment", "report.h.log": "Log (last {n} lines)", "report.issue": "Problem report",
   "cfg.look.h": "Display", "cfg.look.size": "Text size", "cfg.look.s1": "Standard", "cfg.look.s2": "Larger", "cfg.look.s3": "Largest", "cfg.look.theme": "Colors", "cfg.look.auto": "Match the OS", "cfg.look.light": "Light", "cfg.look.dark": "Dark", "cfg.look.p": "The text size and colors apply to the bar too.", "cfg.window.h": "Window",
   "cfg.window.ontop": "Keep the main window on top of other windows", "cfg.window.barTop": "Keep the bar on top of other windows",
   "cfg.window.p": "The bar is the small window that opens while you activate, kept over the logger.",

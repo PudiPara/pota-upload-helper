@@ -1,0 +1,28 @@
+name: Tests
+
+# Every pull request: the offline unit tests on both OSes, no build (build.yml tests and builds main).
+# A failure shows on the PR before anything is merged.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip pywebview
+      - run: python -m unittest discover -s tests -v

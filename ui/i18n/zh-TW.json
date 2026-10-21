@@ -14,7 +14,7 @@
   "cfg.calls.err": "呼號只能包含字母、數字和 /。",
   "cfg.calls.last": "最後一個呼號無法刪除。",
   "cfg.lang.h": "語言", "cfg.tab.general": "一般", "cfg.tab.qso": "通聯", "cfg.country.h": "所在國家/地區",
-  "cfg.app.h": "應用程式",
+  "cfg.app.h": "應用程式", "cfg.log.open": "開啟記錄檔", "cfg.log.p": "發生問題時，請按「開啟記錄檔」查看內容，並附在回報中（其中包含呼號和公園編號）。", "report.open": "回報問題", "report.title": "回報問題", "report.p": "請確認下面的內容，並寫下「發生了什麼」後再送出。記錄中包含呼號和公園編號，可以刪改。「在 GitHub 回報」需要 GitHub 帳號，回報會公開。沒有帳號時，請「複製」後傳給作者。", "report.copy": "複製", "report.github": "在 GitHub 回報", "report.h.what": "發生了什麼", "report.h.env": "環境", "report.h.log": "記錄（最後 {n} 行）", "report.issue": "問題回報",
   "cfg.look.h": "顯示", "cfg.look.size": "文字大小", "cfg.look.s1": "標準", "cfg.look.s2": "較大", "cfg.look.s3": "特大", "cfg.look.theme": "配色", "cfg.look.auto": "跟隨系統", "cfg.look.light": "淺色", "cfg.look.dark": "深色", "cfg.look.p": "文字大小和配色也會套用到運作列。", "cfg.window.h": "視窗",
   "cfg.window.ontop": "主視窗永遠顯示在其他視窗之前", "cfg.window.barTop": "運作列永遠顯示在其他視窗之前",
   "cfg.window.p": "運作列是運作時開啟的小視窗，放在日誌軟體上方使用。",

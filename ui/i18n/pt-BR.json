@@ -14,7 +14,7 @@
   "cfg.calls.err": "Um indicativo só tem letras, números e /.",
   "cfg.calls.last": "O último indicativo não pode ser removido.",
   "cfg.lang.h": "Idioma", "cfg.tab.general": "Geral", "cfg.tab.qso": "QSOs", "cfg.country.h": "País",
-  "cfg.app.h": "Aplicativo",
+  "cfg.app.h": "Aplicativo", "cfg.log.open": "Abrir o log", "cfg.log.p": "Se algo der errado, abra o log, confira e anexe ao seu relato (ele contém indicativos e referências de parques).", "report.open": "Relatar um problema", "report.title": "Relatar um problema", "report.p": "Confira o texto abaixo e descreva o que aconteceu antes de enviar. O log contém indicativos e referências de parques; você pode apagar o que quiser. \"Relatar no GitHub\" exige uma conta no GitHub e o relato é público. Sem conta, copie e envie ao autor.", "report.copy": "Copiar", "report.github": "Relatar no GitHub", "report.h.what": "O que aconteceu", "report.h.env": "Ambiente", "report.h.log": "Log (últimas {n} linhas)", "report.issue": "Relato de problema",
   "cfg.look.h": "Exibição", "cfg.look.size": "Tamanho do texto", "cfg.look.s1": "Padrão", "cfg.look.s2": "Maior", "cfg.look.s3": "Muito grande", "cfg.look.theme": "Cores", "cfg.look.auto": "Igual ao sistema", "cfg.look.light": "Claro", "cfg.look.dark": "Escuro", "cfg.look.p": "O tamanho do texto e as cores também valem para a barra.", "cfg.window.h": "Janela",
   "cfg.window.ontop": "Manter a janela principal sempre na frente", "cfg.window.barTop": "Manter a barra sempre na frente",
   "cfg.window.p": "A barra é a janela pequena aberta durante a ativação, sobre o programa de log.",
