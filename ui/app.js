@@ -90,8 +90,34 @@
 
   // ================================================================ live
   // Under the park input: the plate(s) plus the park name from pota.app (fetched after a pause in typing).
+  // One input per park: the first next to the start button, more below with 「公園を追加」.
+  // A pasted "JP-1266,JP-1206" is split into rows.
+  const parkInputs = () => [$("#parks"), ...$$("#parkExtra input")];
+  const parkValue = () => parkInputs().map((i) => i.value).join(",");
+  function addParkRow(value) {
+    const row = document.createElement("div"); row.className = "park-row";
+    row.innerHTML = `<input placeholder="JP-1206" spellcheck="false" autocomplete="off"><button class="link" type="button">${esc(t("ed.delete"))}</button>`;
+    const inp = row.querySelector("input"); inp.value = value || "";
+    inp.addEventListener("input", onParkInput);
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") startLive(); });
+    row.querySelector("button").addEventListener("click", () => { row.remove(); renderPreview(); });
+    $("#parkExtra").appendChild(row);
+    return inp;
+  }
+  function setParks(value) {
+    const parks = splitParks(value);
+    $("#parkExtra").innerHTML = "";
+    $("#parks").value = parks[0] || String(value || "").split(/[,\s;]+/)[0] || "";
+    parks.slice(1).forEach((p) => addParkRow(p));
+    renderPreview();
+  }
+  function onParkInput(e) {
+    if (/[,;\s]/.test(e.target.value.trim())) { setParks(parkValue()); return; }   // pasted a list
+    renderPreview();
+  }
+  $("#parkAdd").addEventListener("click", () => addParkRow("").focus());
   function renderPreview() {
-    const parks = splitParks($("#parks").value);
+    const parks = splitParks(parkValue());
     $("#parksPreview").innerHTML = parks.map((p) => `${plate(p)}<span class="park-name" data-ref="${esc(p)}"></span>`).join("");
     clearTimeout(renderPreview.h);
     if (parks.length) renderPreview.h = setTimeout(async () => {
@@ -121,11 +147,11 @@
       r.options.map((o) => `<option value="${esc(o.code)}"${o.code === st.loc ? " selected" : ""}>${label(o)}</option>`).join("") + `</select>`;
     $("#locSel").addEventListener("change", (e) => (st.loc = e.target.value));
   }
-  $("#parks").addEventListener("input", renderPreview);
+  $("#parks").addEventListener("input", onParkInput);
   $("#parks").addEventListener("keydown", (e) => { if (e.key === "Enter") startLive(); });
 
   async function startLive() {
-    const parks = splitParks($("#parks").value);
+    const parks = splitParks(parkValue());
     const err = $("#liveError");
     if (!parks.length) { err.textContent = t("live.err.park"); err.hidden = false; return; }
     if ((st.locOptions || []).length > 1 && !st.loc) { err.textContent = t("live.err.loc"); err.hidden = false; return; }
@@ -697,7 +723,7 @@
     await loadLang(lang);
     $("#version").textContent = `v${s.version}`;
     renderCalls(); $("#p2pAuto").checked = !!s.p2p_auto;
-    $("#parks").value = s.parks; renderPreview();
+    setParks(s.parks);
     $("#outPath").textContent = s.out;
     $("#logCount").textContent = s.log_count ? " " + t("build.count", { n: s.log_count }) : "";
     segSet("#liveRun .seg", "prefix", st.prefix); sp.country = st.prefix || "";

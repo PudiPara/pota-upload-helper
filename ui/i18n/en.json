@@ -34,7 +34,7 @@
  "live.lede": "Start recording when you go on the air. Stations spotted from parks are noted every minute, so P2P and 2fer can still be worked out after they go QRT.",
  "live.parks.ph": "JP-1266",
  "live.start": "Start recording",
- "live.hint": "Separate 2fer / 3fer parks with commas (JP-1266,JP-1206)",
+ "live.addPark": "+ Add a park (2fer / 3fer)",
  "live.err.park": "Enter the park reference like JP-1266.",
  "live.loc": "Location",
  "live.loc.pick": "Choose the prefecture / state",

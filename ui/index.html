@@ -57,7 +57,8 @@
           <input id="parks" placeholder="JP-1266" data-i18n-ph="live.parks.ph" spellcheck="false" autocomplete="off">
           <button class="btn btn-primary" id="startLive" data-i18n="live.start">記録を始める</button>
         </div>
-        <p class="hint" data-i18n="live.hint">2fer・3fer はカンマで区切ります（JP-1266,JP-1206）</p>
+        <div class="park-extra" id="parkExtra"></div>
+        <button class="link park-add" id="parkAdd" data-i18n="live.addPark">＋ 公園を追加（2fer・3fer）</button>
         <div class="plates plates-lg" id="parksPreview"></div>
         <div class="park-loc" id="parkLoc" hidden></div>
         <p class="error" id="liveError" hidden></p>

@@ -28,7 +28,7 @@
   "rail.openData": "Otwórz folder danych", "rail.checkUpdate": "Sprawdź aktualizacje",   "live.title": "Jaki park dzisiaj?",
   "live.lede": "Włącz zapis, gdy zaczynasz pracę. Stacje spotowane z parków są notowane co minutę, więc P2P i 2fer da się ustalić nawet po ich QRT.",
   "live.parks.ph": "JP-1266", "live.start": "Zacznij zapis",
-  "live.hint": "Parki 2fer / 3fer oddziel przecinkami (JP-1266,JP-1206)",
+  "live.addPark": "+ Dodaj park (2fer / 3fer)",
   "live.err.park": "Wpisz oznaczenie parku w postaci JP-1266.",
   "live.loc": "Lokalizacja",
   "live.loc.pick": "Wybierz prefekturę / stan",
