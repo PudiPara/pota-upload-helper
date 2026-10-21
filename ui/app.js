@@ -133,6 +133,9 @@
   // when a park spans several (JP-0016 = Kanagawa, Shizuoka, Tokyo, Yamanashi). Python computes it.
   function renderLoc(r) {
     const box = $("#parkLoc"); st.locOptions = r ? r.options : [];
+    const warn = $("#parkApart");
+    warn.hidden = !(r && r.apart && r.apart.length);
+    if (!warn.hidden) warn.textContent = r.apart.map(([a, b]) => t("live.warn.apart", { a, b })).join(" ");
     if (!r || (!r.options.length && !r.multi.length)) { box.hidden = true; st.loc = ""; return; }
     box.hidden = false;
     const label = (o) => `${esc(o.code)}${o.name ? " " + esc(o.name) : ""}`;

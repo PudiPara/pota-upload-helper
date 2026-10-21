@@ -34,6 +34,7 @@
   "live.loc.pick": "Wybierz prefekturę / stan",
   "live.err.loc": "Ten park leży w kilku prefekturach / stanach. Wybierz, gdzie jesteś.",
   "live.err.noLoc": "Te parki nie mają wspólnej prefektury / stanu.",
+  "live.warn.apart": "Według pota.app {a} i {b} nie nakładają się. Sprawdź, czy ten 2fer jest możliwy.",
   "live.toBar": "Tryb paska", "live.finish": "Zakończ ten park", "live.finishArmed": "Zakończ z {n} niepotwierdzonymi",
   "live.working": "Zapisuję…",
   "live.qsoNote.done": "Aktywacja zaliczona ({n} kombinacji stacja/pasmo/emisja)", "live.qsoNote.left": "Jeszcze {n} QSO do zaliczenia aktywacji",

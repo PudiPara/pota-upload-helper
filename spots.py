@@ -87,6 +87,19 @@ def candidate_for(rec):
     return parks
 
 
+# ---------------------------------------------------------------- parks that say they don't overlap
+NO_OVERLAP = re.compile(r"(?:does\s*n[o']?t|do\s*n[o']?t|not|no)\s+overlap|重なる[^。\n]{0,12}(?:ありません|ない)|重なりません|重ならない|重複しません|重複しない", re.I)
+
+
+def says_no_overlap(comment, other):
+    """True when a park's pota.app comment names `other` in a sentence saying the two don't overlap
+    ("This park does NOT overlap with JP-1296." / 「…(JP-1296)と重なる指定地域はありません。」)."""
+    for sentence in re.split(r"[。\n]|(?<=\.)\s", comment or ""):
+        if other.upper() in sentence.upper() and NO_OVERLAP.search(sentence):
+            return True
+    return False
+
+
 # ---------------------------------------------------------------- a station's spot history on pota.app
 # pota.app keeps every spot of an activator at a park (spot/comments/{activator}/{reference}) and shows the
 # activator's own latest comment apart from the newest spot - that is where "2-fer: X Y" survives after

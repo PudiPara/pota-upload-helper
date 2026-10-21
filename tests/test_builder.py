@@ -173,3 +173,13 @@ class ParkAcrossPrefectures(unittest.TestCase):
         self.assertIn("<MY_STATE:2>TK", open(os.path.join(out, "JL1FVA@JP-0016-20260109-JP-TK.adi"), encoding="utf-8").read())
         self.assertEqual(files["JL1FVA@JP-1206-20260109.adi"]["qsos"], 2)      # the one-prefecture park keeps one file
 
+
+class NoOverlapNote(unittest.TestCase):
+    def test_comment_says_parks_do_not_overlap(self):
+        from spots import says_no_overlap
+        jp0016 = "「富士箱根伊豆国立公園」　　真鶴半島県立自然公園(JP-1296)と重なる指定地域はありません。\nThis park does NOT overlap with JP-1296."
+        self.assertTrue(says_no_overlap(jp0016, "JP-1296"))
+        self.assertTrue(says_no_overlap("This park does NOT overlap with JP-1296.", "JP-1296"))
+        self.assertFalse(says_no_overlap(jp0016, "JP-1206"))                       # another park: no note
+        self.assertFalse(says_no_overlap("Overlaps with JP-1296 at the cape.", "JP-1296"))
+
