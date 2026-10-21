@@ -46,6 +46,19 @@ class UpdaterTest(unittest.TestCase):
             updater.download("https://example.com/evil.zip", os.path.join(tempfile.mkdtemp(), "x.zip"))
 
 
+class RenamedRepo(unittest.TestCase):
+    def test_downloads_from_the_old_and_the_new_repo_name_only(self):
+        import unittest.mock as m
+        for url in ("https://github.com/PudiPara/potaroo/releases/download/v9/x.zip",
+                    updater.DOWNLOAD_PREFIX + "v9/x.zip"):
+            with m.patch("urllib.request.urlopen", side_effect=OSError("offline")), m.patch("subprocess.run", side_effect=OSError("no curl")):
+                with self.assertRaises(Exception) as e:
+                    updater.download(url, "x")
+                self.assertNotIsInstance(e.exception, ValueError)
+        with self.assertRaises(ValueError):
+            updater.download("https://github.com/someone/else/releases/download/v9/x.zip", "x")
+
+
 if __name__ == "__main__":
     unittest.main()
 
