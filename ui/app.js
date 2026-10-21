@@ -575,19 +575,21 @@
   $("#openPota").addEventListener("click", () => api.open_url("https://pota.app/"));
 
   // ================================================================ settings
-  const KINDS = [["n1mm", "N1MM"], ["wsjtx", "WSJT-X"], ["adif", "ADIF"]];
+  const KINDS = [["n1mm", "N1MM"], ["wsjtx", "WSJT-X"], ["adif", "ADIF"], ["hamlog", "Turbo HAMLOG"]];
   const recvState = (l) => { const s = st.receiver[l.name]; return s && typeof s === "object" ? s : { code: l.enabled ? "" : "off", text: l.enabled ? "" : t("set.off") }; };
   const recvClass = (s) => (s.code === "error" || s.code === "badforward") ? "is-bad" : (s.code === "listening" || s.code === "receiving") ? "is-ok" : "";
   function renderListeners() {
     $("#listeners").innerHTML = st.listeners.map((l, i) => {
       const s = recvState(l);
-      return `<div class="lis" data-i="${i}">
+      const hl = l.kind === "hamlog";          // no port: the app asks HAMLOG itself
+      return `<div class="lis${hl ? " is-hamlog" : ""}" data-i="${i}">
         <label class="switch" title="${esc(t("set.toggle"))}"><input type="checkbox" data-k="enabled" ${l.enabled ? "checked" : ""}><span class="switch-ui"></span></label>
         <label>${esc(t("set.name"))}<input type="text" data-k="name" value="${esc(l.name)}"></label>
         <label>${esc(t("set.kind"))}<select data-k="kind">${KINDS.map(([v, k]) => `<option value="${v}"${l.kind === v ? " selected" : ""}>${k}</option>`).join("")}</select></label>
+        ${hl ? `<p class="lis-note">${esc(t("set.hamlog.note"))}</p>` : `
         <label>${esc(t("set.port"))}<input type="text" inputmode="numeric" data-k="port" value="${esc(l.port)}"></label>
         <label>${esc(t("set.mc"))}<input type="text" data-k="multicast" placeholder="${esc(t("set.mc.ph"))}" value="${esc(l.multicast)}"></label>
-        <label>${esc(t("set.fwd"))}<input type="text" data-k="forward" placeholder="${esc(t("set.fwd.ph"))}" value="${esc(l.forward)}"></label>
+        <label>${esc(t("set.fwd"))}<input type="text" data-k="forward" placeholder="${esc(t("set.fwd.ph"))}" value="${esc(l.forward)}"></label>`}
         <button class="link lis-del" data-del="${i}">${esc(t("set.del"))}</button>
         <div class="lis-state ${recvClass(s)}">${esc(s.text)}</div>
       </div>`;
@@ -595,6 +597,7 @@
     $$("#listeners [data-k]").forEach((el) => el.addEventListener("change", () => {
       const l = st.listeners[+el.closest(".lis").dataset.i];
       l[el.dataset.k] = el.type === "checkbox" ? el.checked : el.value;
+      if (el.dataset.k === "kind") renderListeners();          // HAMLOG hides the port fields
     }));
     $$("#listeners [data-del]").forEach((b) => b.addEventListener("click", () => { st.listeners.splice(+b.dataset.del, 1); renderListeners(); }));
   }
