@@ -796,8 +796,10 @@
   $("#p2pAuto").addEventListener("change", (e) => api.save({ p2p_auto: e.target.checked }));
   function renderMypota() {
     const m = st.mypota || {}, day = (iso) => fmtDate(iso.slice(0, 10).replace(/-/g, ""));
-    $("#mypotaStatus").textContent = [m.hunter ? t("cfg.mypota.hunter", { n: m.hunter.n, at: day(m.hunter.at) }) : "",
-      m.activator ? t("cfg.mypota.activator", { n: m.activator.n, at: day(m.activator.at) }) : ""].filter(Boolean).join(" · ") || t("cfg.mypota.none");
+    // one line per CSV: which file, and what was read from it (or that it is still missing)
+    $("#mypotaStatus").innerHTML = [["hunter", "hunter_parks.csv"], ["activator", "activator_parks.csv"]].map(([k, file]) =>
+      `<li class="${m[k] ? "" : "is-missing"}"><b>${esc(t("cfg.mypota.kind." + k))}</b><code>${file}</code>
+        <span>${esc(m[k] ? t("cfg.mypota.count", { n: m[k].n, at: day(m[k].at) }) : t("cfg.mypota.missing"))}</span></li>`).join("");
     $("#spotsNewBox").hidden = !m.hunter;                 // "New" needs the hunter list
   }
   $("#mypotaPick").addEventListener("click", async () => {
