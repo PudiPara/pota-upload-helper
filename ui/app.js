@@ -154,14 +154,16 @@
     const label = (o) => `${esc(o.code)}${o.name ? " " + esc(o.name) : ""}`;
     if (!r.options.length) { box.innerHTML = `<span class="loc-label">${esc(t("live.loc"))}</span><span class="error">${esc(t("live.err.noLoc"))}</span>`; st.loc = ""; return; }
     if (r.options.length === 1) {
-      st.loc = r.options[0].code;
+      st.loc = r.options[0].code; st.locPicked = false;      // fixed, not the operator's choice
       box.innerHTML = `<span class="loc-label">${esc(t("live.loc"))}</span><span class="loc-fixed">${label(r.options[0])}</span>`;
       return;
     }
-    if (!r.options.some((o) => o.code === st.loc)) st.loc = "";
+    // keep a location only if the operator picked it in this select: one that came fixed with the
+    // previous park (JP-1266 -> Tokyo) must not pre-fill a park that spans several (JP-0016)
+    if (!st.locPicked || !r.options.some((o) => o.code === st.loc)) { st.loc = ""; st.locPicked = false; }
     box.innerHTML = `<span class="loc-label">${esc(t("live.loc"))}</span><select id="locSel"><option value="">${esc(t("live.loc.pick"))}</option>` +
       r.options.map((o) => `<option value="${esc(o.code)}"${o.code === st.loc ? " selected" : ""}>${label(o)}</option>`).join("") + `</select>`;
-    $("#locSel").addEventListener("change", (e) => (st.loc = e.target.value));
+    $("#locSel").addEventListener("change", (e) => { st.loc = e.target.value; st.locPicked = !!st.loc; });
   }
   $("#parks").addEventListener("input", onParkInput);
   $("#parks").addEventListener("keydown", (e) => { if (e.key === "Enter") startLive(); });
