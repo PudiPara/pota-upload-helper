@@ -90,6 +90,8 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
 - **Window close ≠ finish.** `finish_live` stops, builds **the whole UTC day** (every park of the day gets
   its file with all of its QSOs, so a park shared by several sessions is never cut down to the last
   session) and resets; `shutdown` only stops threads.
+- **設定 → 常に最前面** (`settings.on_top`): the window is created on top when set; `Api.set_on_top` →
+  `BarMode.set_on_top`. Leaving bar mode restores this setting instead of always clearing on-top.
 - **Bar mode** is a resize/move/on-top of the one window (pywebview can't do a second window cheaply);
   `window.confirm` is unavailable in the web view, so "finish with unconfirmed" needs a second press.
   On Windows the window calls are posted to the UI thread with `BeginInvoke` and not awaited
