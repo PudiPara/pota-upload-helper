@@ -35,7 +35,10 @@ re-derives data (band, mode group, candidate parks) that Python already sent.
 ## Decisions (and why)
 - **P2P is confirmed by the operator by default.** Spots are a hint; the hunter log (the other side's
   upload) is the only verified source and still overrides at build time, with a note. `settings.p2p_auto`
-  (設定 → P2P) records the spot candidate as "yes" without asking (`app.py _on_qso`, all copies).
+  (設定 → P2P) records the spot candidate as "yes" without asking (`app.py _on_qso`, all copies) - but
+  only when `spots.candidate_info` says `auto`: no QRT by the activator before the QSO (they may be
+  calling from home), a spot within `FRESH` (10 min), and the 2fer not pieced from separate spots.
+  Otherwise the row still asks はい / いいえ, with the reason as a small tag (`P2P_NOTE`).
 - **One 設定 page** holds callsigns, the P2P switch, the UDP listeners (ロガーとの接続), language and app
   items; the rail has four views. QSO rows sort by `ts` (date + TIME_ON to the second) sent by Python.
 - **2fer rules**: a station's parks = the spot's reference + references in its comment, merged over its

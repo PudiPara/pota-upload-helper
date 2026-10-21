@@ -29,7 +29,7 @@ from i18n import t
 from potacommon import (APP_NAME, DATA_DIR, DEFAULT_OUT, VERSION, base_call, fetch_json, iso_minutes,
                         load_settings, lock_instance, read_adif, save_settings, split_parks)
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
-from spots import SpotLogger, candidate_for, history_parks, says_no_overlap, summarize
+from spots import SpotLogger, candidate_info, history_parks, says_no_overlap, summarize
 from window import BarMode
 
 SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted", "p2p_auto")   # "live" is set by start_live/finish_live only
@@ -68,7 +68,8 @@ def qso_event(rec, uid=None):
             "date": rec.get("QSO_DATE"), "time": (rec.get("TIME_ON") or "")[:4], "band": rec.get("BAND", ""),
             "ts": (rec.get("QSO_DATE") or "") + (rec.get("TIME_ON") or "").ljust(6, "0"),   # sort key, to the second
             "mode": rec.get("SUBMODE") or rec.get("MODE", ""), "decision": decision, "parks": parks,
-            "candidate": split_parks(rec.get("P2P_CANDIDATE")), "my": split_parks(rec.get("MY_SIG_INFO"))}
+            "candidate": split_parks(rec.get("P2P_CANDIDATE")), "my": split_parks(rec.get("MY_SIG_INFO")),
+            "note": rec.get("P2P_NOTE") or ""}
 
 
 class Api:
@@ -181,14 +182,17 @@ class Api:
                 rec["MY_SIG"], rec["MY_SIG_INFO"] = "POTA", ",".join(self._logger.parks)
                 if getattr(self, "_locs", None):
                     rec["MY_POTA_LOCS"] = dict(self._locs)        # parks spanning prefectures/states -> where I was
-            cand = candidate_for(rec)
+            info = candidate_info(rec)
+            cand = info["parks"]
             if cand:
                 rec["P2P_CANDIDATE"] = ",".join(cand)
+                if info["note"]:
+                    rec["P2P_NOTE"] = info["note"]          # why this one is asked even with 自動 on
             logged = split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO"))
             if logged and not rec.get("P2P_DECISION"):      # the operator typed it in the logger
                 qsolog.apply_decision(rec, "log", logged)
             uid = qsolog.upsert(rec, ext_id, listener)       # may carry a decision over from the other copy
-            if cand and not rec.get("P2P_DECISION") and load_settings().get("p2p_auto"):
+            if cand and info["auto"] and not rec.get("P2P_DECISION") and load_settings().get("p2p_auto"):
                 qsolog.set_p2p(uid, "yes", ",".join(cand))     # 設定: trust the spot, don't ask (all copies)
                 qsolog.apply_decision(rec, "yes", cand)
             ev = qso_event(rec, uid)

@@ -183,3 +183,36 @@ class NoOverlapNote(unittest.TestCase):
         self.assertFalse(says_no_overlap(jp0016, "JP-1206"))                       # another park: no note
         self.assertFalse(says_no_overlap("Overlaps with JP-1296 at the cape.", "JP-1296"))
 
+
+class CandidateAfterQrt(unittest.TestCase):
+    def setUp(self):
+        import spots
+        self.spots = spots
+        self._load, self._hist = spots.load_spots, spots.history_info
+        spots.history_info = lambda *a, **k: {"parks": [], "times": []}
+
+    def tearDown(self):
+        self.spots.load_spots, self.spots.history_info = self._load, self._hist
+
+    def _with(self, spotlist):
+        from potacommon import iso_minutes
+        rows = [(iso_minutes(t), ["US-6818"], {"activator": "KD9NYE", "spotter": who, "reference": "US-6818",
+                                                 "spotTime": t, "comments": c}) for t, who, c in spotlist]
+        self.spots.load_spots = lambda: {"KD9NYE": rows}
+
+    def info(self, hhmm):
+        return self.spots.candidate_info({"CALL": "KD9NYE", "QSO_DATE": "20260110", "TIME_ON": hhmm + "00"})
+
+    def test_fresh_spot_is_auto(self):
+        self._with([("2026-01-10T13:10:00", "W1AW", "599")])
+        self.assertEqual((self.info("1315")["auto"], self.info("1315")["note"]), (True, ""))
+
+    def test_after_their_qrt_is_asked(self):
+        self._with([("2026-01-10T13:10:00", "W1AW", "599"), ("2026-01-10T13:12:00", "KD9NYE", "QRT thanks all")])
+        i = self.info("1315")
+        self.assertEqual((i["parks"], i["auto"], i["note"]), (["US-6818"], False, "qrt"))
+
+    def test_old_spot_is_asked(self):
+        self._with([("2026-01-10T12:50:00", "W1AW", "599")])
+        self.assertEqual((self.info("1315")["auto"], self.info("1315")["note"]), (False, "stale"))
+

@@ -69,22 +69,47 @@ def their_parks_at(spots, t_min):
     return res, sure
 
 
+FRESH = 10                # minutes: a spot this close to the QSO means they are still at the park
+QRT = re.compile(r"\bQRT\b", re.I)
+
+
 def candidate_for(rec):
-    """The P2P candidate for a QSO that just arrived: where the other station was spotted around that
-    time (recorded spots), plus what its spot history on pota.app says (the activator's own comments)."""
+    return candidate_info(rec)["parks"]
+
+
+def candidate_info(rec):
+    """The P2P candidate for a QSO that just arrived, and whether it is safe to accept without asking.
+    -> {"parks": [...], "auto": bool, "note": "" | "qrt" | "stale" | "unsure"}
+    parks: where the station was spotted around the QSO (recorded spots) plus its pota.app spot history.
+    auto only when nothing is doubtful: no QRT from the activator before the QSO (they may be calling
+    from home now), a spot within FRESH minutes, and the parks not pieced together from separate spots."""
+    out = {"parks": [], "auto": False, "note": ""}
     try:
         t_min = minutes(rec.get("QSO_DATE", ""), rec.get("TIME_ON") or "0000")
     except ValueError:
-        return []
+        return out
     recorded = load_spots().get(base_call(rec.get("CALL")), [])
-    parks, _ = their_parks_at(recorded, t_min)
-    near = [raw for m, _, raw in recorded if t_min - SPOT_BEFORE <= m <= t_min + SPOT_AFTER and raw.get("reference")]
-    if near:
-        raw = max(near, key=lambda r: r.get("spotTime") or "")
-        for p in history_parks(raw.get("activator") or rec.get("CALL"), raw["reference"], wait=True) or []:
-            if p not in parks:
-                parks.append(p)
-    return parks
+    parks, sure = their_parks_at(recorded, t_min)
+    near = [(m, raw) for m, _, raw in recorded if t_min - SPOT_BEFORE <= m <= t_min + SPOT_AFTER]
+    events = [(m, bool(QRT.search(raw.get("comments") or "") and _by_activator(raw))) for m, raw in near]
+    refd = [raw for _, raw in near if raw.get("reference")]
+    if refd:
+        raw = max(refd, key=lambda r: r.get("spotTime") or "")
+        h = history_info(raw.get("activator") or rec.get("CALL"), raw["reference"], wait=True) or {}
+        parks += [p for p in h.get("parks") or [] if p not in parks]
+        events += [(m, q) for m, q in h.get("times") or [] if t_min - SPOT_BEFORE <= m <= t_min + SPOT_AFTER]
+    if not parks:
+        return out
+    before = sorted(e for e in events if e[0] <= t_min)
+    qrt = bool(before) and before[-1][1]                 # their last word before the QSO was QRT
+    fresh = any(abs(m - t_min) <= FRESH for m, q in events if not q)
+    out.update(parks=parks, auto=not qrt and fresh and sure,
+               note="qrt" if qrt else "stale" if not fresh else "unsure" if not sure else "")
+    return out
+
+
+def _by_activator(raw):
+    return base_call(raw.get("spotter")) == base_call(raw.get("activator"))
 
 
 # ---------------------------------------------------------------- parks that say they don't overlap
@@ -141,8 +166,24 @@ def parks_from_history(hist, activator, reference, now=None):
 
 
 def history_parks(activator, reference, wait=False):
-    """Parks for a station from its pota.app history, cached HISTORY_TTL seconds. wait=False
-    (the アクティベート中 page) schedules the fetch on a worker and returns None until it is in;
+    h = history_info(activator, reference, wait)
+    return None if h is None else h["parks"]
+
+
+def _digest(hist, activator, reference):
+    """{"parks": [...], "times": [(minute, is_qrt_by_the_activator)]} from a spot history."""
+    times = []
+    for x in hist:
+        tm = spot_time(x)
+        if tm:
+            own = base_call(x.get("spotter")) == base_call(activator)
+            times.append((iso_minutes(tm.strftime("%Y-%m-%dT%H:%M:%S")), bool(own and QRT.search(x.get("comments") or ""))))
+    return {"parks": parks_from_history(hist, activator, reference), "times": times}
+
+
+def history_info(activator, reference, wait=False):
+    """A station's pota.app history digested, cached HISTORY_TTL seconds. wait=False (the
+    アクティベート中 page) schedules the fetch on a worker and returns None until it is in;
     wait=True (a QSO just arrived) fetches now."""
     key = ((activator or "").upper(), (reference or "").upper())
     if not key[0] or not key[1]:
@@ -152,10 +193,10 @@ def history_parks(activator, reference, wait=False):
         if e and time.time() - e[0] < HISTORY_TTL:
             return e[1]
     if wait:
-        parks = parks_from_history(fetch_history(*key), *key)
+        info = _digest(fetch_history(*key), *key)
         with _hist_lock:
-            _hist[key] = (time.time(), parks)
-        return parks
+            _hist[key] = (time.time(), info)
+        return info
     with _hist_lock:
         if key not in _hist_queue:
             _hist_queue.append(key)
@@ -177,9 +218,9 @@ def _drain_history():
             if not _hist_queue:
                 return
             key = _hist_queue.pop(0)
-        parks = parks_from_history(fetch_history(*key), *key)
+        info = _digest(fetch_history(*key), *key)
         with _hist_lock:
-            _hist[key] = (time.time(), parks)
+            _hist[key] = (time.time(), info)
 
 
 # ---------------------------------------------------------------- the files the logger writes
