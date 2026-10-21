@@ -446,9 +446,11 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .cheer span { font-size: clamp(14px, 4vw, 22px); font-weight: 700; }
 @keyframes cheer-in { from { opacity: 0; transform: scale(.96); } }
 .cheer-hunt { background: rgba(122, 78, 12, .94); }
-/* the party popper: burst() in app.js moves these with the Web Animations API */
-.confetti { position: fixed; left: 50%; top: 46%; width: 8px; height: 13px; margin: -6px 0 0 -4px; border-radius: 2px;
-  z-index: 21; pointer-events: none; }
+/* party poppers: burst() in app.js fires these streamers with the Web Animations API */
+.streamer { position: fixed; left: 0; top: 0; width: 30px; height: 150px; margin: -75px 0 0 -15px; z-index: 21;
+  pointer-events: none; overflow: visible; }
+.streamer path { fill: none; stroke-width: 7; stroke-linecap: butt; }
+.streamer.is-bit { width: 10px; height: 10px; margin: -5px 0 0 -5px; }
 .cheer-hunt .plates { gap: 8px; margin: 6px 0 2px; }
 .cheer-hunt .plate { font-size: clamp(16px, 4vw, 24px); padding: 3px 12px 4px; border-radius: 7px; }
 

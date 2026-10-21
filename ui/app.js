@@ -219,6 +219,8 @@
     const freshS = new Set(), freshQ = new Set();
     let removed = false;
     for (const e of r.events) { st.lastAt = Math.max(st.lastAt, e.at); st.spots.set(e.call, e); freshS.add(e.call); }
+    // a celebration stays up until the next QSO (FT4 or a CW 599 BK one leaves several seconds), a click or Esc
+    if (r.qsos.some((q) => q.action !== "delete" && q.live)) hideCelebrations();
     for (const q of r.qsos) {
       st.lastQ = Math.max(st.lastQ, q.at);
       if (q.action === "delete") {                 // Python sends every copy it deleted
@@ -314,26 +316,37 @@
     if (st.editing) { const el = $(`[data-in="${CSS.escape(st.editing)}"]`); if (el) el.focus(); }
     if (n >= 10 && !st.cheered) { st.cheered = true; cheer(); }
   }
-  // A short party-popper burst over a celebration: pieces fly out from the middle and fall. With reduced
-  // motion (Windows "Animation effects" off, macOS "Reduce motion") they only appear around it and fade.
-  const CONFETTI = ["#F2C46B", "#F4F1E4", "#7FC79F", "#E9A9A0", "#8EC5FF"];
-  function burst(n = 46) {
+  // Party poppers over a celebration: two, at the bottom corners, each firing curly paper streamers up
+  // toward the middle; they tumble and drift down. With reduced motion (Windows "Animation effects" off,
+  // macOS "Reduce motion") the streamers just appear up there and fade.
+  const STREAMERS = ["#F2C46B", "#F4F1E4", "#7FC79F", "#E9A9A0", "#8EC5FF", "#C9A0F0"];
+  // a paper ribbon with one lazy wave (curled tighter at the end), and small square bits of paper
+  const RIBBON = "M15 4 C 26 34, 4 62, 15 92 C 22 112, 26 128, 16 146";
+  function burst(perPopper = 8, bits = 10) {
     const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    for (let i = 0; i < n; i++) {
-      const el = document.createElement("i"), a = Math.random() * Math.PI * 2, d = 120 + Math.random() * 260;
-      const x = Math.cos(a) * d, y = Math.sin(a) * d * .7, r = Math.random() * 900 - 450;
-      el.className = "confetti"; el.style.background = CONFETTI[i % CONFETTI.length];
-      document.body.appendChild(el);
-      const frames = still
-        ? [{ transform: `translate(${x * .7}px, ${y * .7}px) rotate(${r}deg)`, opacity: 1, offset: 0 },
-           { transform: `translate(${x * .7}px, ${y * .7}px) rotate(${r}deg)`, opacity: 1, offset: .6 },
-           { transform: `translate(${x * .7}px, ${y * .7}px) rotate(${r}deg)`, opacity: 0 }]
-        : [{ transform: "translate(0, 0) rotate(0) scale(.6)", opacity: 1 },
-           { transform: `translate(${x}px, ${y}px) rotate(${r / 2}deg) scale(1)`, opacity: 1, offset: .45 },
-           { transform: `translate(${x * 1.1}px, ${y + 220 + Math.random() * 120}px) rotate(${r}deg) scale(1)`, opacity: 0 }];
-      el.animate(frames, { duration: still ? 1400 : 1500, delay: still ? 0 : Math.random() * 120,
-                           easing: "cubic-bezier(.15, .7, .3, 1)", fill: "forwards" }).onfinish = () => el.remove();
-    }
+    const W = innerWidth, H = innerHeight;
+    [[W * .06, H * .98, 1], [W * .94, H * .98, -1]].forEach(([x0, y0, dir]) => {
+      for (let i = 0; i < perPopper + bits; i++) {
+        const bit = i >= perPopper, color = STREAMERS[(i + (dir > 0 ? 0 : 3)) % STREAMERS.length];
+        const el = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        el.setAttribute("class", bit ? "streamer is-bit" : "streamer");
+        el.setAttribute("viewBox", bit ? "0 0 10 10" : "0 0 30 150");
+        el.innerHTML = bit ? `<rect width="10" height="10" rx="1.5" fill="${color}"/>` : `<path d="${RIBBON}" stroke="${color}"/>`;
+        el.style.left = x0 + "px"; el.style.top = y0 + "px";
+        document.body.appendChild(el);
+        const tx = dir * W * (.22 + Math.random() * .34), ty = -H * (.45 + Math.random() * .38);   // the arc's top
+        const r0 = dir * (20 + Math.random() * 30), r1 = r0 + dir * (120 + Math.random() * 260), s = .7 + Math.random() * .5;
+        const at = (x, y, r, o) => ({ transform: `translate(${x}px, ${y}px) rotate(${r}deg) scale(${s})`, opacity: o });
+        const frames = still
+          ? [at(tx, ty, r1, 1), { ...at(tx, ty, r1, 1), offset: .6 }, at(tx, ty, r1, 0)]
+          : [{ ...at(0, 0, r0, 1), easing: "cubic-bezier(.15, .8, .35, 1)" },         // shot out, slowing at the top
+             { ...at(tx, ty, r1, 1), offset: .38, easing: "ease-in" },                   // then it drifts down
+             { ...at(tx * 1.12, ty + H * .18, r1 + dir * 90, 1), offset: .8, easing: "linear" },
+             at(tx * 1.2, ty + H * .3, r1 + dir * 140, 0)];
+        el.animate(frames, { duration: still ? 1500 : 2200 + Math.random() * 500, delay: still ? 0 : Math.random() * 90,
+                             fill: "forwards" }).onfinish = () => el.remove();
+      }
+    });
   }
 
   // Hunted!: a P2P that hunts a park the operator had never hunted (Python's mypota marks it "new"),
@@ -344,13 +357,12 @@
     if (!parks.length) return;
     parks.forEach((p) => st.huntedShown.add(p));
     $("#huntedParks").innerHTML = plates(parks);
-    const c = $("#hunted"); c.hidden = false; burst();
-    clearTimeout(hunted.h); hunted.h = setTimeout(() => (c.hidden = true), 5000);
+    $("#cheer").hidden = true; $("#hunted").hidden = false; burst();
   }
-  $("#hunted").addEventListener("click", () => ($("#hunted").hidden = true));
+  function hideCelebrations() { $("#hunted").hidden = true; $("#cheer").hidden = true; }
+  $("#hunted").addEventListener("click", hideCelebrations);
   function cheer() {
-    const c = $("#cheer"); c.hidden = false; burst(70);
-    clearTimeout(cheer.h); cheer.h = setTimeout(() => (c.hidden = true), 7000);
+    $("#cheer").hidden = false; burst(11, 14);
   }
   $("#cheer").addEventListener("click", () => ($("#cheer").hidden = true));
 
@@ -825,7 +837,7 @@
                                      [t("pop.profile"), () => api.open_url(`https://pota.app/#/profile/${encodeURIComponent(baseCall(call))}`)]]);
     }
   }, true);
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("#pop").hidden = true; });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { $("#pop").hidden = true; hideCelebrations(); } });
   $("#openData").addEventListener("click", () => api.open_data());
   $("#lang").addEventListener("change", async (e) => {
     await api.save({ lang: e.target.value }); await loadLang(e.target.value); rerender();
