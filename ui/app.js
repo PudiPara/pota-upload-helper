@@ -4,7 +4,7 @@
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   let api = null;
   const st = {
-    call: "", calls: [], prefix: "home", spots: new Map(), qsos: new Map(), lastAt: 0, lastQ: 0,
+    call: "", calls: [], prefix: "home", country: "", countries: [], ex: {}, spots: new Map(), qsos: new Map(), lastAt: 0, lastQ: 0,
     start: null, timer: null, poll: null, source: "app", adif: "", out: "", outDir: "",
     acts: [], selected: new Set(), listeners: [], receiver: {}, editing: null, bar: false, cheered: false,
     lang: "ja", langs: [], termsAccepted: "", mypota: {}, huntedShown: new Set(),
@@ -13,7 +13,8 @@
 
   // ---------- i18n ----------
   let L = {};
-  const t = (k, p) => String(L[k] != null ? L[k] : k).replace(/\{(\w+)\}/g, (_, n) => (p && p[n] != null ? p[n] : ""));
+  // {park}, {park2}, {cc} without a value = the example parks of the operator's country (Api.examples)
+  const t = (k, p) => String(L[k] != null ? L[k] : k).replace(/\{(\w+)\}/g, (_, n) => (p && p[n] != null ? p[n] : st.ex[n] ?? ""));
   function pickLang(tag) {
     const codes = st.langs.map(([c]) => c);
     const low = String(tag || "").replace("_", "-").toLowerCase();
@@ -31,6 +32,9 @@
     $$("[data-i18n-title]").forEach((el) => (el.title = t(el.dataset.i18nTitle)));
     $("#termsBody").innerHTML = t("terms.body");
     $("#lang").value = lang;
+    $("#country").innerHTML = st.countries.map((c) => [c, countryName(c)]).sort((a, b) => a[1].localeCompare(b[1], lang))
+      .map(([c, name]) => `<option value="${esc(c)}">${esc(name)}</option>`).join("");   // name first: type to find it
+    $("#country").value = st.country;
   }
   function rerender() {           // dynamic parts that hold translated text
     renderListeners(); updateReceiver(st.receiver); renderCalls(); renderMypota();
@@ -255,7 +259,7 @@
       </li>`;
   }
   function renderSpots(fresh) {
-    const worked = workedCalls(), home = homeOf(st.parks);
+    const worked = workedCalls(), home = st.country || homeOf(st.parks);
     $("#segHome").innerHTML = `<span class="flag">${flagOf(home)}</span> ${esc(countryName(home))}`;
     const list = [...st.spots.values()].filter((e) => !st.prefix || e.parks.some((p) => p.startsWith(home + "-")))
       .sort((a, b) => b.at - a.at);
@@ -860,16 +864,30 @@
   $("#lang").addEventListener("change", async (e) => {
     await api.save({ lang: e.target.value }); await loadLang(e.target.value); rerender();
   });
+  // 所在国: "my country" on the live spots switch, the アクティベート中 page's first country, the example parks
+  async function setCountry(cc) {
+    st.country = cc; st.ex = await api.examples(cc); sp.country = cc;
+  }
+  $("#country").addEventListener("change", async (e) => {
+    await api.save({ country: e.target.value }); await setCountry(e.target.value); await loadLang(st.lang); rerender();
+  });
+  // first run: the region of the system language ("en-GB" -> GB), else the language's main country
+  const LANG_COUNTRY = { ja: "JP", en: "US", "zh-CN": "CN", "zh-TW": "TW", fr: "FR", de: "DE", es: "ES", it: "IT", "pt-BR": "BR", ko: "KR", pl: "PL" };
+  const guessCountry = (tag, lang) => { const m = /-([a-z]{2})(?:-|$)/i.exec(String(tag || "").replace("_", "-"));
+    const cc = m ? m[1].toUpperCase() : LANG_COUNTRY[lang] || ""; return st.countries.includes(cc) ? cc : ""; };
 
   // ---------- boot ----------
   async function boot() {
     api = window.pywebview.api;
     const s = await api.get_state();
     Object.assign(st, { call: s.call || "", calls: s.calls || [], prefix: s.prefix, out: s.out, adif: s.adif, source: s.source || "app", listeners: s.listeners,
-                        langs: s.langs || [["ja", "日本語"]], termsAccepted: s.terms_accepted || "" });
+                        langs: s.langs || [["ja", "日本語"]], termsAccepted: s.terms_accepted || "", countries: s.countries || [] });
     $("#lang").innerHTML = st.langs.map(([c, name]) => `<option value="${esc(c)}">${esc(name)}</option>`).join("");
     const lang = s.lang || pickLang(navigator.language);
     if (!s.lang) api.save({ lang });
+    const country = s.country || guessCountry(navigator.language, lang);
+    if (!s.country && country) api.save({ country });
+    await setCountry(country);
     await loadLang(lang);
     $("#version").textContent = `v${s.version}`;
     renderCalls(); $("#p2pAuto").checked = !!s.p2p_auto; $("#onTop").checked = !!s.on_top;
@@ -878,7 +896,7 @@
     setParks(s.parks);
     $("#outPath").textContent = s.out;
     setLogCount(s.log_count);
-    segSet("#liveRun .seg", "prefix", st.prefix); sp.country = homeOf(s.live ? s.live.parks : s.parks);
+    segSet("#liveRun .seg", "prefix", st.prefix);
     renderListeners(); updateReceiver(s.receiver);
     setSource(st.source);
     if (s.live) enterRunning(s.live.parks, s.live.start);

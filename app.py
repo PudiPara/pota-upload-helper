@@ -32,10 +32,11 @@ from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, base_call, data
                         save_settings, split_parks)
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
-from spots import SESSION_MARGIN, SpotLogger, common_locations, history_parks, park_info, summarize, tag_candidate
+from spots import (SESSION_MARGIN, SpotLogger, common_locations, countries, example_parks, history_parks, park_info,
+                   summarize, tag_candidate)
 from window import BarMode
 
-SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "terms_accepted", "p2p_auto", "lookup", "on_top")   # "live" is set by start_live/finish_live only
+SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "p2p_auto", "lookup", "on_top")   # "live" is set by start_live/finish_live only
 DATE_RE = re.compile(r"\d{8}")
 SPOT_INTERVAL = 60       # seconds between pota.app spot polls while recording
 
@@ -143,9 +144,15 @@ class Api:
                 "prefix": "home" if s.get("prefix", "home") else "", "adif": s.get("adif", ""), "out": s.get("out", DEFAULT_OUT),
                 "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
                 "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
+                "country": s.get("country") or "", "countries": countries(),
                 "terms_accepted": s.get("terms_accepted") or "", "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")),
                 "lookup": lookup if isinstance(lookup, list) else [lookup],
                 "log_count": qsolog.count(), "receiver": self._receiver_texts(), "mypota": mypota.status()}
+
+    def examples(self, country):
+        """The example parks of the operator's country for the UI copy; the Python side's strings use them too."""
+        i18n.examples = example_parks(country or "")
+        return i18n.examples
 
     def save(self, data):
         keep = {k: v for k, v in data.items() if k in SETTINGS_KEYS}
@@ -553,6 +560,7 @@ def main():
         return
     updater.cleanup()
     i18n.set_lang(load_settings().get("lang") or "ja")
+    i18n.examples = example_parks(load_settings().get("country") or "")
     api = Api()
     from window import BAR_W
     win = webview.create_window(APP_NAME, resource("ui", "index.html"), js_api=api,

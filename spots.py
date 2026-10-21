@@ -279,6 +279,17 @@ def shipped_parks():
     return _shipped
 
 
+def countries():
+    """The park prefixes (ISO 3166 alpha-2) that have active parks, for 設定 → 所在国."""
+    return sorted({ref.split("-")[0] for ref in shipped_parks()})
+
+
+def example_parks(country):
+    """{cc, park, park2}: the first parks of a country, for the examples in the UI copy (US without one)."""
+    refs = sorted(r for r in shipped_parks() if r.split("-")[0] == country) or ["US-0001", "US-0002"]
+    return {"cc": refs[0].split("-")[0], "park": refs[0], "park2": refs[min(1, len(refs) - 1)]}
+
+
 def _park_record(ref):
     """pota.app's park/{ref}, cached; {} when it can't be had (asked again next time)."""
     if ref not in _fetched:

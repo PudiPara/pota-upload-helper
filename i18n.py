@@ -10,6 +10,7 @@ import sys
 LANGS = ["ja", "en", "zh-CN", "zh-TW", "fr", "de", "es", "it", "pt-BR", "ko", "pl"]
 _lang = "ja"
 _cache = {}
+examples = {}       # {park}, {park2}, {cc} in every string: parks of the operator's country (spots.example_parks)
 
 
 def _dir():
@@ -54,9 +55,9 @@ def set_lang(lang):
 
 def t(key, **kw):
     s = load(_lang).get(key) or load("en").get(key) or load("ja").get(key) or key
-    if kw:
+    if kw or examples:
         try:
-            return s.format(**kw)
+            return s.format(**{**examples, **kw})
         except (KeyError, IndexError, ValueError):
             return s
     return s
