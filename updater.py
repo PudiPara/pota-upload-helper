@@ -23,6 +23,8 @@ REPO = "PudiPara/pota-upload-helper"
 LATEST = "https://api.github.com/repos/%s/releases/latest" % REPO
 PAGE = "https://github.com/%s/releases/latest" % REPO
 DOWNLOAD_PREFIX = "https://github.com/%s/releases/download/" % REPO
+# the repo is being renamed to PudiPara/potaroo; GitHub then answers with the new name's URLs
+DOWNLOAD_PREFIXES = (DOWNLOAD_PREFIX, "https://github.com/PudiPara/potaroo/releases/download/")
 # 1.x looks for POTA-Upload-Helper-*.zip; CI publishes those names too until nobody is on 1.x
 ASSETS = {"darwin": "Potaroo-macOS.zip", "win32": "Potaroo-Windows.zip"}
 
@@ -74,7 +76,7 @@ def check():
 
 # ---------------------------------------------------------------- download / install
 def download(url, dest, timeout=600):
-    if not url.startswith(DOWNLOAD_PREFIX):
+    if not url.startswith(DOWNLOAD_PREFIXES):
         raise ValueError(t("updater.badUrl", url=url))
     try:
         req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
