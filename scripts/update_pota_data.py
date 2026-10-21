@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Rebuild the pota.app data shipped with the app (run by hand before a release, then commit):
 
-    python3 scripts/update_pota_data.py
+    python3 scripts/update_pota_data.py                      (downloads both)
+    python3 scripts/update_pota_data.py all_parks_ext.csv    (parks from a copy already downloaded)
 
-  assets/parks.tsv.gz   every active park: reference, name, location codes, grid
+  assets/parks.tsv.gz   every active park: reference, name, location codes, grid, latitude, longitude
                         (from https://pota.app/all_parks_ext.csv, the list loggers like QLog use)
   locations.py          location code -> name (from api.pota.app/locations); pota.app's park record
                         sorts codes and names apart, so they can't be paired by position
@@ -29,12 +30,18 @@ def get(url):
         return r.read().decode("utf-8")
 
 
-def parks():
-    rows = [r for r in csv.DictReader(io.StringIO(get("https://pota.app/all_parks_ext.csv"))) if r.get("active") == "1"]
+def parks(path=None):
+    if path:
+        with open(path, encoding="utf-8-sig") as fh:
+            text = fh.read()
+    else:
+        text = get("https://pota.app/all_parks_ext.csv")
+    rows = [r for r in csv.DictReader(io.StringIO(text)) if r.get("active") == "1"]
     if len(rows) < 50000:
         sys.exit("only %d parks - not writing" % len(rows))
     clean = lambda s: (s or "").replace("\t", " ").replace("\n", " ").strip()
-    body = "\n".join("\t".join(clean(r[k]) for k in ("reference", "name", "locationDesc", "grid")) for r in rows) + "\n"
+    cols = ("reference", "name", "locationDesc", "grid", "latitude", "longitude")
+    body = "\n".join("\t".join(clean(r[k]) for k in cols) for r in rows) + "\n"
     with open(os.path.join(ROOT, "assets", "parks.tsv.gz"), "wb") as fh:
         fh.write(gzip.compress(body.encode("utf-8"), 9, mtime=0))     # mtime=0: same parks, same bytes
     print("assets/parks.tsv.gz: %d parks" % len(rows))
@@ -54,5 +61,8 @@ def locations():
 
 
 if __name__ == "__main__":
-    parks()
-    locations()
+    if len(sys.argv) > 1:
+        parks(sys.argv[1])
+    else:
+        parks()
+        locations()

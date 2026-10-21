@@ -380,8 +380,9 @@ class Api:
         days = [(d, per) for d, _, _, per, _ in list_activations(recs=recs)]
         rec, parks = mypota.record(recs, days), shipped_parks()
         for row in rec["hunted"] + rec["activated"]:
-            name, _, grid = parks.get(row["ref"]) or ("", "", "")
-            row["name"], row["at"] = name, grid_center(grid)          # at: [lat, lon] for the map, or None
+            name, _, grid, at = parks.get(row["ref"]) or ("", "", "", None)
+            # [lat, lon] for the map: the park's own position, else the middle of its grid square
+            row["name"], row["at"] = name, at or grid_center(grid)
         return rec
 
     def import_mypota(self):

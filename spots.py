@@ -276,7 +276,7 @@ def load_sessions():
 # number shows its name and locations at once and offline. pota.app is asked only for a park newer than
 # that list, and for a park's comment when two parks are entered (the "does not overlap" note).
 PARKS_FILE = ("assets", "parks.tsv.gz")
-_shipped = None            # reference -> (name, "US-MI,US-ND", grid)
+_shipped = None            # reference -> (name, "US-MI,US-ND", grid, (lat, lon) or None)
 _fetched = {}              # reference -> pota.app's park record, for the run of the app
 
 
@@ -284,9 +284,16 @@ def shipped_parks():
     global _shipped
     if _shipped is None:
         try:
+            parks = {}
             with gzip.open(resource(*PARKS_FILE), "rt", encoding="utf-8") as fh:
-                _shipped = {ref: (name, locs, grid) for ref, name, locs, grid in
-                            (line.rstrip("\n").split("\t") for line in fh)}
+                for line in fh:
+                    ref, name, locs, grid, *ll = line.rstrip("\n").split("\t")
+                    try:
+                        at = (float(ll[0]), float(ll[1]))
+                    except (IndexError, ValueError):
+                        at = None                 # a park without a position (or an older list)
+                    parks[ref] = (name, locs, grid, at)
+            _shipped = parks
         except (OSError, ValueError):
             _shipped = {}
     return _shipped
