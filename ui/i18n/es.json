@@ -45,7 +45,7 @@
   "live.loc.pick": "Elige la prefectura / el estado",
   "live.err.loc": "Este parque abarca varias prefecturas / estados. Elige dónde estás.",
   "live.err.noLoc": "Estos parques no comparten prefectura / estado.",
-  "live.warn.apart": "Según pota.app, {a} y {b} no se superponen. Comprueba que este 2fer sea posible.",
+  "live.warn.apart": "Según pota.app, {a} y {b} no se superponen. Comprueba que este 2fer sea posible.", "live.note.spread": "Los puntos de referencia de los parques están a {d} (aquí cada parque es un solo punto). Solo cuenta como 2fer / 3fer si estás dentro de todos los parques a la vez.",
   "live.toBar": "Barra", "live.finish": "Terminar este parque", "live.finishArmed": "Terminar con {n} sin confirmar",
   "live.working": "Escribiendo…",
   "live.qsoNote.done": "Activación completada ({n} combinaciones estación/banda/modo)", "live.qsoNote.left": "Faltan {n} QSO para completar la activación",

@@ -203,6 +203,10 @@
     const warn = $("#parkApart");
     warn.hidden = !(r && r.apart && r.apart.length);
     if (!warn.hidden) warn.textContent = r.apart.map(([a, b]) => t("live.warn.apart", { a, b })).join(" ");
+    // a note, not a warning: a park is one point here, so how far apart they are can't say whether they overlap
+    const spread = $("#parkSpread");
+    spread.hidden = !(r && r.spread_km != null);
+    if (!spread.hidden) spread.textContent = t("live.note.spread", { d: fmtDist(r.spread_km) });
     if (!r || (!r.options.length && !r.multi.length)) { box.hidden = true; st.loc = ""; return; }
     box.hidden = false;
     const label = (o) => `${esc(o.code)}${o.name ? " " + esc(o.name) : ""}`;
