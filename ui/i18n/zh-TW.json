@@ -1,6 +1,6 @@
 {
   "_name": "繁體中文",
-  "app.name": "POTA Upload Helper",
+  "app.name": "Potaroo",
   "nav.live": "運用中", "nav.live.sub": "記錄 spot",
   "nav.spots": "正在啟用的電台", "nav.spots.sub": "此刻在公園發射的電台",
   "nav.build": "產生上傳檔案", "nav.build.sub": "pota.app 用檔案",

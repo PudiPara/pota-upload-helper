@@ -1,4 +1,6 @@
-# POTA Upload Helper
+# Potaroo
+
+*Früher POTA Upload Helper*
 
 [日本語](README.md) · [English](README.en.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Italiano](README.it.md) · [Português (Brasil)](README.pt-BR.md) · [한국어](README.ko.md) · [Polski](README.pl.md)
 
@@ -36,10 +38,10 @@ Die neueste Version gibt es unter [Releases](../../releases).
 
 | OS | Datei | So geht’s |
 |---|---|---|
-| macOS (Apple Silicon) | `POTA-Upload-Helper-macOS.dmg` | Öffnen und `POTA Upload Helper` nach `Applications` ziehen |
-| Windows 10 / 11 | `POTA-Upload-Helper-Setup.exe` | Installiert pro Benutzer (keine Adminrechte) und legt einen Startmenü-Eintrag an |
+| macOS (Apple Silicon) | `Potaroo-macOS.dmg` | Öffnen und `Potaroo` nach `Applications` ziehen |
+| Windows 10 / 11 | `Potaroo-Setup.exe` | Installiert pro Benutzer (keine Adminrechte) und legt einen Startmenü-Eintrag an |
 
-Die Zips (`POTA-Upload-Helper-macOS.zip` / `POTA-Upload-Helper-Windows.zip`) hängen ebenfalls an; das Update in der App nutzt sie, bitte nicht aus einem Release löschen.
+Die Zips (`Potaroo-macOS.zip` / `Potaroo-Windows.zip`) hängen ebenfalls an; das Update in der App nutzt sie, bitte nicht aus einem Release löschen.
 
 Die App ist nicht signiert, der erste Start zeigt eine Warnung.
 
@@ -72,8 +74,8 @@ Sollen dieselben Daten an ein weiteres Programm (OpsLog …) gehen, trage dessen
 
 | OS | Ort |
 |---|---|
-| macOS | `~/Library/Application Support/POTA Upload Helper/` |
-| Windows | `%APPDATA%\POTA Upload Helper\` |
+| macOS | `~/Library/Application Support/Potaroo/` |
+| Windows | `%APPDATA%\Potaroo\` |
 
 `qsolog.db` (empfangene QSOs), `spots-YYYYMMDD.jsonl` (Spots), `sessions.json` (deine Aktivierungszeiten und Parks), `hunter.json` (Kopie des Hunter-Logs), `settings.json`.
 Das öffentliche pota.app-Profil zeigt nur die letzten 25 Hunter-QSOs; die App ergänzt `hunter.json` während der Aufzeichnung und bei jedem Bauen, damit die Historie wächst.

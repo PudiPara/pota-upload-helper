@@ -6,7 +6,7 @@ import types
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-os.environ.setdefault("POTA_HELPER_DATA", os.path.join(tempfile.mkdtemp(), "data"))   # another test module may own it
+os.environ.setdefault("POTAROO_DATA", os.path.join(tempfile.mkdtemp(), "data"))   # another test module may own it
 sys.modules.setdefault("webview", types.SimpleNamespace(OPEN_DIALOG=1, FOLDER_DIALOG=2))  # app.py imports it
 sys.path.insert(0, ROOT)
 import app  # noqa: E402

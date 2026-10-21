@@ -17,9 +17,9 @@ jobs:
       matrix:
         include:
           - os: macos-latest       # Apple Silicon
-            asset: POTA-Upload-Helper-macOS.zip
+            asset: Potaroo-macOS.zip
           - os: windows-latest
-            asset: POTA-Upload-Helper-Windows.zip
+            asset: Potaroo-Windows.zip
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -32,13 +32,13 @@ jobs:
       - name: Build macOS app
         if: runner.os == 'macOS'
         run: |
-          pyinstaller --noconfirm --windowed --name "POTA Upload Helper" \
+          pyinstaller --noconfirm --windowed --name "Potaroo" \
             --osx-bundle-identifier com.jl1fva.pota-upload-helper \
             --icon assets/icon.icns \
             --add-data "ui:ui" app.py
           # macOS 15+ asks for "Local Network" permission before an app may receive
           # multicast (WSJT-X on 224.0.0.1); the prompt needs this usage string.
-          APP="dist/POTA Upload Helper.app"
+          APP="dist/Potaroo.app"
           VER="$(python3 -c 'import potacommon; print(potacommon.VERSION)')"
           plutil -replace CFBundleShortVersionString -string "$VER" "$APP/Contents/Info.plist"
           plutil -replace CFBundleVersion -string "$VER" "$APP/Contents/Info.plist"
@@ -46,30 +46,33 @@ jobs:
           plutil -replace NSHumanReadableCopyright -string "JL1FVA" "$APP/Contents/Info.plist"
           codesign --force --deep --sign - "$APP"   # re-seal after editing Info.plist
           # zip: what the in-app updater downloads.  dmg: what people install from.
-          (cd dist && ditto -c -k --keepParent "POTA Upload Helper.app" "../POTA-Upload-Helper-macOS.zip")
+          (cd dist && ditto -c -k --keepParent "Potaroo.app" "../Potaroo-macOS.zip")
+          cp Potaroo-macOS.zip POTA-Upload-Helper-macOS.zip   # what 1.x's updater looks for
           rm -rf dmg && mkdir dmg && cp -R "$APP" dmg/ && ln -s /Applications dmg/Applications
-          hdiutil create -volname "POTA Upload Helper" -srcfolder dmg -ov -format UDZO POTA-Upload-Helper-macOS.dmg
+          hdiutil create -volname "Potaroo" -srcfolder dmg -ov -format UDZO Potaroo-macOS.dmg
 
       - name: Build Windows app
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          pyinstaller --noconfirm --onefile --windowed --name "POTA Upload Helper" --icon assets/icon.ico --add-data "ui;ui" app.py
+          pyinstaller --noconfirm --onefile --windowed --name "Potaroo" --icon assets/icon.ico --add-data "ui;ui" app.py
           # zip: what the in-app updater downloads.  Setup.exe: what people install from (Inno Setup, per-user).
-          Compress-Archive -Path "dist/POTA Upload Helper.exe" -DestinationPath "POTA-Upload-Helper-Windows.zip"
+          Compress-Archive -Path "dist/Potaroo.exe" -DestinationPath "Potaroo-Windows.zip"
+          Copy-Item "Potaroo-Windows.zip" "POTA-Upload-Helper-Windows.zip"   # what 1.x's updater looks for
           $ver = python -c "import potacommon; print(potacommon.VERSION)"
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; }
           & $iscc "/DMyAppVersion=$ver" installer\windows.iss
-          if (-not (Test-Path "POTA-Upload-Helper-Setup.exe")) { throw "installer was not built" }
+          if (-not (Test-Path "Potaroo-Setup.exe")) { throw "installer was not built" }
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.asset }}
           path: |
+            Potaroo-*.zip
+            Potaroo-*.dmg
             POTA-Upload-Helper-*.zip
-            POTA-Upload-Helper-*.dmg
-            POTA-Upload-Helper-Setup.exe
+            Potaroo-Setup.exe
 
   release:
     needs: build
@@ -84,11 +87,13 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ver.outputs.v }}
-          name: POTA Upload Helper ${{ steps.ver.outputs.v }}
+          name: Potaroo ${{ steps.ver.outputs.v }}
           target_commitish: ${{ github.sha }}
           files: |
-            POTA-Upload-Helper-macOS.dmg
-            POTA-Upload-Helper-Setup.exe
+            Potaroo-macOS.dmg
+            Potaroo-Setup.exe
+            Potaroo-macOS.zip
+            Potaroo-Windows.zip
             POTA-Upload-Helper-macOS.zip
             POTA-Upload-Helper-Windows.zip
           generate_release_notes: true

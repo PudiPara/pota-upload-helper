@@ -2,7 +2,7 @@
 
 ## 日本語
 
-このアプリ（POTA Upload Helper）は個人が趣味で作った無保証のソフトウェアで、MIT ライセンスで配布しています。
+このアプリ（Potaroo）は個人が趣味で作った無保証のソフトウェアで、MIT ライセンスで配布しています。
 
 - **このアプリの使用によって生じたいかなる損害についても、作者は責任を負いません。** pota.app へ誤った内容をアップロードしたこと、QSO の重複や欠落、ログやファイルの消失、ロガーやネットワーク設定への影響などを含みます。アップロードするファイルの内容は、必ず自分で確認してください。
 - P2P や 2fer の判定は pota.app のスポットとハンターログに基づく推定で、正しさは保証されません。
@@ -12,7 +12,7 @@
 
 ## English
 
-This app (POTA Upload Helper) is hobby software by an individual, provided as is, without warranty, under the MIT License.
+This app (Potaroo) is hobby software by an individual, provided as is, without warranty, under the MIT License.
 
 - **The author accepts no liability for any damage arising from the use of this app**, including uploading wrong data to pota.app, duplicated or missing QSOs, lost logs or files, and effects on your logger or network settings. Always check the files before you upload them.
 - P2P and 2fer detection is an estimate based on pota.app spots and hunter logs; correctness is not guaranteed.

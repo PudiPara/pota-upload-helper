@@ -17,13 +17,14 @@ import urllib.request
 import zipfile
 
 from i18n import t
-from potacommon import APP_NAME, VERSION, fetch_json
+from potacommon import APP_NAME, USER_AGENT, VERSION, fetch_json
 
 REPO = "PudiPara/pota-upload-helper"
 LATEST = "https://api.github.com/repos/%s/releases/latest" % REPO
 PAGE = "https://github.com/%s/releases/latest" % REPO
 DOWNLOAD_PREFIX = "https://github.com/%s/releases/download/" % REPO
-ASSETS = {"darwin": "POTA-Upload-Helper-macOS.zip", "win32": "POTA-Upload-Helper-Windows.zip"}
+# 1.x looks for POTA-Upload-Helper-*.zip; CI publishes those names too until nobody is on 1.x
+ASSETS = {"darwin": "Potaroo-macOS.zip", "win32": "Potaroo-Windows.zip"}
 
 
 def parse_version(tag):
@@ -76,12 +77,12 @@ def download(url, dest, timeout=600):
     if not url.startswith(DOWNLOAD_PREFIX):
         raise ValueError(t("updater.badUrl", url=url))
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "pota-upload-helper/" + VERSION})
+        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(req, timeout=60) as r, open(dest, "wb") as fh:
             shutil.copyfileobj(r, fh)
     except (ssl.SSLError, urllib.error.URLError):
         kw = {"creationflags": 0x08000000} if os.name == "nt" else {}
-        subprocess.run(["curl", "-sSL", "-m", str(timeout), "-A", "pota-upload-helper/" + VERSION, "-o", dest, url],
+        subprocess.run(["curl", "-sSL", "-m", str(timeout), "-A", USER_AGENT, "-o", dest, url],
                        check=True, **kw)
     if os.path.getsize(dest) < 1_000_000:
         raise RuntimeError(t("updater.tooSmall", n=os.path.getsize(dest)))
@@ -93,7 +94,7 @@ def install(url, installed=None):
     installed = installed or app_path()
     if not installed:
         raise RuntimeError(t("updater.fromSource"))
-    work = tempfile.mkdtemp(prefix="pota-update-")
+    work = tempfile.mkdtemp(prefix="potaroo-update-")
     zip_path = os.path.join(work, "update.zip")
     download(url, zip_path)
     if sys.platform == "darwin":

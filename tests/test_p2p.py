@@ -7,7 +7,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TMP = tempfile.mkdtemp()
-os.environ.setdefault("POTA_HELPER_DATA", os.path.join(TMP, "data"))   # another test module may own it
+os.environ.setdefault("POTAROO_DATA", os.path.join(TMP, "data"))   # another test module may own it
 
 from potacommon import read_adif  # noqa: E402
 import builder  # noqa: E402

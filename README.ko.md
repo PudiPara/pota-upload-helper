@@ -1,4 +1,6 @@
-# POTA Upload Helper
+# Potaroo
+
+*이전 이름: POTA Upload Helper*
 
 [日本語](README.md) · [English](README.en.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Italiano](README.it.md) · [Português (Brasil)](README.pt-BR.md) · [한국어](README.ko.md) · [Polski](README.pl.md)
 
@@ -36,10 +38,10 @@ FT8 등에서는 상대가 공원에서 운용 중인지, 더구나 2fer인지 �
 
 | OS | 파일 | 사용법 |
 |---|---|---|
-| macOS(Apple Silicon) | `POTA-Upload-Helper-macOS.dmg` | 열어서 `POTA Upload Helper`를 `Applications`로 드래그 |
-| Windows 10 / 11 | `POTA-Upload-Helper-Setup.exe` | 실행하면 사용자별 위치(관리자 권한 불필요)에 설치되고 시작 메뉴에 들어갑니다 |
+| macOS(Apple Silicon) | `Potaroo-macOS.dmg` | 열어서 `Potaroo`를 `Applications`로 드래그 |
+| Windows 10 / 11 | `Potaroo-Setup.exe` | 실행하면 사용자별 위치(관리자 권한 불필요)에 설치되고 시작 메뉴에 들어갑니다 |
 
-zip판(`POTA-Upload-Helper-macOS.zip` / `POTA-Upload-Helper-Windows.zip`)도 첨부되어 있습니다. 앱 내 업데이트가 이 zip을 쓰므로 Release에서 지우지 마세요.
+zip판(`Potaroo-macOS.zip` / `Potaroo-Windows.zip`)도 첨부되어 있습니다. 앱 내 업데이트가 이 zip을 쓰므로 Release에서 지우지 마세요.
 
 서명하지 않은 앱이라 처음에는 경고가 나옵니다.
 
@@ -72,8 +74,8 @@ zip판(`POTA-Upload-Helper-macOS.zip` / `POTA-Upload-Helper-Windows.zip`)도 첨
 
 | OS | 위치 |
 |---|---|
-| macOS | `~/Library/Application Support/POTA Upload Helper/` |
-| Windows | `%APPDATA%\POTA Upload Helper\` |
+| macOS | `~/Library/Application Support/Potaroo/` |
+| Windows | `%APPDATA%\Potaroo\` |
 
 `qsolog.db`(받은 QSO), `spots-YYYYMMDD.jsonl`(스팟 기록), `sessions.json`(내 운용 시간과 공원), `hunter.json`(헌터 로그 사본), `settings.json`.
 pota.app 공개 프로필에는 최근 25건의 헌터 로그만 나오므로, 기록 중과 생성 때마다 `hunter.json`에 추가해 이력을 쌓습니다.

@@ -59,7 +59,7 @@ def parse_record(text, jst_offset=9):
     return rec
 
 
-_CLASS = "PotaUploadHelperHamlog"
+_CLASS = "PotarooHamlog"
 _PROC = None          # one window procedure for the process, kept alive for good
 _CLIENTS = {}         # hwnd -> Client: the class is registered once, so the procedure finds its client here
 
@@ -103,7 +103,7 @@ class Client:
             # procedure would leave a second client (after 保存して受信し直す) answering the first one.
             _PROC = WNDPROC(_dispatch)
             u.RegisterClassW(ctypes.byref(WNDCLASSW(lpfnWndProc=_PROC, hInstance=hinst, lpszClassName=_CLASS)))
-        self.hwnd = u.CreateWindowExW(0, _CLASS, "POTA Upload Helper HAMLOG", 0, 0, 0, 0, 0, W.HWND(-3), None, hinst, None)
+        self.hwnd = u.CreateWindowExW(0, _CLASS, "Potaroo HAMLOG", 0, 0, 0, 0, 0, W.HWND(-3), None, hinst, None)
         if not self.hwnd:
             raise OSError("cannot create the message window")
         _CLIENTS[self.hwnd] = self

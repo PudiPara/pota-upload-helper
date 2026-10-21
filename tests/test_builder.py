@@ -7,7 +7,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TMP = tempfile.mkdtemp()
-os.environ["POTA_HELPER_DATA"] = os.path.join(TMP, "data")
+os.environ["POTAROO_DATA"] = os.path.join(TMP, "data")
 
 from potacommon import base_call, read_adif, split_parks, write_adif  # noqa: E402
 import builder  # noqa: E402
@@ -21,7 +21,7 @@ def qso(call, t, band="40m", mode="FT8", **kw):
 
 class BuilderTest(unittest.TestCase):
     def setUp(self):
-        data = os.environ["POTA_HELPER_DATA"]
+        data = os.environ["POTAROO_DATA"]
         os.makedirs(data, exist_ok=True)
         json.dump([{"date": "2026-10-20T01:05:00", "callsign": "JA1AAA/P", "band": "40M", "mode": "DATA",
                     "reference": "JP-0001"},

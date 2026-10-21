@@ -1,4 +1,6 @@
-# POTA Upload Helper
+# Potaroo
+
+*旧名：POTA Upload Helper*
 
 [日本語](README.md) · [English](README.en.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Italiano](README.it.md) · [Português (Brasil)](README.pt-BR.md) · [한국어](README.ko.md) · [Polski](README.pl.md)
 
@@ -36,10 +38,10 @@ FT8 などでは、相手が公園から運用しているのか、さらに 2fe
 
 | OS | ファイル | 使い方 |
 |---|---|---|
-| macOS（Apple Silicon） | `POTA-Upload-Helper-macOS.dmg` | 開いて `POTA Upload Helper` を `Applications` にドラッグ |
-| Windows 10 / 11 | `POTA-Upload-Helper-Setup.exe` | 実行するとユーザーごとの場所（管理者権限不要）にインストールされ、スタートメニューに入ります |
+| macOS（Apple Silicon） | `Potaroo-macOS.dmg` | 開いて `Potaroo` を `Applications` にドラッグ |
+| Windows 10 / 11 | `Potaroo-Setup.exe` | 実行するとユーザーごとの場所（管理者権限不要）にインストールされ、スタートメニューに入ります |
 
-zip 版（`POTA-Upload-Helper-macOS.zip` / `POTA-Upload-Helper-Windows.zip`）も添付しています。アプリ内の更新はこの zip を使うので、Release からは消さないでください。
+zip 版（`Potaroo-macOS.zip` / `Potaroo-Windows.zip`）も添付しています。アプリ内の更新はこの zip を使うので、Release からは消さないでください。
 
 署名していないアプリなので、初回は警告が出ます。
 
@@ -89,8 +91,8 @@ WSJT-X の QSO はアプリにも直接届き（WSJT-X の受信口）、ロガ�
 
 | OS | 場所 |
 |---|---|
-| macOS | `~/Library/Application Support/POTA Upload Helper/` |
-| Windows | `%APPDATA%\POTA Upload Helper\` |
+| macOS | `~/Library/Application Support/Potaroo/` |
+| Windows | `%APPDATA%\Potaroo\` |
 
 `qsolog.db`（受け取った QSO）、`spots-YYYYMMDD.jsonl`（スポット記録）、`sessions.json`（自分の運用時間と公園）、`hunter.json`（ハンターログの控え）、`settings.json`。
 pota.app の公開プロフィールに出るハンターログは直近 25 件だけなので、記録中と作成のたびに `hunter.json` に追記して履歴を貯めます。

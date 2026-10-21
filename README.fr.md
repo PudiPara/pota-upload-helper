@@ -1,4 +1,6 @@
-# POTA Upload Helper
+# Potaroo
+
+*Anciennement POTA Upload Helper*
 
 [日本語](README.md) · [English](README.en.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Italiano](README.it.md) · [Português (Brasil)](README.pt-BR.md) · [한국어](README.ko.md) · [Polski](README.pl.md)
 
@@ -36,10 +38,10 @@ Prenez la dernière version dans [Releases](../../releases).
 
 | OS | Fichier | Comment |
 |---|---|---|
-| macOS (Apple Silicon) | `POTA-Upload-Helper-macOS.dmg` | Ouvrez-le et glissez `POTA Upload Helper` dans `Applications` |
-| Windows 10 / 11 | `POTA-Upload-Helper-Setup.exe` | Installe pour l’utilisateur (sans droits admin) et ajoute une entrée au menu Démarrer |
+| macOS (Apple Silicon) | `Potaroo-macOS.dmg` | Ouvrez-le et glissez `Potaroo` dans `Applications` |
+| Windows 10 / 11 | `Potaroo-Setup.exe` | Installe pour l’utilisateur (sans droits admin) et ajoute une entrée au menu Démarrer |
 
-Les zips (`POTA-Upload-Helper-macOS.zip` / `POTA-Upload-Helper-Windows.zip`) sont joints aussi ; la mise à jour intégrée les utilise, ne les supprimez pas d’une Release.
+Les zips (`Potaroo-macOS.zip` / `Potaroo-Windows.zip`) sont joints aussi ; la mise à jour intégrée les utilise, ne les supprimez pas d’une Release.
 
 L’application n’est pas signée : le premier lancement affiche un avertissement.
 
@@ -72,8 +74,8 @@ Pour transmettre les mêmes données à un autre programme (OpsLog…), indiquez
 
 | OS | Emplacement |
 |---|---|
-| macOS | `~/Library/Application Support/POTA Upload Helper/` |
-| Windows | `%APPDATA%\POTA Upload Helper\` |
+| macOS | `~/Library/Application Support/Potaroo/` |
+| Windows | `%APPDATA%\Potaroo\` |
 
 `qsolog.db` (QSO reçus), `spots-YYYYMMDD.jsonl` (spots), `sessions.json` (vos créneaux d’activation et parcs), `hunter.json` (copie du journal chasseur), `settings.json`.
 Le profil public pota.app ne montre que les 25 derniers QSO chasseur ; l’application complète `hunter.json` pendant l’enregistrement et à chaque génération pour garder l’historique.
