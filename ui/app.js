@@ -224,13 +224,14 @@
     st.lastQ = Date.now() / 1000 - 1;
     st.cheered = st.qsos.size >= 10;            // re-opened mid-activation: don't celebrate twice
     renderSpots(); renderQsos();
-    tick(); clearInterval(st.timer); st.timer = setInterval(tick, 1000);
+    clearTimeout(st.timer); tick();
     poll(); clearInterval(st.poll); st.poll = setInterval(poll, 2500);
     if (!BAR) setBar(true);
     fillParkNames("#signParks", parks);
   }
   function tick() {
-    const s = Math.max(0, Math.floor((Date.now() - st.start) / 1000));
+    const ms = Date.now() - st.start, s = Math.max(0, Math.floor(ms / 1000));
+    clearTimeout(st.timer); st.timer = setTimeout(tick, 1000 - (((ms % 1000) + 1000) % 1000) + 20);   // the next whole second
     const p = (n) => String(n).padStart(2, "0");
     const tm = `${p(Math.floor(s / 3600))}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}`;
     $("#elapsed").textContent = tm; $("#barElapsed").textContent = tm;
@@ -340,9 +341,9 @@
     const p2p = list.filter((q) => q.decision && q.decision !== "no" && q.parks.length).length;
     const pending = list.filter((q) => !q.decision && q.candidate.length).length;
     $("#qsoCount").textContent = n; $("#barCount").textContent = n; $("#barPer").textContent = breakdown;
-    const w = Math.min(100, (n / 10) * 100) + "%";
-    $("#qsoBar").style.width = w; $("#barMeter").style.width = w;
-    $(".tally").classList.toggle("is-done", n >= 10); $(".bar-tally").classList.toggle("is-done", n >= 10);
+    const pct = Math.min(100, (n / 10) * 100);
+    $("#qsoBar").style.width = pct + "%"; $("#barRing").style.setProperty("--p", pct);
+    $(".tally").classList.toggle("is-done", n >= 10); $("#barRing").classList.toggle("is-done", n >= 10);
     $("#qsoNote").textContent = (breakdown ? breakdown + " — " : "") + (n >= 10 ? t("live.qsoNote.done", { n: uniq }) : t("live.qsoNote.left", { n: 10 - n }));
     $("#p2pCount").textContent = [p2p ? t("live.p2pCount", { n: p2p }) : "", pending ? t("live.pendingCount", { n: pending }) : ""].filter(Boolean).join(" · ");
     if (st.editing) { const el = $(`[data-in="${CSS.escape(st.editing)}"]`); if (el) el.focus(); }
@@ -482,7 +483,7 @@
     btns.forEach((b) => { b.disabled = true; b.textContent = t("live.working"); });
     const r = await api.finish_live(true);
     btns.forEach((b) => (b.disabled = false)); finishLabels();
-    clearInterval(st.timer); clearInterval(st.poll);
+    clearTimeout(st.timer); clearInterval(st.poll);
     await setBar(false);
     $("#liveRun").hidden = true; $("#liveIdle").hidden = false; $("#liveDot").hidden = true;
     const card = $("#doneCard"); card.hidden = false;

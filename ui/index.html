@@ -104,14 +104,13 @@
 
       <div id="liveRun" hidden>
         <div class="bar" id="bar" hidden>
-          <div class="bar-head">
-            <div class="bar-parks" id="barParks"></div>
-            <div class="bar-tally"><strong id="barCount">0</strong><span>/10</span><i class="bar-meter"><b id="barMeter"></b></i><small class="bar-per" id="barPer"></small></div>
-            <div class="bar-clock" id="barElapsed">00:00:00</div>
-            <button class="bar-btn" id="barClose" data-i18n="bar.close">閉じる</button>
+          <div class="bar-tile pywebview-drag-region"><div class="bar-ring" id="barRing"><strong id="barCount">0</strong><span>/10</span></div></div>
+          <div class="bar-body">
+            <div class="bar-top pywebview-drag-region"><i class="bar-live"></i><span class="bar-parks" id="barParks"></span><small class="bar-per" id="barPer"></small><span class="bar-clock" id="barElapsed">00:00:00</span></div>
+            <ol class="qsos qsos-bar" id="barQsos"></ol>
+            <div class="bar-empty" id="barEmpty" data-i18n="bar.empty">ロガーからの QSO を待っています。</div>
           </div>
-          <ol class="qsos qsos-bar" id="barQsos"></ol>
-          <div class="bar-empty" id="barEmpty" data-i18n="bar.empty">ロガーからの QSO を待っています。</div>
+          <button class="bar-close" id="barClose" data-i18n-title="bar.close">&times;</button>
         </div>
 
         <header class="sign">

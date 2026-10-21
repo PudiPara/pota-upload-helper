@@ -5,7 +5,7 @@ import sys
 
 import webview
 
-BAR_W, BAR_H = 640, 190
+BAR_W, BAR_H = 600, 116
 
 
 def _top_right():
@@ -84,7 +84,7 @@ class BarMode:
     def _open(self):
         x, y = _top_right()
         bar = webview.create_window(self._title, self._url + "#bar", js_api=self._api, width=BAR_W, height=BAR_H,
-                                    x=x, y=y, min_size=(BAR_W // 2, 120), on_top=self.bar_on_top)
+                                    x=x, y=y, frameless=True, on_top=self.bar_on_top)   # a banner: dragged by its tile (.pywebview-drag-region)
         bar.events.closed += self._closed
         self._bar = bar
 
