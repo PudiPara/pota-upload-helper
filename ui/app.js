@@ -258,7 +258,7 @@
     if (editing) ctl = input;
     else if (p2p) ctl = `<span class="p2p-tag">P2P</span><span class="plates">${plates(q.parks)}</span><button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.change")}</button>`;
     else if (q.decision === "no") ctl = `<span class="qso-none">${t("row.none")}</span><button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.change")}</button>`;
-    else if (q.candidate.length) ctl = `<span class="ask-text">${t("row.ask")}</span><span class="plates">${plates(q.candidate)}</span>
+    else if (q.candidate.length) ctl = `<span class="ask-text">${t("row.ask")}</span><span class="plates">${plates(q.candidate)}</span>${q.note ? `<span class="ask-note">${esc(t("row.note." + q.note))}</span>` : ""}
         <button class="chip chip-yes" data-act="yes" data-uid="${esc(q.uid)}">${t("row.yes")}</button><button class="chip" data-act="no" data-uid="${esc(q.uid)}">${t("row.no")}</button>
         <button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.manual")}</button>`;
     else ctl = input;
