@@ -1,5 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-  <!-- Potaroo app icon: a park trail sign in pine green, a cream conifer, amber radio arcs. -->
+  <!-- Potaroo app icon: a park trail sign in pine green; the long-footed potoroo behind the name's pun as
+       one flat cream silhouette, sitting up on its haunches; its thin tail raised behind like an antenna,
+       amber radio arcs from the tip. -->
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#2E7A5C"/>
@@ -10,22 +12,29 @@
       <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </linearGradient>
   </defs>
-  <!-- rounded square with the usual macOS margin -->
   <rect x="52" y="52" width="920" height="920" rx="206" fill="url(#bg)"/>
   <rect x="52" y="52" width="920" height="920" rx="206" fill="url(#shine)"/>
-  <!-- the plate's double rule -->
   <rect x="112" y="112" width="800" height="800" rx="160" fill="none" stroke="#F4F1E4" stroke-opacity=".38" stroke-width="14"/>
-  <!-- conifer: apex at (512,300) -->
-  <g fill="#F4F1E4">
-    <path d="M512 300 L640 476 L590 476 L676 596 L612 596 L716 736 L308 736 L412 596 L348 596 L434 476 L384 476 Z"/>
-    <rect x="476" y="722" width="72" height="104" rx="14"/>
+  <g transform="translate(36 10)">
+    <!-- potoroo sitting up on its haunches (the kangaroo in it): pear-shaped body, chest raised, head
+         forward with a long snout, small forearms, hind foot under the body; the thin tail raised
+         behind like an antenna, radio arcs from its tip -->
+    <g fill="#F4F1E4">
+      <path d="M316 700 C 222 660, 176 540, 206 372 C 210 348, 242 350, 238 374 C 214 520, 252 610, 340 652 Z"/>
+      <circle cx="446" cy="636" r="164"/>
+      <ellipse cx="576" cy="520" rx="124" ry="160" transform="rotate(38 576 520)"/>
+      <circle cx="654" cy="404" r="98"/>
+      <path d="M680 318 C 740 338, 790 392, 814 436 C 824 454, 812 470, 794 466 C 740 460, 690 474, 640 492 Z"/>
+      <ellipse cx="606" cy="318" rx="28" ry="44" transform="rotate(-18 606 318)"/>
+      <rect x="408" y="770" width="230" height="42" rx="21"/>
+      <rect x="664" y="548" width="30" height="92" rx="15" transform="rotate(-14 679 548)"/>
+    </g>
+    <g fill="none" stroke="#F2C46B" stroke-width="32" stroke-linecap="round">
+      <path d="M164 362 A58 58 0 0 1 222 304"/>
+      <path d="M110 362 A112 112 0 0 1 222 250"/>
+    </g>
+    <circle cx="222" cy="362" r="22" fill="#F2C46B"/>
+    <circle cx="690" cy="392" r="17" fill="#1F5541"/>
+    <circle cx="806" cy="448" r="11" fill="#1F5541"/>
   </g>
-  <!-- ground -->
-  <rect x="276" y="824" width="472" height="22" rx="11" fill="#F4F1E4" fill-opacity=".55"/>
-  <!-- radio arcs: quarter circles around the treetop, up to the right -->
-  <g fill="none" stroke="#F2C46B" stroke-width="38" stroke-linecap="round">
-    <path d="M512 224 A76 76 0 0 1 588 300"/>
-    <path d="M512 158 A142 142 0 0 1 654 300"/>
-  </g>
-  <circle cx="512" cy="300" r="26" fill="#F2C46B"/>
 </svg>
