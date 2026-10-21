@@ -341,14 +341,14 @@ class Api:
         """Open or close the bar window."""
         return self._bar.set(on) if self._bar else False
 
-    def fit_bar(self, width, inner):
+    def fit_bar(self, width):
         """The bar measured its content: make the window that wide (no line wraps, nothing to spare)."""
         try:
-            width, inner = max(360, min(1600, int(width))), int(inner)
+            width = max(360, min(1600, int(width)))
         except (TypeError, ValueError):
             return False
         if self._bar:
-            self._bar.fit(width, inner)
+            self._bar.fit(width)
         return True
 
     def set_on_top(self, on):

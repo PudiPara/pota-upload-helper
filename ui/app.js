@@ -433,17 +433,20 @@
   function askNext() {
     ask.q = ask.q.filter(asking);
     const box = $("#ask"), q = st.qsos.get(ask.q[0]);
-    if (!q) { box.hidden = true; return; }
+    if (!q) { box.hidden = true; fitBar(); return; }
     if (!box.hidden && box.dataset.uid === q.uid) return;
     box.dataset.uid = q.uid; box.hidden = false;
     $("#askCall").textContent = q.call; $("#askParks").innerHTML = plates(q.candidate, q.new);
+    fitBar();                                      // a 3fer question is wider than the row under it
   }
   // the bar window is as wide as its content needs: no wraps, nothing to spare (window.py BarMode.fit)
   function fitBar() {
     const bar = $("#bar"); bar.classList.add("is-measure");
-    const w = Math.ceil(bar.getBoundingClientRect().width);
+    let w = Math.ceil(bar.getBoundingClientRect().width);
     bar.classList.remove("is-measure");
-    if (Math.abs(w - window.innerWidth) > 2) api.fit_bar(w, window.innerWidth);
+    if (!$("#ask").hidden) w = Math.max(w, Math.ceil($(".ask-q").getBoundingClientRect().width) + 32);   // its 16 px sides
+    w = Math.max(360, w);                          // Api.fit_bar's floor: the P2P question's buttons
+    if (Math.abs(w - window.innerWidth) > 2 && w !== st.barW) { st.barW = w; api.fit_bar(w); }
   }
   function blinkAsk() { const b = $("#ask"); b.classList.remove("is-blink"); void b.offsetWidth; b.classList.add("is-blink"); }
   $$("#ask [data-ask]").forEach((b) => b.addEventListener("click", async () => {

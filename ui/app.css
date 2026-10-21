@@ -107,7 +107,7 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
   border-radius: 2px; background: #8FD0A6;
 }
 .nav-dot {
-  position: absolute; right: 12px; top: 13px; width: 8px; height: 8px; border-radius: 50%;
+  position: absolute; right: 12px; top: 16px; width: 8px; height: 8px; border-radius: 50%;   /* on the label's middle */
   background: #7EE2A0; box-shadow: 0 0 0 0 rgba(126, 226, 160, .6);
   animation: pulse 2s infinite;
 }
@@ -409,7 +409,7 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .act-del.is-armed { color: var(--warn); font-weight: 700; }
 .act:first-child { border-top: 0; }
 .act:hover { background: var(--surface-2); }
-.act input { width: 16px; height: 16px; accent-color: var(--pine-2); }
+.act input { width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--pine-2); }   /* on the date's middle */
 .act-date { font-weight: 600; }
 .act-date small { color: var(--ink-2); font-weight: 400; margin-left: 4px; }
 .act-n { text-align: right; font-weight: 600; }
@@ -527,8 +527,9 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 /* the bar's P2P question over the whole bar (askNext in app.js); blinks when the next QSO comes first */
 .ask { position: fixed; inset: 0; z-index: 19; display: grid; place-content: center; gap: 8px; padding: 6px 16px;
   background: #7A4E0C; color: #F4F7F1; text-align: center; }
-.ask-q { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; font-weight: 700; font-size: 13.5px; }
-.ask-q strong { font-size: 20px; }
+.ask-q { display: flex; flex-wrap: nowrap; white-space: nowrap; align-items: center; justify-content: center; gap: 8px; font-weight: 700; font-size: 13.5px; }
+.ask-q strong { font-size: 20px; line-height: 1; }
+.ask-q .plates { flex-wrap: nowrap; }
 .ask-btns { display: flex; gap: 10px; justify-content: center; }
 .ask .chip { font-size: 14px; padding: 5px 18px; background: #F4F7F1; color: #1B2420; border-color: transparent; }
 .ask .chip[data-ask="yes"] { background: #9FD3AE; }
@@ -543,7 +544,7 @@ body.is-bar .cheer { grid-template-columns: auto auto; justify-content: center; 
   gap: 4px 16px; background: #1E4D3A; }
 body.is-bar .cheer > span:nth-child(2):last-child { grid-row: 1 / span 2; }   /* 10 QSO: one line beside the word */
 body.is-bar .cheer-hunt { background: #7A4E0C; }
-body.is-bar .cheer strong { grid-row: 1 / span 2; font-size: 40px; }
+body.is-bar .cheer strong { grid-row: 1 / span 2; font-size: 40px; line-height: 1; position: relative; top: -.09em; }   /* caps sit low in their box */
 body.is-bar .cheer span { font-size: 14px; }
 body.is-bar .cheer-hunt .plates { margin: 0; gap: 6px; }
 body.is-bar .cheer-hunt .plate { font-size: 15px; padding: 2px 9px 3px; }
