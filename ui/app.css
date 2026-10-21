@@ -537,6 +537,16 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .ask.is-blink { animation: ask-blink .3s 6 alternate; }
 @keyframes ask-blink { to { background: #BE3424; } }
 .cheer-hunt .plate { font-size: clamp(16px, 4vw, 24px); padding: 3px 12px 4px; border-radius: 7px; }
+/* in the bar (about 100 px high) a celebration is two columns: the big word on the left, the plates and
+   the line under it on the right; opaque, so the bar's text doesn't show through */
+body.is-bar .cheer { grid-template-columns: auto auto; justify-content: center; align-content: center; align-items: center; justify-items: start;
+  gap: 4px 16px; background: #1E4D3A; }
+body.is-bar .cheer > span:nth-child(2):last-child { grid-row: 1 / span 2; }   /* 10 QSO: one line beside the word */
+body.is-bar .cheer-hunt { background: #7A4E0C; }
+body.is-bar .cheer strong { grid-row: 1 / span 2; font-size: 40px; }
+body.is-bar .cheer span { font-size: 14px; }
+body.is-bar .cheer-hunt .plates { margin: 0; gap: 6px; }
+body.is-bar .cheer-hunt .plate { font-size: 15px; padding: 2px 9px 3px; }
 
 .toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
