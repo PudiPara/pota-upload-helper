@@ -74,6 +74,19 @@ class BarMode:
             _run_steps(self.window, [("bar on_top", lambda: setattr(bar, "on_top", self.bar_on_top))])
         return self.bar_on_top
 
+    def fit(self, width):
+        """Make the bar as wide as its content (CSS px), keeping its right edge where it is. An absolute
+        width: the bar is frameless (window = page), and requests that follow each other quickly must not
+        build on a size that is still changing."""
+        bar = self._bar
+        if not bar:
+            return
+
+        def run():
+            from webview.window import FixPoint
+            bar.resize(width, bar.height, fix_point=FixPoint.NORTH | FixPoint.EAST)
+        _run_steps(self.window, [("fit", run)])
+
     @property
     def active(self):
         return self._on

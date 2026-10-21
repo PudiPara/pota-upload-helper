@@ -49,7 +49,7 @@
   "live.toBar": "바 모드", "live.finish": "이 공원 운용 종료", "live.finishArmed": "미확인 {n}건인 채로 종료",
   "live.working": "만드는 중…",
   "live.qsoNote.done": "활성화 성공 ({n}개 국·밴드·모드 조합)", "live.qsoNote.left": "활성화까지 {n} QSO 남음",
-  "live.p2pCount": "P2P {n}건", "live.pendingCount": "확인 대기 {n}건",
+  "live.stat.pending": "확인 대기", "live.stat.rate": "페이스", "live.stat.perHour": "/시간", "live.stat.last": "마지막 교신", "live.stat.ago": "{n}분 전", "live.stat.now": "방금",
   "live.qsos": "교신", "live.spots": "공원에서 교신 중인 국", "live.seg.world": "전 세계",
   "live.qsosEmpty1": "로거에서 오는 QSO를 기다리는 중입니다.", "live.qsosEmpty2": "오지 않으면 ‘로거 연결’을 확인하세요.",
   "live.spotsEmpty1": "아직 없습니다.", "live.spotsEmpty2": "1분마다 스팟을 확인합니다.",

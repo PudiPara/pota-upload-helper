@@ -49,7 +49,7 @@
   "live.toBar": "Modalità barra", "live.finish": "Termina questo parco", "live.finishArmed": "Termina con {n} non confermati",
   "live.working": "Scrittura…",
   "live.qsoNote.done": "Attivazione completata ({n} combinazioni stazione/banda/modo)", "live.qsoNote.left": "Mancano {n} QSO per completare l’attivazione",
-  "live.p2pCount": "{n} P2P", "live.pendingCount": "{n} da confermare",
+  "live.stat.pending": "In attesa", "live.stat.rate": "Ritmo", "live.stat.perHour": "/h", "live.stat.last": "Ultimo QSO", "live.stat.ago": "{n} min fa", "live.stat.now": "proprio ora",
   "live.qsos": "QSO", "live.spots": "In aria dai parchi", "live.seg.world": "Mondo",
   "live.qsosEmpty1": "In attesa dei QSO dal log.", "live.qsosEmpty2": "Se non arriva nulla, controlla «Collegamento al log».",
   "live.spotsEmpty1": "Nessuno spot per ora.", "live.spotsEmpty2": "Gli spot vengono controllati ogni minuto.",

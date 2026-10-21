@@ -49,7 +49,7 @@
   "live.toBar": "切换为工具条", "live.finish": "结束本公园的运用", "live.finishArmed": "保留 {n} 条未确认并结束",
   "live.working": "正在生成…",
   "live.qsoNote.done": "激活成功（{n} 个电台·波段·模式组合）", "live.qsoNote.left": "再 {n} 个 QSO 即可激活",
-  "live.p2pCount": "P2P {n} 条", "live.pendingCount": "待确认 {n} 条",
+  "live.stat.pending": "待确认", "live.stat.rate": "速率", "live.stat.perHour": "/小时", "live.stat.last": "最近通联", "live.stat.ago": "{n} 分钟前", "live.stat.now": "刚刚",
   "live.qsos": "通联", "live.spots": "正在公园发射的电台", "live.seg.world": "全球",
   "live.qsosEmpty1": "等待日志软件发来的 QSO。", "live.qsosEmpty2": "如果收不到，请检查“连接日志软件”。",
   "live.spotsEmpty1": "还没有找到。", "live.spotsEmpty2": "每分钟检查一次 spot。",
