@@ -26,7 +26,7 @@ import time
 from collections import defaultdict
 from urllib.parse import quote
 
-from i18n import t
+from i18n import Text, t
 from locations import NAMES as LOCATION_NAMES
 from potacommon import (band_from_khz, base_call, data_path, fetch_json, grid_center, iso_minutes, mode_group, parks_in,
                         read_json, rec_minutes, resource, split_parks, utc_minutes, utc_stamp, write_json)
@@ -554,10 +554,10 @@ class SpotLogger:
             now = now_utc()
             try:
                 spots = fetch_json("spot/activator")
-                self.on_status(t("spot.updated", time=now.strftime("%H:%M"), n=len(spots)))
+                self.on_status(Text("spot.updated", time=now.strftime("%H:%M"), n=len(spots)))
             except Exception as e:
                 spots = []
-                self.on_status(t("spot.fetchFail", time=now.strftime("%H:%M"), err=e))
+                self.on_status(Text("spot.fetchFail", time=now.strftime("%H:%M"), err=str(e)))
             path = data_path("spots-%s.jsonl" % now.strftime("%Y%m%d"))
             with open(path, "a", encoding="utf-8") as fh:
                 for s in spots:
@@ -586,6 +586,6 @@ class SpotLogger:
                 try:
                     load_hunter(self.call, False, log=self.on_status)
                 except Exception as e:
-                    self.on_status(t("spot.hunterFail", err=e))
+                    self.on_status(Text("spot.hunterFail", err=str(e)))
             polls += 1
             self._stop.wait(self.interval)

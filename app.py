@@ -272,7 +272,7 @@ class Api:
         locs = self._locs_for(parks, loc)
         self._stop_logger()
         with self._lock:
-            self._events, self._status = [], t("api.firstSpot")
+            self._events, self._status = [], i18n.Text("api.firstSpot")
         save_settings({"parks": ",".join(parks), "call": call})
         self._logger = SpotLogger(parks, call, SPOT_INTERVAL, on_activator=self._on_spot, on_status=self._on_status)
         self._logger.start()
@@ -305,7 +305,7 @@ class Api:
         with self._lock:
             return {"events": [e for e in self._events if e["at"] > since],
                     "qsos": [e for e in self._qso_events if e["at"] > qsince],
-                    "status": self._status, "receiver": self._receiver_texts(),
+                    "status": str(self._status), "receiver": self._receiver_texts(),
                     "running": self._recording(), "look": self._look(), "bar": bool(self._bar and self._bar.active)}
 
     def _look(self, s=None):
