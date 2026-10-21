@@ -414,8 +414,10 @@
       const el = dot.getTooltip() && dot.getTooltip().getElement();
       if (el) side[dir] = Math.max(side[dir], el.offsetWidth + 16);
     });
-    Lf.circleMarker(r.me, { radius: 8, weight: 2, color: "#fff", fillColor: "#2A6A50", fillOpacity: 1 })
+    const me = Lf.circleMarker(r.me, { radius: 8, weight: 2, color: "#fff", fillColor: "#2A6A50", fillOpacity: 1 })
       .bindTooltip(esc((st.parks || []).join(" + ")), { permanent: true, direction: "bottom", offset: [0, 8], className: "map-tag" }).addTo(lmap.layer);
+    const meEl = me.getTooltip() && me.getTooltip().getElement();       // centred under my dot: half of it on each side
+    if (meEl) { side.left = Math.max(side.left, meEl.offsetWidth / 2 + 16); side.right = Math.max(side.right, meEl.offsetWidth / 2 + 16); }
     // frame when a P2P is added or the parks change, not on every redraw
     const key = (st.parks || []).join() + "|" + pts.length;
     if (key !== lmap.framed) { lmap.framed = key; pts.length > 1   // room at each side for the widest label there
