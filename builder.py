@@ -39,7 +39,10 @@ def hhmm(rec):
 
 def records(adif_path=None, recs=None):
     """The records to work on (the app log's, or an ADIF file's), MODE/SUBMODE and BAND as ADIF writes them."""
-    return [fix_mode_band(dict(r)) for r in (recs if recs is not None else read_adif(adif_path))]
+    out = [fix_mode_band(dict(r)) for r in (recs if recs is not None else read_adif(adif_path))]
+    for r in out:
+        r["CALL"] = (r.get("CALL") or "").upper().strip()      # ADIF's characters are A-Z 0-9 /
+    return out
 
 
 def problems(rec, call):
@@ -56,15 +59,18 @@ def problems(rec, call):
         out.append(("b.note.self", {}))
     if not re.fullmatch(r"[A-Z0-9/]+", call_):
         out.append(("b.note.badCall", {}))
+    if not re.fullmatch(r"([01]\d|2[0-3])[0-5]\d([0-5]\d)?", rec.get("TIME_ON") or ""):
+        out.append(("b.note.badTime", {"value": rec.get("TIME_ON") or "-"}))
     if (rec.get("QSO_DATE") or "") > dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d"):
         out.append(("b.note.future", {}))
     if (rec.get("PROP_MODE") or "").upper() == "RPT":
         out.append(("b.note.repeater", {}))
-    for ref, sig, info, parks in (("POTA_REF", "SIG", "SIG_INFO", their_parks_of(rec)),
-                                  ("MY_POTA_REF", "MY_SIG", "MY_SIG_INFO", my_parks_of(rec))):
+    for ref, sig, info in (("POTA_REF", "SIG", "SIG_INFO"), ("MY_POTA_REF", "MY_SIG", "MY_SIG_INFO")):
         raw = rec.get(ref) or (rec.get(info) if (rec.get(sig) or "POTA").upper() == "POTA" else "")
-        if raw and not parks:
-            out.append(("b.note.parkUnread", {"value": raw}))
+        bad = [x for x in re.split(r"[,\s;]+", (raw or "").upper()) if re.fullmatch(r"[A-Z]{1,4}\d{4,5}", x)]
+        if bad:                                  # "US1234": a park without its hyphen (not a SOTA "W2/WE-003")
+            out.append(("b.note.parkUnread", {"value": ",".join(bad),         # {park}: how it should read
+                                              "park": re.sub(r"^([A-Z]+)(\d)", r"\1-\2", bad[0])}))
     return out
 
 

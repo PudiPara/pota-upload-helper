@@ -28,7 +28,8 @@ class Modes(unittest.TestCase):
         self.assertEqual(adif_mode("D-STAR"), {"MODE": "DIGITALVOICE", "SUBMODE": "DSTAR"})
         self.assertEqual(adif_mode("DV"), {"MODE": "DIGITALVOICE"})
         self.assertEqual(adif_mode("PSK31"), {"MODE": "PSK", "SUBMODE": "PSK31"})
-        self.assertEqual(adif_mode("VarAC"), {"MODE": "DYNAMIC", "SUBMODE": "VARA HF"})
+        self.assertEqual(adif_mode("vara hf"), {"MODE": "DYNAMIC", "SUBMODE": "VARA HF"})
+        self.assertEqual(adif_mode("VarAC"), {"MODE": "VARAC"})       # HF, FM or SAT: not guessed (noted at build)
         self.assertEqual(adif_mode("FT8"), {"MODE": "FT8"})
 
     def test_groups_and_keys(self):
@@ -41,6 +42,10 @@ class Modes(unittest.TestCase):
         self.assertEqual((r["MODE"], r["SUBMODE"], r["BAND"]), ("SSB", "USB", "20m"))
         r = fix_mode_band(rec(MODE="MFSK", SUBMODE="FT4"))                 # a SUBMODE came with it: as it is
         self.assertEqual((r["MODE"], r["SUBMODE"]), ("MFSK", "FT4"))
+        r = fix_mode_band(rec(MODE="DATA", SUBMODE="ft4"))                 # the SUBMODE decides the MODE
+        self.assertEqual((r["MODE"], r["SUBMODE"]), ("MFSK", "FT4"))
+        r = fix_mode_band(rec(MODE="C4FM", SUBMODE="C4FM"))                # import-only MODE
+        self.assertEqual((r["MODE"], r["SUBMODE"]), ("DIGITALVOICE", "C4FM"))
 
 
 class Bands(unittest.TestCase):
@@ -79,6 +84,9 @@ class EditorAndNotes(unittest.TestCase):
         self.assertIn("b.note.repeater", keys(rec(PROP_MODE="RPT")))
         self.assertIn("b.note.parkUnread", keys(rec(SIG_INFO="US1234")))
         self.assertEqual(keys(rec(SIG="WWFF", SIG_INFO="JAFF-0123")), [])
+        self.assertEqual(keys(rec(SIG_INFO="W2/WE-003")), [])             # a SOTA summit, not a park
+        self.assertIn("b.note.badTime", keys(rec(TIME_ON="2460")))
+        self.assertIn("b.note.badTime", keys(rec(TIME_ON="")))
 
 
 if __name__ == "__main__":
