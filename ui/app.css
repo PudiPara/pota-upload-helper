@@ -670,7 +670,8 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .storm strong { display: inline-flex; align-items: center; gap: .25em; font-size: 40px; font-weight: 900; line-height: 1.1;
   background: #161616; color: #FFD400; padding: 8px 22px 10px 16px; border-radius: 6px; }
 .storm-bolt { width: .85em; height: .85em; fill: currentColor; flex: none; }
-.storm-wind { width: .9em; height: .9em; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; flex: none; }
+.storm-wind { width: 1.05em; height: 1.05em; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; flex: none;
+  margin: -.04em 0 0; }   /* its strokes sit low in the box: lifted to the words' middle */
 .storm[data-icon="bolt"] .storm-wind, .storm[data-icon="wind"] .storm-bolt { display: none; }
 /* the JMA's colours by 警戒レベル相当: 2 注意報 yellow (the base above), 3 警報 red, 4 危険警報 purple, 5 特別警報 black;
    on red / purple / black the words are white and the plate white with the colour */
