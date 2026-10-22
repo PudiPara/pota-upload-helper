@@ -55,6 +55,17 @@ class JmaTest(unittest.TestCase):
         self.assertEqual(fc["temps"]["place"], "名護")                                   # the area's city, by position
         self.assertEqual(jma.class10(TABLE10, "1322500"), "130010")
 
+    def test_place_has_the_prefecture(self):
+        saved = jma.areas, jma._area_table
+        try:
+            jma._area_table = lambda: {"names": {"4721100": "沖縄市", "1410011": "横浜市北部", "1410012": "横浜市南部"}}
+            jma.areas = lambda lat, lon: ("471000", ["4721100"])
+            self.assertEqual(jma.place(0, 0), "沖縄県沖縄市")
+            jma.areas = lambda lat, lon: ("140000", ["1410011", "1410012"])
+            self.assertEqual(jma.place(0, 0), "神奈川県横浜市北部・横浜市南部")
+        finally:
+            jma.areas, jma._area_table = saved
+
     def test_add_jma(self):
         w = weather.add_jma({"alerts": {"rain": {"in": 1, "p": 70}, "thunder": {"in": 0}}}, [{"code": "14", "level": 2}])
         self.assertEqual(w["alerts"], {"jma:14": {"level": 2}})              # Japan: the JMA's only, not the forecast's
