@@ -455,6 +455,15 @@
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
 <div class="pop" id="pop" hidden role="menu"></div>
+<div class="storm" id="storm" hidden role="alertdialog" aria-labelledby="stormTitle">
+  <strong id="stormTitle"><svg class="storm-bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 1 4 14h6.5L9 23l11-13.5h-6.8z"/></svg><span data-i18n="wx.storm.title">雷に注意</span></strong><p id="stormBody"></p>
+  <button class="btn storm-ok" id="stormOk" data-i18n="wx.storm.ok">確認しました</button>
+</div>
+<div class="wxa" id="wxa" hidden role="status">
+  <i class="wxa-glow"></i><div class="wxa-fx" id="wxaFx"></div><i class="wxa-flash"></i><i class="wxa-scrim"></i>
+  <div class="wxa-text"><strong class="wxa-temp" id="wxaTemp"></strong>
+    <div class="wxa-info"><b id="wxaMain"></b><span id="wxaSub"></span><span class="wxa-alert" id="wxaAlert"></span></div></div>
+</div>
 <div class="sky" id="sky" hidden role="status">
   <i class="sky-l" data-sky="night"></i><i class="sky-l" data-sky="dawn"></i><i class="sky-l" data-sky="day"></i><i class="sky-l" data-sky="dusk"></i>
   <i class="sky-stars"></i><i class="sky-orb" id="skyOrb"></i>

@@ -356,7 +356,8 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .wx.is-alert { border-color: var(--amber); background: var(--amber-bg); }
 .wx-alert { color: var(--amber-ink); font-weight: 700; }
 .wx-src { margin-left: auto; font-size: 11.5px; color: var(--ink-3); }
-.bar-wx { color: var(--amber-ink); font-weight: 700; font-size: 11.5px; white-space: nowrap; }
+.bar-wx { color: var(--amber-ink); font-weight: 700; font-size: 11.5px; white-space: nowrap; min-width: 0; flex-shrink: 100; overflow: hidden; text-overflow: ellipsis; }   /* gives way before the parks do */
+.bar.is-measure .bar-wx { display: none; }          /* a weather alert never widens the bar: it takes the room there is */
 .live-tabs + .live-map, .live-tabs ~ .live-grid { margin-top: 10px; }
 .live-map { height: max(360px, calc(100vh - 470px)); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; z-index: 0; background: var(--surface); }
 .live-map .leaflet-container { font: inherit; }
@@ -631,6 +632,70 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .sky-text strong { font-size: 30px; font-weight: 900; letter-spacing: .02em; line-height: 1; }
 .sky-text span { font-size: 13.5px; font-weight: 700; line-height: 1.3; }
 .sky-text span + span { font-size: 12.5px; opacity: .85; }
+
+/* ---------- the weather in the bar (playWx in app.js), drawn like a phone's weather app: the sky of the weather (night
+   when the next sun event is the sunrise), a sun or moon glow, soft clouds drifting, rain / snow / mist / lightning, and the
+   temperature large and thin. Clouds are blurred pills with two puffs (::before / ::after), coloured by --cloud. ---------- */
+.wxa { --cloud: rgba(255, 255, 255, .9); position: fixed; inset: 0; z-index: 18; overflow: hidden; cursor: pointer; color: #FFFFFF;
+  background: linear-gradient(#5C86B5, #A9C6E2); }
+.wxa[data-g="clear"] { background: linear-gradient(#3F8AD6, #9CCDF2); }
+.wxa[data-g="overcast"], .wxa[data-g="fog"] { --cloud: rgba(214, 220, 228, .85); background: linear-gradient(#6E7A88, #A7B1BC); }
+.wxa[data-g="drizzle"], .wxa[data-g="rain"], .wxa[data-g="showers"] { --cloud: rgba(120, 134, 152, .95); background: linear-gradient(#3E5068, #6E8199); }
+.wxa[data-g="snow"] { --cloud: rgba(205, 214, 224, .95); background: linear-gradient(#7A8EA4, #C9D5E0); }
+.wxa[data-g="thunder"] { --cloud: rgba(58, 64, 84, .95); background: linear-gradient(#1B1F2E, #3A4260); }
+.wxa[data-night] { --cloud: rgba(110, 120, 150, .75); background: linear-gradient(#0E1630, #283666); }
+.wxa[data-night][data-g="drizzle"], .wxa[data-night][data-g="rain"], .wxa[data-night][data-g="showers"], .wxa[data-night][data-g="thunder"] {
+  --cloud: rgba(52, 58, 78, .95); background: linear-gradient(#0B1020, #252C44); }
+.wxa-glow { position: absolute; left: 62%; top: -60%; width: 220px; height: 220px; margin-left: -110px; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, rgba(255, 236, 170, .95) 0 14%, rgba(255, 214, 120, .45) 26%, rgba(255, 214, 120, 0) 62%); }
+.wxa[data-night] .wxa-glow { background: radial-gradient(circle, rgba(250, 248, 230, .95) 0 9%, rgba(220, 225, 255, .3) 20%, rgba(220, 225, 255, 0) 50%); }
+.wxa-fx { position: absolute; inset: 0; }
+.wxa-flash { position: absolute; inset: 0; background: #FFFFFF; opacity: 0; }
+/* a thunderstorm on the way (showStorm): yellow over everything, black words, until the operator closes it */
+.storm { position: fixed; inset: 0; z-index: 40; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 24px;
+  background: #FFD400; color: #161616; text-align: center; }
+.storm[hidden] { display: none; }
+/* like a weather warning on TV: hazard stripes top and bottom, the title as a black plate */
+.storm::before, .storm::after { content: ""; position: absolute; left: 0; right: 0; height: 16px;
+  background: repeating-linear-gradient(-45deg, #161616 0 14px, transparent 14px 28px); }
+.storm::before { top: 0; }
+.storm::after { bottom: 0; }
+.storm strong { display: inline-flex; align-items: center; gap: .25em; font-size: 40px; font-weight: 900; line-height: 1.1;
+  background: #161616; color: #FFD400; padding: 8px 22px 10px 16px; border-radius: 6px; }
+.storm-bolt { width: .85em; height: .85em; fill: currentColor; flex: none; }
+.storm p { margin: 0; max-width: 34em; font-size: 17px; font-weight: 700; line-height: 1.5; }
+.storm .storm-ok { background: #161616; color: #FFD400; border-color: #161616; font-size: 15px; font-weight: 800; padding: 9px 26px; }
+/* the main window: a slim notice bar across the top, like a site's announcement bar; the page moves down under it */
+body:not(.is-bar) .storm { bottom: auto; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 38px;
+  padding: 6px 140px 6px 20px; text-align: left; box-shadow: 0 2px 8px rgba(0, 0, 0, .18); }
+body:not(.is-bar) .storm::before, body:not(.is-bar) .storm::after { display: none; }
+body:not(.is-bar) .storm strong { font-size: 12.5px; padding: 2px 9px 3px 7px; border-radius: 4px; flex: none; }
+body:not(.is-bar) .storm p { font-size: 13px; line-height: 1.4; max-width: none; }
+body:not(.is-bar) .storm .storm-ok { position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  font-size: 12px; padding: 3px 12px; }
+body.has-storm:not(.is-bar) .shell { padding-top: 38px; }
+body.is-bar .storm { gap: 6px; padding: 6px 14px; cursor: pointer; }
+body.is-bar .storm::before, body.is-bar .storm::after { height: 8px; }
+body.is-bar .storm strong { font-size: 18px; padding: 2px 12px 3px 9px; border-radius: 4px; }
+body.is-bar .storm p { font-size: 12.5px; line-height: 1.35; }
+body.is-bar .storm .storm-ok { display: none; }
+/* behind the words: clouds pass under the temperature without washing it out */
+.wxa-scrim { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10, 20, 40, .42), rgba(10, 20, 40, .22) 55%, rgba(10, 20, 40, 0) 85%); }
+.wxa-cloud { position: absolute; width: 110px; height: 34px; border-radius: 34px; background: var(--cloud); filter: blur(3px); }
+.wxa-cloud::before, .wxa-cloud::after { content: ""; position: absolute; border-radius: 50%; background: inherit; }
+.wxa-cloud::before { width: 52px; height: 52px; top: -26px; left: 16px; }
+.wxa-cloud::after { width: 40px; height: 40px; top: -18px; left: 54px; }
+.wxa-drop { position: absolute; top: 0; width: 1.5px; height: 14px; border-radius: 1px; background: rgba(220, 232, 255, .6); }
+.wxa-flake { position: absolute; top: 0; width: 5px; height: 5px; border-radius: 50%; background: rgba(255, 255, 255, .92); }
+.wxa-band { position: absolute; left: -40%; width: 80%; height: 22px; border-radius: 50%; background: rgba(255, 255, 255, .35); filter: blur(6px); }
+.wxa-gust { position: absolute; left: 0; height: 1.5px; width: 70px; border-radius: 1px; background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .8)); }
+.wxa-text { position: absolute; left: 6%; right: 4%; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 14px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .45), 0 0 14px rgba(0, 0, 0, .35); }
+.wxa-temp { font-size: 54px; font-weight: 300; line-height: 1; letter-spacing: -.02em; }
+.wxa-info { display: grid; gap: 1px; min-width: 0; }
+.wxa-info b { font-size: 16px; font-weight: 700; }
+.wxa-info span { font-size: 12.5px; font-weight: 600; white-space: nowrap; opacity: .92; }
+.wxa-info .wxa-alert { color: #FFD27A; opacity: 1; font-weight: 700; }
 
 /* ---------- 10 QSO reached ---------- */
 .cheer {
