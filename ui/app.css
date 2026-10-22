@@ -731,17 +731,16 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 /* the main window: a slim notice bar across the top of the page (beside the rail, not over it), like a site's
    announcement bar; the page moves down under it */
 body:not(.is-bar) .storm { left: 216px; bottom: auto; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 38px;
-  padding: 6px 140px 6px 20px; text-align: left; box-shadow: 0 2px 8px rgba(0, 0, 0, .18); }
+  padding: 6px 14px 6px 20px; text-align: left; box-shadow: 0 2px 8px rgba(0, 0, 0, .18); }
 body:not(.is-bar) .storm::before, body:not(.is-bar) .storm::after { display: none; }
 body:not(.is-bar) .storm strong { font-size: 12.5px; padding: 2px 9px 3px 7px; border-radius: 4px; flex: none; }
-body:not(.is-bar) .storm p { font-size: 13px; line-height: 1.4; max-width: none; }
-body:not(.is-bar) .storm .storm-ok { position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-  font-size: 12px; padding: 3px 12px; }
-body.has-storm:not(.is-bar) .main { padding-top: 38px; }
+body:not(.is-bar) .storm p { flex: 1; min-width: 0; font-size: 13px; line-height: 1.4; max-width: none; }   /* wraps in the room left */
+body:not(.is-bar) .storm .storm-ok { flex: none; white-space: nowrap; font-size: 12px; padding: 3px 12px; }        /* beside the words, never over them */
+body.has-storm:not(.is-bar) .main { padding-top: var(--storm-h, 38px); }   /* the notice's own height (nextNotice) */
 @media (max-width: 900px) {            /* the rail sits on top: the notice goes over the whole width, everything moves down */
   body:not(.is-bar) .storm { left: 0; }
   body.has-storm:not(.is-bar) .main { padding-top: 0; }
-  body.has-storm:not(.is-bar) .shell { padding-top: 38px; }
+  body.has-storm:not(.is-bar) .shell { padding-top: var(--storm-h, 38px); }
 }
 body.is-bar .storm { gap: 6px; padding: 6px 14px; cursor: pointer; }
 body.is-bar .storm::before, body.is-bar .storm::after { height: 8px; }

@@ -488,6 +488,7 @@
       $("#sky").hidden = true; $("#wxa").hidden = true; $("#wxaFx").innerHTML = "";
     }
     box.hidden = false; document.body.classList.add("has-storm");
+    document.body.style.setProperty("--storm-h", box.offsetHeight + "px");   // the page moves down by what it takes (1 or 2 lines)
     box.getAnimations().forEach((x) => x.cancel());
     const [c1, c2] = PULSE[level];
     box.animate([{ background: c1 }, { background: c2 }, { background: c1 }], { duration: 700, iterations: 5 });
