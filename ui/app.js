@@ -395,6 +395,10 @@
   const fmtWind = (ms) => (distUnit() === "mi" ? Math.round(ms * 2.237) + " mph" : Math.round(ms) + " m/s");
   function renderWeather(w, notify) {
     const line = $("#wxLine"), alerts = Object.keys((w && w.alerts) || {});
+    // Japan: the JMA's warnings (Python: jma.py) are alerts "jma:<code>"; the rest are the forecast's (Open-Meteo)
+    const om = alerts.filter((k) => !k.startsWith("jma:")), official = (w && w.jma) || [];
+    const jmaName = (x) => t("jma." + x.code);
+    const shorts = official.map(jmaName).concat(om.map((k) => t("wx.short." + k)));
     const alertText = (k) => { const a = w.alerts[k] || {};
       return t("wx.alert." + k, { when: whenText(a.in), p: a.p, g: fmtWind(a.g || 0) }); };
     line.hidden = !w; $("#barWx").hidden = !alerts.length;
@@ -404,22 +408,34 @@
     if (w.wind != null) parts.push(t("wx.wind", { v: fmtWind(w.wind), g: fmtWind(w.gust != null ? w.gust : w.wind) }));
     if (w.rain != null) parts.push(t("wx.pop", { p: w.rain }));
     if (w.sun) parts.push(t("wx." + w.sun.kind, { at: w.sun.at }));
-    line.innerHTML = `<span>${esc(parts.join(" · "))}</span>` + alerts.map((k) => `<span class="wx-alert">${esc(alertText(k))}</span>`).join("") +
+    // the JMA's in its colours (advisory yellow, warning red, emergency purple), with its credit
+    line.innerHTML = `<span>${esc(parts.join(" · "))}</span>` +
+      official.map((x) => `<span class="jma jma-l${x.level}">${esc(jmaName(x))}</span>`).join("") +
+      om.map((k) => `<span class="wx-alert">${esc(alertText(k))}</span>`).join("") +
+      (official.length ? `<button class="link wx-src" data-url="https://www.jma.go.jp/bosai/warning/">${esc(t("jma.src"))}</button>` : "") +
       `<button class="link wx-src" data-url="https://open-meteo.com/">Weather data by Open-Meteo.com</button>`;
     line.classList.toggle("is-alert", alerts.length > 0);
-    $("#barWx").textContent = alerts.map((k) => t("wx.short." + k)).join(" · ");
+    $("#barWx").textContent = shorts.join(" · "); $("#barWx").hidden = !shorts.length;
     if (BAR) fitBar();
-    const others = (w.new || []).filter((k) => k !== "thunder");
-    if (notify && !BAR && others.length) toast(others.map(alertText).join(" "));
-    if (notify && (w.new || []).includes("thunder")) showStorm(w.alerts.thunder);   // its own yellow notice, apart from the weather
+    const fresh = w.new || [], storm = fresh.includes("thunder") || fresh.includes("jma:14");
+    if (notify && !BAR) {
+      const words = fresh.filter((k) => !k.startsWith("jma:") && k !== "thunder").map(alertText);
+      const named = official.filter((x) => fresh.includes("jma:" + x.code) && !(storm && x.code === "14")).map(jmaName);
+      if (named.length) words.unshift(t("jma.new", { names: named.join("・") }));
+      if (words.length) toast(words.join(" "));
+    }
+    if (notify && storm) showStorm(w.alerts.thunder, !!w.alerts["jma:14"]);   // its own yellow notice, apart from the weather
     // the bar: the first look of a recording, and a new alert, play the weather over the bar
-    if (notify && BAR && (w.seq === 1 || (w.new || []).length)) playWx(w, alerts.map((k) => t("wx.short." + k)));
+    if (notify && BAR && (w.seq === 1 || fresh.length)) playWx(w, shorts);
   }
   // A thunderstorm on the way is dangerous at a park with an antenna up: both windows put a yellow screen over
   // everything with what to do, flashing for a few seconds, and it stays until the operator closes it.
-  function showStorm(a) {
+  // official: the JMA's 雷注意報 is in force (Japan) - its own name, and the words say so
+  function showStorm(a, official) {
     const box = $("#storm"), when = whenText((a || {}).in);
-    $("#stormBody").textContent = BAR ? t("wx.alert.thunder", { when }).replace(/^\S+\s+/, "") : t("wx.storm.body", { when });   // the bar: the short line, its ⚡ is on the plate
+    $("#stormName").textContent = official ? t("jma.14") : t("wx.storm.title");
+    $("#stormBody").textContent = official ? t(BAR ? "wx.storm.jmaShort" : "wx.storm.jma")
+      : BAR ? t("wx.alert.thunder", { when }).replace(/^\S+\s+/, "") : t("wx.storm.body", { when });   // the bar: the short line, its ⚡ is on the plate
     box.hidden = false; document.body.classList.add("has-storm");
     box.getAnimations().forEach((a) => a.cancel());
     box.animate([{ background: "#FFD400" }, { background: "#FF9F00" }, { background: "#FFD400" }], { duration: 700, iterations: 5 });

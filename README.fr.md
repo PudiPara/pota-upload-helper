@@ -163,4 +163,4 @@ Proposez vos modifications sur une branche, sous forme de Pull Request. Chaque P
 
 MIT
 
-Pour afficher les drapeaux, l’application embarque la police de [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), qui ne contient que les drapeaux de Twemoji (CC-BY 4.0). La carte utilise [Leaflet](https://leafletjs.com/) (BSD-2-Clause) et les tuiles © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Données météo : [Open-Meteo](https://open-meteo.com/) (CC BY 4.0).
+Pour afficher les drapeaux, l’application embarque la police de [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), qui ne contient que les drapeaux de Twemoji (CC-BY 4.0). La carte utilise [Leaflet](https://leafletjs.com/) (BSD-2-Clause) et les tuiles © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Données météo : [Open-Meteo](https://open-meteo.com/) (CC BY 4.0). Alertes pour les parcs au Japon : agence météo japonaise (source : site de la JMA) ; la commune du parc : géocodeur inverse du GSI.

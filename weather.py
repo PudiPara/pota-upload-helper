@@ -85,6 +85,16 @@ def summarize(d):
     return out
 
 
+def add_jma(w, found):
+    """Japan: the JMA's warnings in force (jma.warnings) are the only alerts - w["jma"], each one an alert "jma:<code>"
+    ({level}), notified when new. The forecast's own (thunder / rain / wind from Open-Meteo) are dropped: under the
+    Meteorological Service Act only the JMA warns in Japan (art. 23) and forecasting needs a licence (art. 17), so a
+    park in Japan gets the JMA's word, credited, and the forecast's numbers only."""
+    w["jma"] = found
+    w["alerts"] = {"jma:" + x["code"]: {"level": x["level"]} for x in found}
+    return w
+
+
 def news(before, now):
     """The alerts in now that before did not have (a new one, or the first look): what to notify."""
     old = (before or {}).get("alerts") or {}

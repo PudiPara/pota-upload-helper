@@ -356,6 +356,12 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .wx.is-alert { border-color: var(--amber); background: var(--amber-bg); }
 .wx-alert { color: var(--amber-ink); font-weight: 700; }
 .wx-src { margin-left: auto; font-size: 11.5px; color: var(--ink-3); }
+.wx-src + .wx-src { margin-left: 0; }
+/* the JMA's warnings in the JMA's colours: advisory (注意報) yellow, warning (警報) red, emergency (特別警報) purple */
+.jma { padding: 1px 8px 2px; border-radius: 4px; font-size: 11.5px; font-weight: 800; line-height: 1.5; }
+.jma-l1 { background: #F2C500; color: #161616; }
+.jma-l2 { background: #E60012; color: #FFFFFF; }
+.jma-l3 { background: #5F1985; color: #FFFFFF; }
 .bar-wx { color: var(--amber-ink); font-weight: 700; font-size: 11.5px; white-space: nowrap; min-width: 0; flex-shrink: 100; overflow: hidden; text-overflow: ellipsis; }   /* gives way before the parks do */
 .bar.is-measure .bar-wx { display: none; }          /* a weather alert never widens the bar: it takes the room there is */
 .live-tabs + .live-map, .live-tabs ~ .live-grid { margin-top: 10px; }

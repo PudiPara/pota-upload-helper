@@ -27,6 +27,7 @@ import i18n
 import mypota
 import qsolog
 import updater
+import jma
 import weather
 from builder import build, find_activation_qsos, list_activations
 from i18n import t
@@ -135,13 +136,21 @@ class Api:
         self._weather = None
         at = middle([p for p in map(park_at, parks) if p])
         if at:
-            threading.Thread(target=self._weather_loop, args=(at, stop), daemon=True).start()
+            japan = any(p.startswith("JP-") for p in parks)      # the JMA's warnings too (jma.py)
+            threading.Thread(target=self._weather_loop, args=(at, stop, japan), daemon=True).start()
 
-    def _weather_loop(self, at, stop):
+    def _weather_loop(self, at, stop, japan=False):
         seq = 0
         while not stop.is_set():
             try:
                 w = weather.fetch(*at)
+                if japan:                      # the JMA's warnings, and no alerts of the forecast's own (weather.add_jma)
+                    try:
+                        found = jma.warnings(*at)
+                    except Exception as e:     # keep the last answer: a hiccup must not re-notify the same warnings
+                        logging.warning("jma: %s", e)
+                        found = (self._weather or {}).get("jma") or []
+                    weather.add_jma(w, found)
                 seq += 1
                 with self._lock:
                     if not stop.is_set():

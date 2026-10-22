@@ -163,4 +163,4 @@ python3 -m unittest discover -s tests
 
 MIT
 
-国旗の表示には、Twemoji（CC-BY 4.0）の国旗だけを収めた [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill)（MIT）のフォントを同梱しています。地図は [Leaflet](https://leafletjs.com/)（BSD-2-Clause）と © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors のタイルを使っています。天気は [Open-Meteo](https://open-meteo.com/) のデータ（CC BY 4.0）です。
+国旗の表示には、Twemoji（CC-BY 4.0）の国旗だけを収めた [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill)（MIT）のフォントを同梱しています。地図は [Leaflet](https://leafletjs.com/)（BSD-2-Clause）と © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors のタイルを使っています。天気は [Open-Meteo](https://open-meteo.com/) のデータ（CC BY 4.0）です。日本の公園の注意報・警報は気象庁のデータ（出典：気象庁ホームページ）、公園の市町村は国土地理院の逆ジオコーディングを使っています。

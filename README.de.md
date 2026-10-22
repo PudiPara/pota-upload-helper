@@ -163,4 +163,4 @@ python3 -m unittest discover -s tests
 
 MIT
 
-Für die Länderflaggen liegt die Schrift aus [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT) bei, die nur die Flaggen aus Twemoji (CC-BY 4.0) enthält. Die Karte nutzt [Leaflet](https://leafletjs.com/) (BSD-2-Clause) und Kacheln von © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Wetterdaten von [Open-Meteo](https://open-meteo.com/) (CC BY 4.0).
+Für die Länderflaggen liegt die Schrift aus [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT) bei, die nur die Flaggen aus Twemoji (CC-BY 4.0) enthält. Die Karte nutzt [Leaflet](https://leafletjs.com/) (BSD-2-Clause) und Kacheln von © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Wetterdaten von [Open-Meteo](https://open-meteo.com/) (CC BY 4.0). Warnungen für Parks in Japan: japanischer Wetterdienst (Quelle: JMA-Website); die Gemeinde des Parks: Reverse-Geocoder des GSI.

@@ -163,4 +163,4 @@ Para mudanças, crie um branch e abra um Pull Request. A cada PR os testes rodam
 
 MIT
 
-Para as bandeiras, vem incluída a fonte do [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), que contém só as bandeiras do Twemoji (CC-BY 4.0). O mapa usa o [Leaflet](https://leafletjs.com/) (BSD-2-Clause) e tiles de © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Dados do tempo do [Open-Meteo](https://open-meteo.com/) (CC BY 4.0).
+Para as bandeiras, vem incluída a fonte do [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), que contém só as bandeiras do Twemoji (CC-BY 4.0). O mapa usa o [Leaflet](https://leafletjs.com/) (BSD-2-Clause) e tiles de © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Dados do tempo do [Open-Meteo](https://open-meteo.com/) (CC BY 4.0). Avisos para parques no Japão: agência meteorológica do Japão (fonte: site da JMA); o município do parque: geocodificador reverso do GSI.
