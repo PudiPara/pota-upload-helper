@@ -3,11 +3,21 @@ JMA's own pages read (www.jma.go.jp/bosai: not a documented API, it may change; 
 credit 「出典：気象庁ホームページ」). The park's municipality comes from GSI's reverse geocoder (国土地理院).
 
 point -> municipality code (GSI muniCd, cached per point) -> the JMA's class20 areas (a ward of a designated city is
-the city, which the JMA may split in two: then every part) -> their office (prefecture) -> its warnings file."""
-import time
-import urllib.parse
+the city, which the JMA may split in two: then every part) -> their office (prefecture) -> its warnings file.
 
-from potacommon import data_path, fetch_json, read_json, write_json
+When to read it again: feed_news() looks at the JMA's 防災情報XML high-frequency feed (pull, free, no sign-up; rewritten
+every minute with the last ~10 minutes' bulletins; xml.kishou.go.jp/xmlpull.html, 10 GB a day per IP at most) for a new
+警報・注意報 bulletin from the park's office: its id ends "_VPWWnn_<office>.xml", the same office code as the JSON."""
+import gzip
+import os
+import re
+import subprocess
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
+from potacommon import USER_AGENT, data_path, fetch_json, read_json, write_json
 
 AREA_URL = "https://www.jma.go.jp/bosai/common/const/area.json"
 # since the new system of late May 2026 (危険警報): data/r8/<office>.json, one latest report per kind (VPWW55 大雨, 58 暴風 ...);
@@ -17,6 +27,10 @@ FORECAST_URL = "https://www.jma.go.jp/bosai/forecast/data/forecast/%s.json"   # 
 GSI_URL = "https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?"
 AREA_MAX_AGE = 30 * 86400          # the area table rarely changes: fetched again after a month
 GONE = {"解除", "発表警報・注意報はなし"}
+FEED_URL = "https://www.data.jma.go.jp/developer/xml/feed/extra.xml"   # 高頻度フィード（随時）: 警報・注意報 among others
+FEED_EVERY = 60                    # seconds: the feed is rewritten every minute (gzip ~13 KB; unchanged = 304)
+WARN_ID = re.compile(r"_VPWW\d+_(\d{6})\.xml$")    # a 警報・注意報 bulletin's id and the office that issued it
+_feed = {"etag": None, "seen": None}
 
 # the JMA's codes -> 警戒レベル相当 (2 注意報 / 3 警報 / 4 危険警報 / 5 特別警報), as the JMA's own warning page lists them
 # (its script's code table, read 2026-10-22). 大雨・土砂災害・高潮 have all four, 暴風・暴風雪・大雪・波浪 no 危険警報, the rest
@@ -144,6 +158,40 @@ def place(lat, lon):
     names = _area_table()["names"]
     pref = int(where[1][0][:2])
     return (PREFECTURES[pref - 1] if 1 <= pref <= 47 else "") + "・".join(dict.fromkeys(names.get(c) or c for c in where[1]))
+
+
+def _feed_text():
+    """The feed's XML, or None when it has not changed since the last look (ETag, so an unchanged minute costs nothing)."""
+    head = {"User-Agent": USER_AGENT, "Accept-Encoding": "gzip"}
+    if _feed["etag"]:
+        head["If-None-Match"] = _feed["etag"]
+    try:
+        with urllib.request.urlopen(urllib.request.Request(FEED_URL, headers=head), timeout=15) as r:
+            body = r.read()
+            _feed["etag"] = r.headers.get("ETag")
+            return (gzip.decompress(body) if r.headers.get("Content-Encoding") == "gzip" else body).decode("utf-8")
+    except urllib.error.HTTPError as e:
+        if e.code == 304:
+            return None
+        raise
+    except urllib.error.URLError:     # Python without certificates (python.org on macOS): the system curl, every time
+        kw = {"creationflags": 0x08000000} if os.name == "nt" else {}
+        out = subprocess.run(["curl", "-sS", "--compressed", "-m", "15", "-A", USER_AGENT, FEED_URL], capture_output=True, check=True, **kw)
+        return out.stdout.decode("utf-8")
+
+
+def feed_news(lat, lon):
+    """Has a new 警報・注意報 bulletin from the point's office come up in the feed since the last look? The first look only
+    notes what is listed (the warnings were just read anyway). Raises on a network error."""
+    where = areas(lat, lon)
+    if not where:
+        return False
+    text = _feed_text()
+    if text is None:
+        return False
+    listed = {(m.group(1), i) for i in re.findall(r"<id>([^<]+)</id>", text) for m in [WARN_ID.search(i)] if m}
+    seen, _feed["seen"] = _feed["seen"], listed            # what is listed now: an old bulletin drops out of the feed
+    return seen is not None and any(office == where[0] for office, _ in listed - seen)
 
 
 def warnings(lat, lon):
