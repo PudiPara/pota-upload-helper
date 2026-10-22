@@ -512,7 +512,7 @@
   // lightning or gusts (Web Animations API), and the temperature large. It waits for the sky (Early / Late Shift).
   function playWx(w, alertLines) {
     // one at a time in the bar: a warning notice, then the shift's sky, then the weather
-    if (!$("#sky").hidden || !$("#storm").hidden) { setTimeout(() => playWx(w, alertLines), 700); return; }
+    if (!$("#sky").hidden || !$("#storm").hidden || playSky.waiting) { setTimeout(() => playWx(w, alertLines), 700); return; }
     const box = $("#wxa"), fx = $("#wxaFx"), W = innerWidth, H = innerHeight, D = 5200, g = w.group;
     const id = (playWx.id = (playWx.id || 0) + 1);
     box.getAnimations({ subtree: true }).forEach((x) => x.cancel());
@@ -641,7 +641,8 @@
     return shift === "early" ? (half ? "dawn" : "night") : (half ? "night" : "dusk");
   }
   function playSky(shift, rise) {
-    if (!$("#storm").hidden) { setTimeout(() => playSky(shift, rise), 700); return; }   // a warning first: the sky after it
+    playSky.waiting = !$("#storm").hidden;        // the weather waits for a sky still waiting (they used to start together)
+    if (playSky.waiting) { setTimeout(() => playSky(shift, rise), 700); return; }   // a warning first: the sky after it
     playSky.last = [shift, rise];
     const sc = SKY[skyScene(shift, rise)], box = $("#sky"), orb = $("#skyOrb"), D = 4200;
     const w = st.shifts[shift];
@@ -1283,6 +1284,7 @@
   $("#openPota").addEventListener("click", () => api.open_url("https://pota.app/"));
 
   // ================================================================ settings
+  // Turbo HAMLOG runs on Windows only: Python says whether this is Windows (get_state "hamlog")
   const KINDS = [["n1mm", "N1MM"], ["wsjtx", "WSJT-X"], ["adif", "ADIF"], ["hamlog", "Turbo HAMLOG"]];
   const recvState = (l) => { const s = st.receiver[l.name]; return s && typeof s === "object" ? s : { code: l.enabled ? "" : "off", text: l.enabled ? "" : t("set.off") }; };
   const recvClass = (s) => (s.code === "error" || s.code === "badforward") ? "is-bad" : (s.code === "listening" || s.code === "receiving") ? "is-ok" : "";
@@ -1293,7 +1295,7 @@
       return `<div class="lis${hl ? " is-hamlog" : ""}" data-i="${i}">
         <label class="switch" title="${esc(t("set.toggle"))}"><input type="checkbox" data-k="enabled" ${l.enabled ? "checked" : ""}><span class="switch-ui"></span></label>
         <label>${esc(t("set.name"))}<input type="text" data-k="name" value="${esc(l.name)}"></label>
-        <label>${esc(t("set.kind"))}<select data-k="kind">${KINDS.map(([v, k]) => `<option value="${v}"${l.kind === v ? " selected" : ""}>${k}</option>`).join("")}</select></label>
+        <label>${esc(t("set.kind"))}<select data-k="kind">${KINDS.filter(([v]) => v !== "hamlog" || st.hamlog || hl).map(([v, k]) => `<option value="${v}"${l.kind === v ? " selected" : ""}>${k}</option>`).join("")}</select></label>
         ${hl ? `<p class="lis-note">${esc(t("set.hamlog.note"))}</p>` : `
         <label>${esc(t("set.port"))}<input type="text" inputmode="numeric" data-k="port" value="${esc(l.port)}"></label>
         <label>${esc(t("set.mc"))}<input type="text" data-k="multicast" placeholder="${esc(t("set.mc.ph"))}" value="${esc(l.multicast)}"></label>
@@ -1721,7 +1723,7 @@
     applyLook(s); segSet("#fontScale", "scale", String(LOOK.font_scale)); segSet("#themeSel", "theme", LOOK.theme); segSet("#barStyle", "bar", LOOK.bar_style);
     st.distUnit = s.dist_unit || "";
     Object.assign(st, { call: s.call || "", calls: s.calls || [], prefix: s.prefix, out: s.out, adif: s.adif, source: s.source || "app", listeners: s.listeners,
-                        langs: s.langs || [["ja", "日本語"]], events: s.events || [], termsAccepted: s.terms_accepted || "", guideSeen: s.guide_seen, countries: s.countries || [] });
+                        langs: s.langs || [["ja", "日本語"]], events: s.events || [], termsAccepted: s.terms_accepted || "", guideSeen: s.guide_seen, hamlog: s.hamlog, countries: s.countries || [] });
     $("#lang").innerHTML = st.langs.map(([c, name]) => `<option value="${esc(c)}">${esc(name)}</option>`).join("");
     const lang = s.lang || pickLang(navigator.language);
     if (!s.lang) api.save({ lang });

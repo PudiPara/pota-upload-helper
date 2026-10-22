@@ -212,7 +212,7 @@ class Api:
         return {"version": VERSION, "data_version": data_version(), "call": calls[0] if calls else "", "calls": calls, "operators": s.get("operators") or {}, "op_list": clean_calls(s.get("op_list"), ""), "events": pota_events(year) + pota_events(year + 1), "parks": s.get("parks", ""),
                 "prefix": "home" if s.get("prefix", "home") else "", "adif": s.get("adif", ""), "out": s.get("out", DEFAULT_OUT),
                 "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
-                "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
+                "listeners": self.listeners(), "hamlog": sys.platform == "win32", "lang": s.get("lang") or "", "langs": i18n.available(),
                 "country": s.get("country") or "", "countries": countries(),
                 "terms_accepted": s.get("terms_accepted") or "", "guide_seen": bool(s.get("guide_seen")), "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")), **self._look(s), "dist_unit": s.get("dist_unit") or "", "bar_on_top": s.get("bar_on_top", True) is not False,
                 "lookup": lookup if isinstance(lookup, list) else [lookup],

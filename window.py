@@ -112,7 +112,8 @@ class BarMode:
     def _open(self):
         x, y = _top_right()
         bar = webview.create_window(self._title, self._url + "#bar", js_api=self._api, width=BAR_W, height=BAR_H,
-                                    x=x, y=y, min_size=(200, 60), frameless=True, on_top=self.bar_on_top)   # the shapes: app.js BAR_SIZES   # a banner: dragged by its tile (.pywebview-drag-region)
+                                    x=x, y=y, min_size=(200, 60), resizable=False, frameless=True, on_top=self.bar_on_top)
+        # a banner dragged by its tile (.pywebview-drag-region); its size is the shape's (app.js BAR_SIZES), not the mouse's (macOS let it be dragged)
         bar.events.closed += self._closed
         bar.events.loaded += lambda: set_zoom(bar, self.zoom)
         self._bar = bar

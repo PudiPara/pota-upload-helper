@@ -103,10 +103,12 @@ def add_jma(w, found, place=None):
     """Japan: the JMA's warnings in force (jma.warnings) are the only alerts - w["jma"], each one an alert "jma:<code>"
     ({level}), notified when new. The forecast's own (thunder / rain / wind from Open-Meteo) are dropped: under the
     Meteorological Service Act only the JMA warns in Japan (art. 23) and forecasting needs a licence (art. 17), so a
-    park in Japan gets the JMA's word, credited, and the forecast's numbers only."""
+    park in Japan gets the JMA's word, credited, and Open-Meteo's present conditions only: its hourly table and the
+    rain chance ahead are forecasts, so they go too (the JMA's 府県天気予報 is the forecast there)."""
     w["jma"] = found
     w["jma_place"] = place                      # the municipality the warnings are for
     w["alerts"] = {"jma:" + x["code"]: {"level": x["level"]} for x in found}
+    w["hours"], w["rain"] = [], None
     return w
 
 

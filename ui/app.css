@@ -840,6 +840,8 @@ body.bar-compact .bar-close { top: 3px; right: 4px; }
 body.bar-compact .qsos-bar .qso { gap: 0 10px; }
 body.bar-compact .qsos-bar .qso-call { font-size: 17px; }
 body.bar-compact .qsos-bar .qso-p2p { min-height: 0; }
+body.bar-compact .qsos-bar .p2p-in input { width: 130px; }
+body.bar-compact .qsos-bar .qso-p2p { column-gap: 6px; }   /* a decided 2fer, its distance and 変更 in two lines */
 body.bar-compact .bar-empty { font-size: 11.5px; line-height: 1.35; padding-top: 1px; }
 body.bar-compact .ask { gap: 5px; padding: 4px 12px; }
 body.bar-compact .ask-q strong { font-size: 17px; }
@@ -869,6 +871,8 @@ body.bar-square .bar-close { top: 4px; right: 4px; color: #BFD4C5; }
 body.bar-square .bar-close:hover { background: rgba(255, 255, 255, .12); color: #FFFFFF; }
 body.bar-square .qsos-bar .qso { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "call call" "band time" "p2p p2p"; }
 body.bar-square .qsos-bar .qso-call { font-size: 20px; }
+body.bar-square .qsos-bar .p2p-in input { width: 108px; }   /* the park and 記録 side by side in the narrow card */
+body.bar-square .qsos-bar { display: flex; flex-direction: column; justify-content: safe center; }   /* the QSO in the middle of the room left */
 body.bar-square .ask { padding: 8px 10px; }
 body.bar-square .ask-q { flex-wrap: wrap; white-space: normal; justify-content: center; row-gap: 4px; }
 body.bar-square .ask-btns { flex-wrap: wrap; gap: 6px; }
@@ -998,3 +1002,9 @@ body.bar-square .wxa-info span { white-space: normal; }
 .pop button:hover { background: var(--surface-2); }
 .lookup-list { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .lis-note { grid-column: span 3; font-size: 12px; color: var(--ink-2); margin: 0; align-self: center; }
+
+/* every pull-down drawn by us, not by the OS: macOS drew its own small control and ignored the padding and height
+   (Windows took them), so they looked smaller beside the inputs and buttons. The arrow is one grey for both themes. */
+select:not([multiple]) { -webkit-appearance: none; appearance: none; padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%237E8C85' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 11px center; background-size: 10px 6px; }
