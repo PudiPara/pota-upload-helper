@@ -158,7 +158,7 @@ class ActivationRowsCountPerPark(unittest.TestCase):
                 q("JA1AAA", "020000", "JP-1206,JP-1946")]                       # same station again from another overlap
         d, parks, n, per, pota = list_activations(recs=recs, )[0]
         self.assertEqual((d, parks, n), ("20260108", "JP-1206,JP-1266,JP-1946", 3))
-        self.assertEqual(per, {"JP-1206": 3, "JP-1266": 2, "JP-1946": 1})
+        self.assertEqual(per, {"JP-1206": 2, "JP-1266": 2, "JP-1946": 1})        # the 10-QSO count: JA1AAA once at JP-1206 (#14)
         self.assertEqual(pota, {"JP-1206": 2, "JP-1266": 2, "JP-1946": 1})       # JA1AAA counts once for JP-1206
 
 

@@ -110,5 +110,17 @@ class AsciiOut(unittest.TestCase):
         self.assertEqual((r["CALL"], r["MODE"], r["SUBMODE"]), ("JA1ABC", "MFSK", "FT4X"))
 
 
+
+class CountKey(unittest.TestCase):
+    def test_what_counts_once(self):
+        k = lambda **kw: potacommon.count_key(rec(**kw), "JP-0016")  # noqa: E731
+        self.assertEqual(k(TIME_ON="010000"), k(TIME_ON="013000"))        # the same station again: once (#14)
+        self.assertNotEqual(k(), k(BAND="20m"))
+        self.assertNotEqual(k(), k(MODE="CW"))
+        self.assertNotEqual(k(), k(CALL="JA1ABC/1"))                       # pota.app compares the call as written
+        self.assertNotEqual(k(), k(QSO_DATE="20261021"))                   # a new UTC day: a new activation (#15)
+        self.assertNotEqual(k(MY_POTA_LOCS={"JP-0016": "JP-KN"}), k(MY_POTA_LOCS={"JP-0016": "JP-SZ"}))
+
+
 if __name__ == "__main__":
     unittest.main()

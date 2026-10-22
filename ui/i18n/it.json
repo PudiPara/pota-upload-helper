@@ -48,7 +48,7 @@
   "live.warn.apart": "Secondo le informazioni di pota.app, {a} e {b} non si sovrappongono: non possono essere registrati come 2fer.", "live.note.spread": "I punti di riferimento dei parchi distano {d} (qui ogni parco è un solo punto). Vale come 2fer / 3fer solo se sei dentro tutti i parchi contemporaneamente.",
   "live.toBar": "Modalità barra", "live.finish": "Termina l'attivazione in questo parco", "live.finishArmed": "Termina con {n} non confermati",
   "live.working": "Generazione…",
-  "live.qsoNote.done": "Attivazione completata ({n} combinazioni stazione/banda/modo)", "live.qsoNote.left": "Mancano {n} QSO per completare l’attivazione",
+  "live.qsoNote.done": "Attivazione completata ({n} combinazioni stazione/banda/modo)", "live.qsoNote.left": "Mancano {n} QSO per completare l’attivazione", "live.dayEnd.left": "{m} min al cambio di data UTC; altri {n} QSO per l’attivazione di oggi", "live.dayEnd.done": "{m} min al cambio di data UTC (attivazione di oggi raggiunta)", "live.dayEnd.bar": "{m} min a 0000Z", "live.newDay": "La data UTC è cambiata. Ieri: {n} QSO ({state}). Inizia una nuova attivazione, puoi ricollegare le stesse stazioni", "live.newDay.ok": "raggiunta", "live.newDay.short": "non raggiunta",
   "live.stat.pending": "In attesa", "live.stat.rate": "Ritmo", "live.stat.perHour": "/h", "live.stat.last": "Ultimo QSO", "live.stat.ago": "{n} min fa", "live.stat.now": "proprio ora",
   "live.tab.list": "Elenco", "live.tab.map": "Mappa", "live.qsos": "QSO", "live.spots": "In aria dai parchi", "live.seg.world": "Mondo",
   "live.qsosEmpty1": "In attesa dei QSO dal logger.", "live.qsosEmpty2": "Se non arriva nulla, controlla «Collegamento al logger».",

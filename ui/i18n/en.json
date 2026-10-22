@@ -57,7 +57,7 @@
  "live.finishArmed": "Finish with {n} unconfirmed",
  "live.working": "Writing…",
  "live.qsoNote.done": "Activation complete ({n} station/band/mode combinations)",
- "live.qsoNote.left": "{n} more QSOs to complete the activation",
+ "live.qsoNote.left": "{n} more QSOs to complete the activation", "live.dayEnd.left": "{m} min to the UTC date change; {n} more QSOs make today's activation", "live.dayEnd.done": "{m} min to the UTC date change (today's activation is made)", "live.dayEnd.bar": "{m} min to 0000Z", "live.newDay": "The UTC date has changed. Yesterday: {n} QSOs ({state}). A new activation starts now, and you can work the same stations again", "live.newDay.ok": "made", "live.newDay.short": "not made",
  "live.stat.pending": "Unanswered", "live.stat.rate": "Rate", "live.stat.perHour": "/h", "live.stat.last": "Last QSO", "live.stat.ago": "{n} min ago", "live.stat.now": "just now",
  "live.tab.list": "List", "live.tab.map": "Map", "live.qsos": "QSOs",
  "live.spots": "On the air from parks",

@@ -57,7 +57,7 @@
  "live.finishArmed": "未確認 {n} 件のまま終了",
  "live.working": "作成しています…",
  "live.qsoNote.done": "アクティベーション成立（{n} 局・バンド・モード）",
- "live.qsoNote.left": "あと {n} QSO でアクティベーション成立",
+ "live.qsoNote.left": "あと {n} QSO でアクティベーション成立", "live.dayEnd.left": "UTC の日付が変わるまで {m} 分。あと {n} QSO で今日の分が成立", "live.dayEnd.done": "UTC の日付が変わるまで {m} 分（今日の分は成立）", "live.dayEnd.bar": "0000Z まで {m} 分", "live.newDay": "UTC の日付が変わりました。前日は {n} QSO（{state}）。ここから新しいアクティベーションで、同じ局とももう一度交信できます", "live.newDay.ok": "成立", "live.newDay.short": "未成立",
  "live.stat.pending": "確認待ち", "live.stat.rate": "ペース", "live.stat.perHour": "/時", "live.stat.last": "最後の交信", "live.stat.ago": "{n} 分前", "live.stat.now": "たった今",
  "live.tab.list": "一覧", "live.tab.map": "地図", "live.qsos": "交信",
  "live.spots": "公園から出ている局",

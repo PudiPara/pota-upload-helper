@@ -48,7 +48,7 @@
   "live.warn.apart": "D’après les informations de pota.app, {a} et {b} ne se chevauchent pas : ils ne peuvent pas être enregistrés comme 2fer.", "live.note.spread": "Les points de référence des parcs sont distants de {d} (chaque parc n’est ici qu’un point). Cela ne compte comme 2fer / 3fer que si vous êtes dans tous les parcs à la fois.",
   "live.toBar": "Barre", "live.finish": "Terminer l’activation de ce parc", "live.finishArmed": "Terminer avec {n} non confirmé(s)",
   "live.working": "Écriture…",
-  "live.qsoNote.done": "Activation validée ({n} combinaisons station/bande/mode)", "live.qsoNote.left": "Encore {n} QSO pour valider l’activation",
+  "live.qsoNote.done": "Activation validée ({n} combinaisons station/bande/mode)", "live.qsoNote.left": "Encore {n} QSO pour valider l’activation", "live.dayEnd.left": "{m} min avant le changement de date UTC ; encore {n} QSO pour valider l’activation du jour", "live.dayEnd.done": "{m} min avant le changement de date UTC (activation du jour validée)", "live.dayEnd.bar": "{m} min avant 0000Z", "live.newDay": "La date UTC a changé. Hier : {n} QSO ({state}). Une nouvelle activation commence, vous pouvez recontacter les mêmes stations", "live.newDay.ok": "validée", "live.newDay.short": "non validée",
   "live.stat.pending": "En attente", "live.stat.rate": "Cadence", "live.stat.perHour": "/h", "live.stat.last": "Dernier QSO", "live.stat.ago": "il y a {n} min", "live.stat.now": "à l’instant",
   "live.tab.list": "Liste", "live.tab.map": "Carte", "live.qsos": "QSO", "live.spots": "Stations en activation", "live.seg.world": "Monde",
   "live.qsosEmpty1": "En attente des QSO du logger.", "live.qsosEmpty2": "Si rien n’arrive, vérifiez « Lien avec le logger ».",

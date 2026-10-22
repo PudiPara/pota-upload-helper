@@ -48,7 +48,7 @@
   "live.warn.apart": "Laut den Parkinformationen von pota.app überschneiden sich {a} und {b} nicht; sie können nicht als 2fer aufgezeichnet werden.", "live.note.spread": "Die Bezugspunkte der Parks liegen {d} auseinander (jeder Park ist hier nur ein Punkt). Ein 2fer / 3fer zählt nur, wenn du gleichzeitig in allen Parks bist.",
   "live.toBar": "Leiste", "live.finish": "Aktivierung in diesem Park beenden", "live.finishArmed": "Mit {n} unbestätigten beenden",
   "live.working": "Schreibe…",
-  "live.qsoNote.done": "Aktivierung geschafft ({n} Kombinationen Station/Band/Betriebsart)", "live.qsoNote.left": "Noch {n} QSOs bis zur gültigen Aktivierung",
+  "live.qsoNote.done": "Aktivierung geschafft ({n} Kombinationen Station/Band/Betriebsart)", "live.qsoNote.left": "Noch {n} QSOs bis zur gültigen Aktivierung", "live.dayEnd.left": "Noch {m} Min. bis zum UTC-Datumswechsel; {n} weitere QSOs für die heutige Aktivierung", "live.dayEnd.done": "Noch {m} Min. bis zum UTC-Datumswechsel (heutige Aktivierung erreicht)", "live.dayEnd.bar": "Noch {m} Min. bis 0000Z", "live.newDay": "Das UTC-Datum hat gewechselt. Gestern: {n} QSOs ({state}). Eine neue Aktivierung beginnt, dieselben Stationen zählen wieder", "live.newDay.ok": "erreicht", "live.newDay.short": "nicht erreicht",
   "live.stat.pending": "Offen", "live.stat.rate": "Rate", "live.stat.perHour": "/h", "live.stat.last": "Letztes QSO", "live.stat.ago": "vor {n} Min.", "live.stat.now": "gerade eben",
   "live.tab.list": "Liste", "live.tab.map": "Karte", "live.qsos": "QSOs", "live.spots": "Aktiv aus Parks", "live.seg.world": "Welt",
   "live.qsosEmpty1": "Warte auf QSOs vom Logger.", "live.qsosEmpty2": "Kommt nichts an, prüfe „Logger-Anbindung“.",

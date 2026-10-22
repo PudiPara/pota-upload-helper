@@ -15,7 +15,7 @@ import re
 from collections import defaultdict
 
 from i18n import t as tr
-from potacommon import (DEFAULT_OUT, band_name, base_call, data_path, fetch_json, fix_mode_band, iso_minutes, mode_known,
+from potacommon import (DEFAULT_OUT, band_name, base_call, count_key, data_path, fetch_json, fix_mode_band, iso_minutes, mode_known,
                         mode_of, my_parks_of, pota_key, read_adif, read_json, rec_minutes, split_parks, their_parks_of,
                         write_adif, write_json)
 from qsolog import decided_parks
@@ -127,20 +127,20 @@ def find_activation_qsos(recs, dates=None, my_parks=None, sessions=None):
 
 
 def list_activations(adif_path=None, recs=None):
-    """[(date, 'JP-1281,JP-1285', qso_count, {park: its qso_count}, {park: lines pota.app keeps})]
+    """[(date, 'JP-1281,JP-1285', qso_count, {park: the QSOs that count there (count_key)}, {park: lines pota.app keeps})]
     newest first, for the GUI. The parks of a day are listed, not joined as one 2fer: a day may hold
     several sessions."""
     recs = records(adif_path, recs)
-    agg = defaultdict(lambda: [defaultdict(int), 0, defaultdict(set)])
+    agg = defaultdict(lambda: [defaultdict(set), 0, defaultdict(set)])
     for r, t, mp in find_activation_qsos(recs):
         a = agg[r["QSO_DATE"]]
         _, theirs = decided_parks(r)
         for p in mp:
-            a[0][p] += 1
+            a[0][p].add(count_key(r, p))
             for tp in (theirs or [""]):        # their 2fer is one line per park
                 a[2][p].add(pota_key(dict(r, SIG_INFO=tp)))
         a[1] += 1
-    return sorted(((d, ",".join(sorted(v[0])), v[1], dict(v[0]), {p: len(k) for p, k in v[2].items()})
+    return sorted(((d, ",".join(sorted(v[0])), v[1], {p: len(k) for p, k in v[0].items()}, {p: len(k) for p, k in v[2].items()})
                    for d, v in agg.items()), reverse=True)
 
 
@@ -164,7 +164,7 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
 
     os.makedirs(out_dir, exist_ok=True)
     files = defaultdict(list)
-    report = defaultdict(lambda: {"qsos": set(), "p2p": [], "rows": [], "calls": set()})
+    report = defaultdict(lambda: {"qsos": set(), "count": set(), "p2p": [], "rows": [], "calls": set()})
     notes = []
     used_hunter = set()
 
@@ -208,6 +208,7 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
             key = (mp, r["QSO_DATE"], loc)
             rep = report[key]
             rep["qsos"].add((b, r["QSO_DATE"], hhmm(r), band, r.get("MODE")))
+            rep["count"].add(count_key(r, mp))           # what counts toward the 10 (a re-QSO on the band/mode does not)
             rep["calls"].add(b)
             if theirs:
                 rep["p2p"].append((hhmm(r), r["CALL"], ",".join(theirs), src))
@@ -238,14 +239,14 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
         write_adif(os.path.join(out_dir, fn), files[(mp, d, loc)], ORDER)
         written.append(fn)
         rep = report[(mp, d, loc)]
-        n = len(rep["qsos"])
-        summary.append({"park": mp, "date": d, "loc": loc, "file": fn, "qsos": n, "stations": len(rep["calls"]),
+        n, counted = len(rep["qsos"]), len(rep["count"])
+        summary.append({"park": mp, "date": d, "loc": loc, "file": fn, "qsos": n, "counted": counted, "stations": len(rep["calls"]),
                         "records": len(files[(mp, d, loc)]), "rows": rep["rows"],
                         # what pota.app will keep: its duplicate key is CALL+MODE+date+BAND+MY_SIG_INFO+SIG_INFO
                         "unique": len({pota_key(o) for o in files[(mp, d, loc)]}),
                         "p2p": [{"time": tm, "call": c, "parks": ps.split(","), "source": src}
                                 for tm, c, ps, src in rep["p2p"]]})
-        lines.append(tr("b.line.file", date=d, park=mp, n=n, stations=len(rep["calls"]), short="" if n >= 10 else tr("b.short"), file=fn))
+        lines.append(tr("b.line.file", date=d, park=mp, n=n, stations=len(rep["calls"]), short="" if counted >= 10 else tr("b.short"), file=fn))
         for tm, c, ps, src in rep["p2p"]:
             lines.append("      P2P %s %-10s %-20s [%s]" % (tm, c, ps, src))
     if notes:

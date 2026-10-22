@@ -31,7 +31,7 @@ from builder import build, find_activation_qsos, list_activations
 from i18n import t
 from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, adif_mode, band_name, base_call, data_path, data_version, fetch_json, grid_center,
                         iso_date,
-                        iso_minutes, load_settings, lock_instance, mode_known, mode_of, my_call, my_parks_of, read_adif, rec_minutes, resource,
+                        iso_minutes, load_settings, lock_instance, count_key, mode_known, mode_of, my_call, my_parks_of, read_adif, rec_minutes, resource,
                         save_settings, split_parks, LOG_NAME, setup_log)
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
@@ -81,6 +81,9 @@ def qso_event(rec, uid=None, hunted=None):
             "new": mypota.new_parks(list(dict.fromkeys(theirs)), hunted, ts),
             "mode": mode_of(rec), "decision": rec.get("P2P_DECISION") or "", "parks": decided_parks(rec)[1],
             "candidate": split_parks(rec.get("P2P_CANDIDATE")), "my": my_parks_of(rec),
+            # for the 10-QSO count: one key per park ("*" when the QSO has none of its own), the UI counts the
+            # distinct keys of today at the session's location (count_key: what pota.app counts once)
+            "ck": {p: count_key(rec, p) for p in my_parks_of(rec) or ["*"]},
             "note": rec.get("P2P_NOTE") or "",
             # to their parks (the decided ones, else the spot's candidate) from mine
             "km": distance_km(my_parks_of(rec), decided_parks(rec)[1] or split_parks(rec.get("P2P_CANDIDATE")))}
@@ -282,7 +285,7 @@ class Api:
         sess = self._logger.session
         self._locs = locs
         save_settings({"live": {"id": sess["id"], "parks": parks, "call": call, "start": sess["start"], "locs": locs}})
-        return {"ok": True, "parks": parks, "start": sess["start"], "loc": loc}
+        return {"ok": True, "parks": parks, "start": sess["start"], "loc": loc, "locs": locs}
 
     def _in_session(self, rec):
         """Does this QSO belong in the running session's list: logged at one of its parks today (a park

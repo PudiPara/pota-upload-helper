@@ -332,6 +332,15 @@ def pota_key(rec):
     return ((rec.get("CALL") or "").upper(), (rec.get("BAND") or "").lower(), mode_of(rec), rec.get("SIG_INFO") or "")
 
 
+def count_key(rec, park):
+    """What makes this QSO one of the 10 an activation needs at `park`: "date|location|CALL|band|mode". pota.app
+    counts an activation per park, location and UTC day, and drops a QSO with the same CALL (as written), band
+    and mode there as a duplicate (Rules; the account-wide check is the same for one callsign)."""
+    loc = (rec.get("MY_POTA_LOCS") or {}).get(park, "")
+    return "|".join([rec.get("QSO_DATE") or "", loc, (rec.get("CALL") or "").upper(), (rec.get("BAND") or "").lower(),
+                     mode_of(rec)])
+
+
 def mode_group(mode):
     """'cw' | 'phone' | 'data' | '' - how pota.app groups modes."""
     m = (mode or "").upper().strip()
