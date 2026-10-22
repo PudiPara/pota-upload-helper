@@ -43,8 +43,12 @@ def now_utc():
 
 # ---------------------------------------------------------------- reading a spot
 def parks_of(spot):
-    """['JP-1788', 'JP-0157'] - the reference first, then references written in the comment ("2fer JP-0157")."""
-    refs = [(spot.get("reference") or "").upper()] + comment_parks(spot.get("comments"))
+    """['JP-1788', 'JP-0157'] - the reference first, then references written in the comment ("2fer JP-0157"):
+    the activator's own comment always, another spotter's only when it says 2fer/3fer - a hunter's respot
+    "P2P from US-1234" names the hunter's park (as in parks_from_history). No spotter (old records): any."""
+    refs = [(spot.get("reference") or "").upper()]
+    if "spotter" not in spot or _by_activator(spot) or FER.search(spot.get("comments") or ""):
+        refs += comment_parks(spot.get("comments"))
     return [r for i, r in enumerate(refs) if r and r not in refs[:i]]
 
 
@@ -572,7 +576,7 @@ class SpotLogger:
                     rec = {"seen": utc_stamp(now), "spotTime": s.get("spotTime"),
                            "activator": s.get("activator"), "base": act, "parks": refs,
                            "frequency": s.get("frequency"), "mode": s.get("mode"),
-                           "comments": s.get("comments"), "spotId": key}
+                           "comments": s.get("comments"), "spotter": s.get("spotter"), "spotId": key}
                     fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
                     before = known.setdefault(act, set())
                     added = [r for r in refs if r not in before]
