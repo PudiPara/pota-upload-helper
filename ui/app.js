@@ -373,7 +373,7 @@
     renderQsos();
   }
   // POTA event periods (Python sends their UTC dates) and the Early / Late Shift hours of these parks, beside 運用中
-  const SHIFT_NAMES = { early: "Early Shift", late: "Late Shift" };
+  const SHIFT_NAMES = { early: "Early Shift", late: "Late Shift" }, SHIFT_LOCAL = { early: 2, late: 18 };   // local start hour
   // the shifts on now: st.shifts = {early: [UTC hour it starts, hours long], late: [...]} from Python
   const activeShifts = () => {
     const h = new Date(Date.now()).getUTCHours();
@@ -403,12 +403,13 @@
   }
   function playSky(shift, rise) {
     const sc = SKY[skyScene(shift, rise)], box = $("#sky"), orb = $("#skyOrb"), D = 4200;
-    const w = st.shifts[shift], at = (h) => new Date(Date.UTC(2000, 0, 1, h)).toLocaleTimeString(st.lang, { hour: "2-digit", minute: "2-digit" });
+    const w = st.shifts[shift];
     $("#skyName").textContent = SHIFT_NAMES[shift];
-    const utc = (h) => String(h % 24).padStart(2, "0") + ":00";
-    // two lines: the computer's own time (where the operator is, as a rule) and UTC
-    $("#skyLine").textContent = rise ? t("sky.start", { from: at(w[0]), to: at(w[0] + w[1]) }) : t("sky.end");
-    $("#skyUtc").textContent = rise ? t("sky.utc", { from: utc(w[0]), to: utc(w[0] + w[1]) }) : "";
+    const hh = (h) => String(h % 24).padStart(2, "0") + ":00", local = SHIFT_LOCAL[shift];
+    // two lines: the park's local time by its 15° band (what a shift is: 02-08 / 18-02, whatever the computer's clock
+    // is set to; real time zones and summer time may differ, as the docs say) and UTC
+    $("#skyLine").textContent = rise ? t("sky.start", { from: hh(local), to: hh(local + w[1]) }) : t("sky.end");
+    $("#skyUtc").textContent = rise ? t("sky.utc", { from: hh(w[0]), to: hh(w[0] + w[1]) }) : "";
     $("#skyUtc").hidden = !rise;
     orb.className = "sky-orb is-" + sc.orb;
     const id = (playSky.id = (playSky.id || 0) + 1);
