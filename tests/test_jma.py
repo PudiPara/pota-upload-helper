@@ -25,16 +25,21 @@ class JmaTest(unittest.TestCase):
         self.assertIsNone(jma.resolve("99999", TABLE))
 
     def test_in_force(self):
-        data = {"areaTypes": [{"areas": [{"code": "130010", "warnings": [{"code": "14", "status": "発表"}]}]},
-                              {"areas": [{"code": "1410011", "warnings": [{"code": "14", "status": "継続"}, {"code": "20", "status": "解除"}]},
-                                         {"code": "1410012", "warnings": [{"code": "03", "status": "発表"}]},
-                                         {"code": "1322500", "warnings": [{"status": "発表警報・注意報はなし"}]}]}]}
-        self.assertEqual(jma.in_force(data, ["1410011", "1410012"]), [{"code": "03", "level": 2}, {"code": "14", "level": 1}])
+        # the r8 file: the latest report of each kind; a 解除 is not in force, a step down (特別警報から警報) is the new one
+        data = [{"dataTypeCode": "VPWW58", "warning": {"class10Items": [{"areaCode": "140010", "kinds": [{"code": "05", "status": "発表"}]}],
+                 "class20Items": [{"areaCode": "1410011", "kinds": [{"code": "05", "status": "特別警報から警報"}]},
+                                  {"areaCode": "1322500", "kinds": [{"status": "発表警報・注意報はなし"}]}]}},
+                {"dataTypeCode": "VPWW55", "warning": {"class20Items": [{"areaCode": "1410012", "kinds": [{"code": "43", "status": "発表"}]},
+                                                                        {"areaCode": "1410011", "kinds": [{"code": "14", "status": "継続"},
+                                                                                                          {"code": "20", "status": "解除"}]}]}}]
+        self.assertEqual(jma.in_force(data, ["1410011", "1410012"]),
+                         [{"code": "43", "level": 4}, {"code": "05", "level": 3}, {"code": "14", "level": 2}])
         self.assertEqual(jma.in_force(data, ["1322500"]), [])
+        self.assertEqual(jma.in_force({"areaTypes": []}, ["1322500"]), [])                 # the old format: nothing
 
     def test_add_jma(self):
-        w = weather.add_jma({"alerts": {"rain": {"in": 1, "p": 70}, "thunder": {"in": 0}}}, [{"code": "14", "level": 1}])
-        self.assertEqual(w["alerts"], {"jma:14": {"level": 1}})              # Japan: the JMA's only, not the forecast's
+        w = weather.add_jma({"alerts": {"rain": {"in": 1, "p": 70}, "thunder": {"in": 0}}}, [{"code": "14", "level": 2}])
+        self.assertEqual(w["alerts"], {"jma:14": {"level": 2}})              # Japan: the JMA's only, not the forecast's
         self.assertEqual(weather.news({"alerts": {"rain": {}}}, w), ["jma:14"])
         self.assertEqual(weather.add_jma({"alerts": {"thunder": {"in": 0}}}, [])["alerts"], {})
 

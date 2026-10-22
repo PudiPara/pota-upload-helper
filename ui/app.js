@@ -434,17 +434,18 @@
   // park in Japan (its name, in its colour: advisory yellow, warning red, emergency purple), the forecast's elsewhere.
   // {alert key: [icon, level, title (null = the JMA's own name), body key, the bar's short body key]}
   const NOTICES = {
-    "jma:14": ["bolt", 1, null, "wx.storm.jma", "wx.storm.jmaShort"],
-    "jma:15": ["wind", 1, null, "wx.notice.windJma", "wx.notice.windJmaShort"],
-    "jma:13": ["wind", 1, null, "wx.notice.windJma", "wx.notice.windJmaShort"],
-    "jma:05": ["wind", 2, null, "wx.notice.stormJma", "wx.notice.stormJmaShort"],
-    "jma:02": ["wind", 2, null, "wx.notice.stormJma", "wx.notice.stormJmaShort"],
-    "jma:35": ["wind", 3, null, "wx.notice.emergency", "wx.notice.emergencyShort"],
-    "jma:32": ["wind", 3, null, "wx.notice.emergency", "wx.notice.emergencyShort"],
-    thunder: ["bolt", 1, "wx.storm.title", "wx.storm.body", "wx.alert.thunder"],
-    wind: ["wind", 1, "wx.notice.windTitle", "wx.notice.wind", "wx.notice.windShort"],
+    "jma:14": ["bolt", 2, null, "wx.storm.jma", "wx.storm.jmaShort"],
+    "jma:15": ["wind", 2, null, "wx.notice.windJma", "wx.notice.windJmaShort"],
+    "jma:13": ["wind", 2, null, "wx.notice.windJma", "wx.notice.windJmaShort"],
+    "jma:05": ["wind", 3, null, "wx.notice.stormJma", "wx.notice.stormJmaShort"],
+    "jma:02": ["wind", 3, null, "wx.notice.stormJma", "wx.notice.stormJmaShort"],
+    "jma:35": ["wind", 5, null, "wx.notice.emergency", "wx.notice.emergencyShort"],
+    "jma:32": ["wind", 5, null, "wx.notice.emergency", "wx.notice.emergencyShort"],
+    thunder: ["bolt", 2, "wx.storm.title", "wx.storm.body", "wx.alert.thunder"],
+    wind: ["wind", 2, "wx.notice.windTitle", "wx.notice.wind", "wx.notice.windShort"],
   };
-  const PULSE = { 1: ["#FFD400", "#FF9F00"], 2: ["#E60012", "#9E000C"], 3: ["#5F1985", "#3A0E52"] };
+  // the JMA's colours by 警戒レベル相当: 2 yellow, 3 red, 4 purple, 5 black (pulsing toward a deeper shade)
+  const PULSE = { 2: ["#F2E700", "#FFB300"], 3: ["#FF2800", "#B81D00"], 4: ["#AA00AA", "#6E006E"], 5: ["#0C000C", "#3A2A3A"] };
   const notice = { queue: [] };
   // the new ones, gravest first, one at a time: closing one shows the next
   function showNotices(keys, w) {

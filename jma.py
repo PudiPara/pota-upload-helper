@@ -10,16 +10,24 @@ import urllib.parse
 from potacommon import data_path, fetch_json, read_json, write_json
 
 AREA_URL = "https://www.jma.go.jp/bosai/common/const/area.json"
-WARN_URL = "https://www.jma.go.jp/bosai/warning/data/warning/%s.json"
+# since the new system of late May 2026 (危険警報): data/r8/<office>.json, one latest report per kind (VPWW55 大雨, 58 暴風 ...);
+# the old data/warning/<office>.json stopped on 2026-05-28
+WARN_URL = "https://www.jma.go.jp/bosai/warning/data/r8/%s.json"
 GSI_URL = "https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?"
 AREA_MAX_AGE = 30 * 86400          # the area table rarely changes: fetched again after a month
 GONE = {"解除", "発表警報・注意報はなし"}
 
-# the JMA's codes -> (name for the copy "jma.<code>", level): 3 emergency (特別警報), 2 warning (警報), 1 advisory (注意報)
-CODES = {"33": 3, "32": 3, "35": 3, "36": 3, "37": 3, "38": 3,
-         "02": 2, "03": 2, "04": 2, "05": 2, "06": 2, "07": 2, "08": 2,
-         "10": 1, "12": 1, "13": 1, "14": 1, "15": 1, "16": 1, "17": 1, "18": 1, "19": 1, "20": 1, "21": 1, "22": 1,
-         "23": 1, "24": 1, "25": 1, "26": 1}
+# the JMA's codes -> 警戒レベル相当 (2 注意報 / 3 警報 / 4 危険警報 / 5 特別警報), as the JMA's own warning page lists them
+# (its script's code table, read 2026-10-22). 大雨・土砂災害・高潮 have all four, 暴風・暴風雪・大雪・波浪 no 危険警報, the rest
+# are 注意報 only. 洪水 (04 / 18) left this table: 氾濫 is its own information now.
+CODES = {"10": 2, "03": 3, "43": 4, "33": 5,            # 大雨
+         "29": 2, "09": 3, "49": 4, "39": 5,            # 土砂災害
+         "19": 2, "08": 3, "48": 4, "38": 5,            # 高潮
+         "15": 2, "05": 3, "35": 5,                     # 強風 / 暴風
+         "13": 2, "02": 3, "32": 5,                     # 風雪 / 暴風雪
+         "12": 2, "06": 3, "36": 5,                     # 大雪
+         "16": 2, "07": 3, "37": 5,                     # 波浪
+         "14": 2, "17": 2, "20": 2, "21": 2, "22": 2, "23": 2, "24": 2, "25": 2, "26": 2}   # 雷 融雪 濃霧 乾燥 なだれ 低温 霜 着氷 着雪
 THUNDER = "14"                      # 雷注意報
 
 
@@ -76,13 +84,14 @@ def warnings(lat, lon):
 
 
 def in_force(data, codes):
-    """The JMA's warnings file -> [{"code", "level"}] in force in any of these class20 areas, the gravest first."""
+    """The JMA's warnings file (r8: a list of the latest report of each kind) -> [{"code", "level"}] in force in any of
+    these class20 areas, the gravest first."""
     found = {}
-    for t in data.get("areaTypes") or []:
-        for a in t.get("areas") or []:
-            if a.get("code") in codes:
-                for w in a.get("warnings") or []:
-                    c = w.get("code")
-                    if c in CODES and w.get("status") not in GONE:
+    for report in data if isinstance(data, list) else []:
+        for item in (report.get("warning") or {}).get("class20Items") or []:
+            if item.get("areaCode") in codes:
+                for k in item.get("kinds") or []:
+                    c = k.get("code")
+                    if c in CODES and k.get("status") not in GONE:
                         found[c] = CODES[c]
     return [{"code": c, "level": lv} for c, lv in sorted(found.items(), key=lambda x: (-x[1], x[0]))]
