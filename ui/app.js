@@ -334,6 +334,7 @@
     if (r.qsos.some((q) => q.action !== "delete" && q.live)) hideCelebrations();
     for (const q of r.qsos) {
       st.lastQ = Math.max(st.lastQ, q.at);
+      if (q.action === "award") { showAward(q.awards); continue; }   // an achievement reached (Python: mypota.awards)
       if (q.action === "delete") {                 // Python sends every copy it deleted
         (q.uids || []).forEach((u) => { removed = st.qsos.delete(u) || removed; });
         toast(t("live.deleted", { call: q.call }));
@@ -740,14 +741,16 @@
     const input = `<span class="p2p-in"><input data-in="${esc(q.uid)}" placeholder="${esc(t("row.ph"))}" spellcheck="false" autocomplete="off"
         value="${esc(editing ? (q.parks || []).join(",") : "")}"><button class="chip chip-yes" data-act="manual" data-uid="${esc(q.uid)}">${t("row.record")}</button>
         ${q.candidate.length || decided || q.decision === "no" ? `<button class="link" data-act="cancel" data-uid="${esc(q.uid)}">${t("row.cancel")}</button>` : ""}</span>`;
+    // a rover calling again from another park than last time (Python: qsolog.earlier_parks)
+    const prev = q.prev && q.prev.length ? `<span class="ask-note">${esc(t("row.prev", { parks: q.prev.join(", ") }))}</span>` : "";
     let ctl;
     if (editing) ctl = input;
     else if (p2p) ctl = `<span class="p2p-tag">P2P</span><span class="plates">${plates(q.parks, q.new)}</span>${newTag(q.new.filter((p) => q.parks.includes(p)))}${distTag(q.km)}<button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.change")}</button>`;
     else if (q.decision === "no") ctl = `<span class="qso-none">${t("row.none")}</span><button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.change")}</button>`;
-    else if (q.candidate.length) ctl = `<span class="ask-text">${t("row.ask")}</span><span class="plates">${plates(q.candidate, q.new)}</span>${newTag(q.new)}${distTag(q.km)}${q.note ? `<span class="ask-note">${esc(t("row.note." + q.note))}</span>` : ""}
+    else if (q.candidate.length) ctl = `<span class="ask-text">${t("row.ask")}</span><span class="plates">${plates(q.candidate, q.new)}</span>${newTag(q.new)}${distTag(q.km)}${q.note ? `<span class="ask-note">${esc(t("row.note." + q.note))}</span>` : ""}${prev}
         <button class="chip chip-yes" data-act="yes" data-uid="${esc(q.uid)}">${t("row.yes")}</button><button class="chip" data-act="no" data-uid="${esc(q.uid)}">${t("row.no")}</button>
         <button class="link" data-act="edit" data-uid="${esc(q.uid)}">${t("row.manual")}</button>`;
-    else ctl = input;
+    else ctl = input + prev;
     const ask = !decided && q.decision !== "no" && q.candidate.length && !editing;
     return `<li class="qso${p2p ? " is-p2p" : ""}${p2p > 1 ? " is-twofer" : ""}${ask ? " is-ask" : ""}${fresh && fresh.has(q.uid) ? " is-new" : ""}" data-uid="${esc(q.uid)}">
         <span class="qso-time">${hhmm(q.time)}</span>
@@ -887,7 +890,20 @@
     $("#huntedParks").innerHTML = plates(parks);
     $("#cheer").hidden = true; celebrate("#hunted", burst());
   }
-  function hideCelebrations() { $("#hunted").hidden = true; $("#cheer").hidden = true; }
+  function hideCelebrations() { $("#hunted").hidden = true; $("#cheer").hidden = true; $("#award").hidden = true; }
+  // An achievement reached while recording (not confirmed until the log is uploaded): the medal drops in spinning,
+  // the names, and the party poppers - in both windows, like 10 QSOs
+  const awardName = (a) => t("award." + a.kind, { name: a.name || "", n: a.n || "", park: a.park || "" });
+  function showAward(list) {
+    if (!list || !list.length) return;
+    $("#awardName").textContent = list.map(awardName).join("\n");
+    $("#cheer").hidden = true; $("#hunted").hidden = true;
+    celebrate("#award", burst(48));
+    $("#awardMedal").animate([{ transform: "translateY(-140px) rotateY(0deg)", opacity: 0 }, { transform: "translateY(10px) rotateY(540deg)", opacity: 1, offset: .7 },
+      { transform: "translateY(0) rotateY(720deg)", opacity: 1 }], { duration: 1500, easing: "cubic-bezier(.2, .7, .3, 1)" });
+    if (!BAR) toast(t("award.title") + ": " + list.map(awardName).join(" · "));
+  }
+  $("#award").addEventListener("click", () => ($("#award").hidden = true));
   $("#hunted").addEventListener("click", hideCelebrations);
   function cheer(n) {
     $("#cheerN").textContent = n + " QSO";
@@ -1463,8 +1479,10 @@
     if (empty) return;
     const sum = (k, rows) => esc(t(k, { n: rows.length, added: rows.filter((r) => r.added).length }));
     const u = (d.unique || {})[rec.kind];      // the next Unique Reference level for the list shown
+    const six = (d.six || {})[rec.kind] || [];  // 6 Pack: parks on 6m in this app's log (mypota.six_pack)
     $("#recSum").innerHTML = `<span>${sum("rec.sum.hunted", d.hunted)}</span><span>${sum("rec.sum.activated", d.activated)}</span>` +
-      (u && u.next ? `<span class="rec-next">${esc(t("rec.next", { n: u.next, left: u.next - u.n }))}</span>` : "");
+      (u && u.next ? `<span class="rec-next">${esc(t("rec.next", { n: u.next, left: u.next - u.n }))}</span>` : "") +
+      (six.length ? `<span class="rec-next" title="${esc(six.join(", "))}">${esc(t("rec.six", { n: Math.min(six.length, 6) }))}</span>` : "");
     const q = rec.q.trim().toUpperCase();
     const rows = d[rec.kind].filter((r) => (!rec.added || r.added) && (!q || r.ref.includes(q) || (r.name || "").toUpperCase().includes(q)));
     $("#recList").innerHTML = rows.map(recRow).join("");

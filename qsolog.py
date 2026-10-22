@@ -149,6 +149,23 @@ def decided_parks(rec):
     return True, their_parks_of(rec)
 
 
+def earlier_parks(rec):
+    """A rover calling again (#52): their parks at this station's previous contact of the day (decided, else its
+    spot candidate) when they differ from this QSO's. -> [] otherwise. A twin copy (within TWIN_WINDOW) is not earlier."""
+    t, call = rec_minutes(rec), base_call(rec.get("CALL"))
+    if t is None:
+        return []
+    now = decided_parks(rec)[1] or split_parks(rec.get("P2P_CANDIDATE"))
+    for r in reversed(records([rec.get("QSO_DATE")])):
+        rt = rec_minutes(r)
+        if base_call(r.get("CALL")) != call or rt is None or rt >= t - TWIN_WINDOW:
+            continue
+        parks = decided_parks(r)[1] or ([] if decided_parks(r)[0] else split_parks(r.get("P2P_CANDIDATE")))
+        if parks:
+            return parks if set(parks) != set(now) else []
+    return []
+
+
 def set_p2p(uid, decision, parks):
     """Record the operator's P2P decision for a QSO and its copies. -> the updated records."""
     parks = split_parks(parks)

@@ -18,6 +18,7 @@ from i18n import t as tr
 from potacommon import (CALL_RE, DEFAULT_OUT, SUBMODES, band_name, base_call, count_key, data_path, fetch_json, fix_mode_band, iso_minutes, mode_known,
                         mode_of, my_parks_of, pota_key, read_adif, read_json, rec_minutes, split_parks, their_parks_of,
                         write_adif, write_json)
+from mypota import ROVER
 from qsolog import decided_parks
 from spots import load_sessions, load_spots, park_location_codes, their_parks_at
 
@@ -26,7 +27,6 @@ ORDER = ["STATION_CALLSIGN", "OPERATOR", "CALL", "QSO_DATE", "TIME_ON", "BAND", 
          "MY_STATE", "MY_GRIDSQUARE", "GRIDSQUARE", "COMMENT"]
 KEEP = ["CALL", "QSO_DATE", "TIME_ON", "BAND", "FREQ", "MODE", "SUBMODE", "RST_SENT", "RST_RCVD",
         "MY_GRIDSQUARE", "GRIDSQUARE"]
-ROVER = ((30, "Lion"), (25, "Leopard"), (20, "Ostrich"), (15, "Cheetah"), (10, "Rhino"), (5, "Warthog"))   # parks a UTC day
 HUNTER_WINDOW = 15     # minutes: hunter log time vs your log time (pota.app's P2P match: "within 15 minutes")
 
 
