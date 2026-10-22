@@ -357,7 +357,7 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .wx-open { margin-left: auto; flex: none; font-size: 12px; }
 .wx .wx-src-line { margin-left: 0; flex: none; }
 /* 天気 tab */
-.wx-tab { margin-top: 10px; display: grid; gap: 12px; }
+.wx-tab { margin-top: 10px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }   /* the table scrolls inside, not the page */
 .wx-tab[hidden] { display: none; }
 .wx-sec { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); padding: 12px 14px; }
 .wx-sec h3 { margin: 0 0 10px; font-size: 13.5px; display: flex; align-items: baseline; gap: 10px; }

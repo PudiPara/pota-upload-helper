@@ -150,7 +150,11 @@ class Api:
                     except Exception as e:     # keep the last answer: a hiccup must not re-notify the same warnings
                         logging.warning("jma: %s", e)
                         found = (self._weather or {}).get("jma") or []
-                    weather.add_jma(w, found)
+                    try:
+                        where = jma.place(*at)
+                    except Exception:          # the warnings still show, without the name
+                        where = None
+                    weather.add_jma(w, found, where)
                     try:                       # the JMA's forecast for the 天気 tab
                         weather.add_jma_forecast(w, jma.forecast(*at))
                     except Exception as e:

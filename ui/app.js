@@ -410,7 +410,7 @@
     if (w.wind != null) parts.push(t("wx.windShort", { v: fmtWind(w.wind) }));
     const top = official[0];
     line.innerHTML = `<span class="wx-now">${esc(parts.join(" · "))}</span>` +
-      (top ? `<span class="jma jma-l${top.level}">${esc(jmaName(top))}</span>` + (official.length > 1 ? `<span class="wx-more">${esc(t("wx.more", { n: official.length - 1 }))}</span>` : "") : "") +
+      (top ? `<span class="jma jma-l${top.level}" title="${esc(w.jma_place || "")}">${esc(jmaName(top))}</span>` + (official.length > 1 ? `<span class="wx-more">${esc(t("wx.more", { n: official.length - 1 }))}</span>` : "") : "") +
       om.map((k) => `<span class="wx-alert">${esc(t("wx.short." + k))}</span>`).join("") +
       `<button class="link wx-open">${esc(t("wx.details"))}</button><button class="link wx-src wx-src-line" data-url="https://open-meteo.com/">Open-Meteo</button>`;
     line.classList.toggle("is-alert", alerts.length > 0);
@@ -419,7 +419,7 @@
     if (notify && !BAR) {                  // the rest: one toast (the notices below have their own screen)
       const words = fresh.filter((k) => !k.startsWith("jma:") && !NOTICES[k]).map(alertText);
       const named = official.filter((x) => fresh.includes("jma:" + x.code) && !NOTICES["jma:" + x.code]).map(jmaName);
-      if (named.length) words.unshift(t("jma.new", { names: named.join("・") }));
+      if (named.length) words.unshift(t("jma.new", { names: named.join("・") }) + (w.jma_place ? t("jma.at", { place: w.jma_place }) : ""));
       if (words.length) toast(words.join(" "));
     }
     if (notify && notices.length) showNotices(notices, w);   // thunder and wind: their own notice, apart from the weather
@@ -457,7 +457,8 @@
     const [key, w] = item, [icon, level, title, body, short] = NOTICES[key], a = w.alerts[key] || {};
     const words = { when: whenText(a.in), g: fmtWind(a.g || 0) };
     box.dataset.icon = icon; box.className = "storm lv" + level;
-    $("#stormName").textContent = title ? t(title) : t("jma." + key.slice(4));
+    // the JMA's: where it is in force too, so the operator knows the warning is for this place
+    $("#stormName").textContent = title ? t(title) : t("jma." + key.slice(4)) + (w.jma_place ? t("jma.at", { place: w.jma_place }) : "");
     $("#stormBody").textContent = BAR ? t(short, words).replace(/^[^\p{L}\p{N}]+/u, "") : t(body, words);   // the bar: the short line, its mark is on the plate
     box.hidden = false; document.body.classList.add("has-storm");
     box.getAnimations().forEach((x) => x.cancel());
@@ -550,7 +551,7 @@
     const jmaSrc = `<button class="link wx-src" data-url="https://www.jma.go.jp/bosai/forecast/">${esc(t("jma.src"))}</button>`;
     const hm = (iso) => (iso || "").slice(11, 16);
     let html = "";
-    if (w.jma) html += `<section class="wx-sec"><h3>${esc(t("wx.tab.jmaWarn"))}</h3><div class="wx-chips">${w.jma.length
+    if (w.jma) html += `<section class="wx-sec"><h3>${esc(t("wx.tab.jmaWarn"))}${w.jma_place ? `<small>${esc(w.jma_place)}</small>` : ""}</h3><div class="wx-chips">${w.jma.length
       ? w.jma.map((x) => `<span class="jma jma-l${x.level}">${esc(t("jma." + x.code))}</span>`).join("") : `<span class="muted">${esc(t("wx.tab.none"))}</span>`}</div></section>`;
     const fc = w.jma_forecast;
     if (fc && fc.area) {

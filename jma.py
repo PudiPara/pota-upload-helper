@@ -35,11 +35,12 @@ THUNDER = "14"                      # 雷注意報
 def _area_table():
     path = data_path("jma-area.json")
     have = read_json(path, None)
-    if not have or "class10s" not in have or time.time() - have.get("at", 0) > AREA_MAX_AGE:
+    if not have or "names" not in have or time.time() - have.get("at", 0) > AREA_MAX_AGE:
         a = fetch_json(AREA_URL, timeout=20)
         have = {"at": time.time(), "class20s": {k: v.get("parent") for k, v in a["class20s"].items()},
                 "parents": {k: v.get("parent") for key in ("class15s", "class10s") for k, v in a[key].items()},
-                "offices": list(a["offices"]), "class10s": list(a["class10s"])}
+                "offices": list(a["offices"]), "class10s": list(a["class10s"]),
+                "names": {k: v.get("name") for k, v in a["class20s"].items()}}
         write_json(path, have)
     return have
 
@@ -127,6 +128,15 @@ def read_forecast(data, area):
             out["temps"] = {"place": (c.get("area") or {}).get("name"),
                             "list": [{"at": t, "t": v} for t, v in zip(ts[2].get("timeDefines") or [], c.get("temps") or []) if v != ""]}
     return out
+
+
+def place(lat, lon):
+    """The municipality's name at a point in Japan as the JMA calls it ("稲城市"; the parts of a split city joined), or None."""
+    where = areas(lat, lon)
+    if not where:
+        return None
+    names = _area_table()["names"]
+    return "・".join(dict.fromkeys(names.get(c) or c for c in where[1]))
 
 
 def warnings(lat, lon):
