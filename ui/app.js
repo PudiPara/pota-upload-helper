@@ -481,7 +481,8 @@
     $("#stormHint").textContent = left ? t("wx.storm.hintNext", { n: left }) : t("wx.storm.hintClose");
     $("#stormOk").textContent = left ? t("wx.storm.next", { n: left }) : t("wx.storm.ok");
     // the JMA's: where it is in force too, so the operator knows the warning is for this place
-    $("#stormName").textContent = title ? t(title) : t("jma." + key.slice(4)) + (w.jma_place ? t("jma.at", { place: w.jma_place }) : "");
+    // the bar's plate says where (it has no other line for it); the main window's notice stays short
+    $("#stormName").textContent = title ? t(title) : t("jma." + key.slice(4)) + (BAR && w.jma_place ? t("jma.at", { place: w.jma_place }) : "");
     $("#stormBody").textContent = BAR ? t(short, words).replace(/^[^\p{L}\p{N}]+/u, "") : t(body, words);   // the bar: the short line, its mark is on the plate
     if (BAR) {                                     // the warning comes first: the sky stops and plays again after it
       if (!$("#sky").hidden && playSky.last) { const again = playSky.last; setTimeout(() => playSky(...again), 700); }

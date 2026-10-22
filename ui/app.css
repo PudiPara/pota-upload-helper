@@ -733,7 +733,7 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 body:not(.is-bar) .storm { left: 216px; bottom: auto; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 38px;
   padding: 6px 14px 6px 20px; text-align: left; box-shadow: 0 2px 8px rgba(0, 0, 0, .18); }
 body:not(.is-bar) .storm::before, body:not(.is-bar) .storm::after { display: none; }
-body:not(.is-bar) .storm strong { font-size: 12.5px; padding: 2px 9px 3px 7px; border-radius: 4px; flex: none; }
+body:not(.is-bar) .storm strong { font-size: 12.5px; padding: 2.5px 9px 2.5px 7px; border-radius: 4px; flex: none; }   /* even: the ink sits in the middle (measured at 4x) */
 body:not(.is-bar) .storm p { flex: 1; min-width: 0; font-size: 13px; line-height: 1.4; max-width: none; }   /* wraps in the room left */
 body:not(.is-bar) .storm .storm-ok { flex: none; white-space: nowrap; font-size: 12px; padding: 3px 12px; }        /* beside the words, never over them */
 body.has-storm:not(.is-bar) .main { padding-top: var(--storm-h, 38px); }   /* the notice's own height (nextNotice) */
@@ -744,7 +744,7 @@ body.has-storm:not(.is-bar) .main { padding-top: var(--storm-h, 38px); }   /* th
 }
 body.is-bar .storm { gap: 6px; padding: 6px 14px; cursor: pointer; }
 body.is-bar .storm::before, body.is-bar .storm::after { height: 8px; }
-body.is-bar .storm strong { font-size: 18px; padding: 2px 12px 3px 9px; border-radius: 4px; }
+body.is-bar .storm strong { font-size: 18px; padding: 2.5px 12px 2.5px 9px; border-radius: 4px; }
 body.is-bar .storm p { font-size: 12.5px; line-height: 1.35; }
 body.is-bar .storm .storm-ok { display: none; }
 .storm-hint { display: none; }
