@@ -515,6 +515,7 @@ def summarize(spots, now=None, history=None, new_of=None):
                     "time": t0.strftime("%H:%M"), "ago": max(0, int((now - t0).total_seconds() // 60)),
                     "comments": newest.get("comments") or "", "spots": len(items), "pending": pending,
                     "qrt": bool(QRT.search(newest.get("comments") or "")),   # the latest spot says they are done
+                    "at": middle([p for p in map(park_at, parks) if p]),       # the map: between their parks
                     "new": new_of(parks) if new_of else []})
     out.sort(key=lambda e: (e["ago"], e["base"]))
     return out

@@ -220,6 +220,11 @@
         <label class="switch switch-sm"><input type="checkbox" id="spotsHideQrt"><span class="switch-ui"></span><span data-i18n="spots.hideQrt">QRT を隠す</span></label>
       </div>
       </div>
+      <div class="seg spots-tabs" id="spotsTabs" role="tablist">
+        <button role="tab" data-tab="list" class="is-on" data-i18n="live.tab.list">一覧</button>
+        <button role="tab" data-tab="map" data-i18n="live.tab.map">地図</button>
+      </div>
+      <div class="live-map spots-map" id="spotsMap" hidden></div>
       <ol class="spots spots-page" id="spotsPage"></ol>
       <div class="empty" id="spotsPageEmpty" hidden><p data-i18n="spots.empty">条件に合う局がいません。</p></div>
       <p class="error" id="spotsError" hidden></p>

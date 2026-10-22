@@ -352,6 +352,8 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .live-tabs + .live-map, .live-tabs ~ .live-grid { margin-top: 10px; }
 .live-map { height: max(360px, calc(100vh - 470px)); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; z-index: 0; background: var(--surface); }
 .live-map .leaflet-container { font: inherit; }
+.spots-tabs { margin: 12px 0 10px; }
+.spots-map { height: max(420px, calc(100vh - 300px)); }
 .map-tag { font-size: 12px; font-weight: 600; padding: 2px 7px; }
 .live-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; margin-top: 16px; align-items: start; }
 .live-grid .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }

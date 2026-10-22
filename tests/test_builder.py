@@ -44,6 +44,7 @@ class BuilderTest(unittest.TestCase):
 
     def test_summarize_spots(self):
         import datetime as dt
+        import spots as spm
         from spots import summarize as summarize_spots
         now = dt.datetime(2026, 10, 20, 4, 50, tzinfo=dt.timezone.utc)
         spots = [{"activator": "JS6UHQ/6", "reference": "JP-1788", "spotTime": "2026-10-20T04:41:00", "frequency": "21049", "mode": "SSB", "comments": "2fer JP-0157"},
@@ -58,6 +59,7 @@ class BuilderTest(unittest.TestCase):
         self.assertEqual([r["base"] for r in summarize_spots(spots, now)], ["JS6UHQ", "JR5JAQ", "JA1OLD"])  # newest first
         self.assertEqual(rows["JS6UHQ"]["ago"], 9)
         self.assertEqual((rows["JS6UHQ"]["country"], rows["JS6UHQ"]["region"]), ("JP", "as"))   # prefix and its continent
+        self.assertEqual([round(x) for x in rows["JR5JAQ"]["at"]], [round(x) for x in spm.middle([spm.park_at("JP-2100"), spm.park_at("JP-2101")])])   # the map
         spots[0]["locationDesc"] = "JP-13"
         self.assertEqual(summarize_spots(spots, now)[0]["location"], "JP-13")
         self.assertFalse(rows["JS6UHQ"]["qrt"])
