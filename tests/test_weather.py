@@ -22,20 +22,26 @@ def answer(codes=(1, 1, 1, 1, 1), rain=(0, 0, 0, 0, 0), gusts=(3, 3, 3, 3, 3), n
 class WeatherTest(unittest.TestCase):
     def test_line(self):
         w = weather.summarize(answer(rain=(90, 0, 10, 30, 20)))    # 15:00 is behind us: from the hour we are in
-        self.assertEqual((w["group"], w["temp"], w["rain"], w["sun"]), ("cloudy", 17.9, 30, {"kind": "sunset", "at": "16:58"}))
+        self.assertEqual((w["group"], w["kind"], w["temp"], w["rain"], w["sun"]), ("clear", "mainlyClear", 17.9, 30, {"kind": "sunset", "at": "16:58"}))
         self.assertEqual(w["alerts"], {})
 
     def test_alerts(self):
-        self.assertEqual(weather.summarize(answer(codes=(1, 1, 1, 95, 1)))["alerts"], {"thunder": True})
-        self.assertEqual(weather.summarize(answer(rain=(0, 10, 70, 0, 0)))["alerts"], {"rain": 70})
+        # the hours from 16:00 (the hour we are in = 0): 17:00 is 1, 18:00 is 2
+        self.assertEqual(weather.summarize(answer(codes=(1, 1, 1, 95, 1)))["alerts"], {"thunder": {"in": 2}})
+        self.assertEqual(weather.summarize(answer(rain=(0, 10, 70, 0, 0)))["alerts"], {"rain": {"in": 1, "p": 70}})
         self.assertEqual(weather.summarize(answer(rain=(0, 10, 70, 0, 0), now_code=61))["alerts"], {})   # raining already
-        self.assertEqual(weather.summarize(answer(gusts=(3, 3, 3, 16.5, 3)))["alerts"], {"wind": 16.5})
+        self.assertEqual(weather.summarize(answer(gusts=(3, 3, 3, 16.5, 3)))["alerts"], {"wind": {"in": 2, "g": 16.5}})
+        self.assertEqual(weather.summarize(answer(now_code=95))["alerts"], {"thunder": {"in": 0}})
 
     def test_news(self):
-        calm, storm = {"alerts": {}}, {"alerts": {"thunder": True, "rain": 70}}
+        calm, storm = {"alerts": {}}, {"alerts": {"thunder": {"in": 1}, "rain": {"in": 0, "p": 70}}}
         self.assertEqual(weather.news(None, storm), ["thunder", "rain"])         # the first look
         self.assertEqual(weather.news(storm, storm), [])                         # nothing new
-        self.assertEqual(weather.news(calm, {"alerts": {"wind": 16}}), ["wind"])
+        self.assertEqual(weather.news(calm, {"alerts": {"wind": {"in": 0, "g": 16}}}), ["wind"])
+
+    def test_kinds(self):
+        self.assertEqual([weather.kind(c) for c in (61, 63, 65, 71, 75, 82, 99)],
+                         [("rainLight", 1), ("rain", 2), ("rainHeavy", 3), ("snowLight", 1), ("snowHeavy", 3), ("showersHeavy", 3), ("thunderHail", 3)])
 
     def test_groups(self):
         self.assertEqual([weather.group(c) for c in (0, 2, 3, 45, 53, 63, 75, 81, 86, 96)],

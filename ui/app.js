@@ -387,7 +387,7 @@
     $("#dashEvent").textContent = names.concat(activeShifts().map((k) => SHIFT_NAMES[k])).join(" · ");
     $("#dashEvent").hidden = !$("#dashEvent").textContent;
   }
-  // The weather at the parks (Python asks Open-Meteo at the start and every 30 min: weather.py). One line on the
+  // The weather at the parks (Python asks Open-Meteo at the start and every 15 min: weather.py). One line on the
   // 運用中 page; an alert (thunderstorm, rain, strong gusts within 3 h) turns it amber, shows a short word in the bar
   // and, when it is new, a toast. Open-Meteo's data is CC BY 4.0: its credit links to it wherever it shows.
   const WX_ICON = { clear: "☀️", cloudy: "⛅", overcast: "☁️", fog: "🌫️", drizzle: "🌦️", rain: "🌧️", snow: "❄️", showers: "🌦️", thunder: "⛈️" };
@@ -395,10 +395,11 @@
   const fmtWind = (ms) => (distUnit() === "mi" ? Math.round(ms * 2.237) + " mph" : Math.round(ms) + " m/s");
   function renderWeather(w, notify) {
     const line = $("#wxLine"), alerts = Object.keys((w && w.alerts) || {});
-    const alertText = (k) => t("wx.alert." + k, { p: w.alerts.rain, g: fmtWind(w.alerts.wind || 0) });
+    const alertText = (k) => { const a = w.alerts[k] || {};
+      return t("wx.alert." + k, { when: whenText(a.in), p: a.p, g: fmtWind(a.g || 0) }); };
     line.hidden = !w; $("#barWx").hidden = !alerts.length;
     if (!w) return;
-    const parts = [`${WX_ICON[w.group] || ""} ${t("wx." + w.group)}`];
+    const parts = [`${WX_ICON[w.group] || ""} ${t("wx.k." + w.kind)}`];
     if (w.temp != null) parts.push(fmtTemp(w.temp));
     if (w.wind != null) parts.push(t("wx.wind", { v: fmtWind(w.wind), g: fmtWind(w.gust != null ? w.gust : w.wind) }));
     if (w.rain != null) parts.push(t("wx.pop", { p: w.rain }));
@@ -408,9 +409,85 @@
     line.classList.toggle("is-alert", alerts.length > 0);
     $("#barWx").textContent = alerts.map((k) => t("wx.short." + k)).join(" · ");
     if (BAR) fitBar();
-    if (notify && !BAR && (w.new || []).length) toast(w.new.map(alertText).join(" "));
+    const others = (w.new || []).filter((k) => k !== "thunder");
+    if (notify && !BAR && others.length) toast(others.map(alertText).join(" "));
+    if (notify && (w.new || []).includes("thunder")) showStorm(w.alerts.thunder);   // its own yellow notice, apart from the weather
+    // the bar: the first look of a recording, and a new alert, play the weather over the bar
+    if (notify && BAR && (w.seq === 1 || (w.new || []).length)) playWx(w, alerts.map((k) => t("wx.short." + k)));
+  }
+  // A thunderstorm on the way is dangerous at a park with an antenna up: both windows put a yellow screen over
+  // everything with what to do, flashing for a few seconds, and it stays until the operator closes it.
+  function showStorm(a) {
+    const box = $("#storm"), when = whenText((a || {}).in);
+    $("#stormBody").textContent = BAR ? t("wx.alert.thunder", { when }).replace(/^\S+\s+/, "") : t("wx.storm.body", { when });   // the bar: the short line, its ⚡ is on the plate
+    box.hidden = false; document.body.classList.add("has-storm");
+    box.getAnimations().forEach((a) => a.cancel());
+    box.animate([{ background: "#FFD400" }, { background: "#FF9F00" }, { background: "#FFD400" }], { duration: 700, iterations: 5 });
+  }
+  const closeStorm = () => { $("#storm").hidden = true; document.body.classList.remove("has-storm"); };
+  // when an alert comes: hours from now from Python (0 = this hour)
+  const whenText = (n) => (!n ? t("wx.when.soon") : n === 1 ? t("wx.when.1") : t("wx.when.n", { n }));
+  $("#stormOk").addEventListener("click", closeStorm);
+  $("#storm").addEventListener("click", () => { if (BAR) closeStorm(); });
+  // The weather over the bar for about 6 s (a click closes it), like a phone's weather app: the sky of its kind
+  // (night when the next sun event is the sunrise), the sun or moon glowing through, clouds drifting, rain, snow, mist,
+  // lightning or gusts (Web Animations API), and the temperature large. It waits for the sky (Early / Late Shift).
+  function playWx(w, alertLines) {
+    if (!$("#sky").hidden) { setTimeout(() => playWx(w, alertLines), 700); return; }
+    const box = $("#wxa"), fx = $("#wxaFx"), W = innerWidth, H = innerHeight, D = 5200, g = w.group;
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const id = (playWx.id = (playWx.id || 0) + 1);
+    box.getAnimations({ subtree: true }).forEach((x) => x.cancel());
+    fx.innerHTML = ""; box.dataset.g = g; box.hidden = false;
+    if (w.sun && w.sun.kind === "sunrise") box.dataset.night = ""; else delete box.dataset.night;
+    $("#wxaTemp").textContent = w.temp != null ? fmtTemp(w.temp).replace(/[CF]$/, "") : "";   // "18°" as a phone shows it
+    $("#wxaMain").textContent = t("wx.k." + w.kind);
+    $("#wxaSub").textContent = [w.wind != null ? t("wx.windShort", { v: fmtWind(w.wind) }) : "", w.rain != null ? t("wx.popShort", { p: w.rain }) : ""]
+      .filter(Boolean).join(" · ");
+    $("#wxaAlert").textContent = alertLines.join(" "); $("#wxaAlert").hidden = !alertLines.length;
+    const add = (cls, css) => { const el = document.createElement("i"); el.className = cls; Object.assign(el.style, css); fx.appendChild(el); return el; };
+    const wet = ["drizzle", "rain", "showers", "thunder"].includes(g);
+    // the sun / moon glow: bright when it is clear, faint through thin cloud, none under rain
+    const glow = { clear: 1, cloudy: .7 }[g] ?? 0, lv = w.level || 2;   // lv: 1 light, 2 moderate, 3 heavy
+    if (glow) box.querySelector(".wxa-glow").animate([{ opacity: 0, transform: "scale(.85)" }, { opacity: glow, transform: "scale(1)" }],
+                                                    { duration: 1400, easing: "ease-out", fill: "forwards" });
+    // clouds drifting right, slowly, at a few heights; more and lower in bad weather
+    const clouds = { clear: 0, cloudy: 3, overcast: 6, fog: 4, drizzle: 6, rain: 7, showers: 6, snow: 6, thunder: 7 }[g] ?? 3;
+    for (let i = 0; i < clouds; i++) {
+      const y = rnd(-.12, wet || g === "overcast" ? .25 : .45) * H, sc = rnd(.8, 1.5), x0 = rnd(-.3, .95) * W;
+      add("wxa-cloud", { left: x0 + "px", top: y + 26 + "px", transform: `scale(${sc})` }).animate(
+        [{ transform: `translateX(0) scale(${sc})` }, { transform: `translateX(${rnd(30, 70)}px) scale(${sc})` }], { duration: D + 800, easing: "linear", fill: "forwards" });
+    }
+    // rain and snow are already falling when the weather shows: each piece starts part-way through its fall (negative delay)
+    if (wet) for (let i = 0; i < [0, 20, 34, 60][lv]; i++) {                         // rain: streaks falling, more and faster when heavy
+      const dur = rnd(450, 700) * [0, 1.3, 1, .75][lv];
+      add("wxa-drop", { left: rnd(-.05, 1.1) * W + "px", height: [0, 10, 14, 18][lv] + "px" }).animate(
+        [{ transform: "translate(0, -20px) rotate(12deg)" }, { transform: `translate(-${H * .2}px, ${H + 20}px) rotate(12deg)` }],
+        { duration: dur, delay: -rnd(0, dur), iterations: Math.ceil(D / 300), easing: "linear" });
+    }
+    if (g === "snow") for (let i = 0; i < [0, 12, 26, 50][lv]; i++) {                                 // snow: flakes drifting down, swaying
+      const sway = rnd(10, 26);
+      add("wxa-flake", { left: rnd(0, 1) * W + "px", opacity: rnd(.5, 1) }).animate([{ transform: "translate(0, -10px)" }, { transform: `translate(${sway}px, ${H * .5}px)` },
+        { transform: `translate(${-sway}px, ${H + 10}px)` }], { duration: rnd(2200, 3400), delay: -rnd(0, 3400), iterations: 4, easing: "linear" });
+    }
+    if (g === "fog") for (let i = 0; i < 3; i++)                                     // mist: soft bands passing low
+      add("wxa-band", { top: (40 + i * 20) + "%" }).animate([{ transform: "translateX(0)" }, { transform: `translateX(${W * 1.1}px)` }],
+        { duration: rnd(5000, 7000), delay: -rnd(0, 4000), easing: "linear" });
+    if (w.alerts && w.alerts.wind) for (let i = 0; i < 7; i++)                        // strong gusts: streaks blowing across
+      add("wxa-gust", { top: rnd(.1, .9) * H + "px" }).animate([{ transform: "translateX(-80px)", opacity: 0 }, { opacity: 1, offset: .3 }, { transform: `translateX(${W + 80}px)`, opacity: 0 }],
+        { duration: rnd(700, 1000), delay: -rnd(0, 1000), iterations: 6, easing: "ease-in" });
+    if (g === "thunder")                                                             // lightning: two flashes
+      box.querySelector(".wxa-flash").animate([{ opacity: 0 }, { opacity: 0, offset: .2 }, { opacity: .75, offset: .22 }, { opacity: 0, offset: .26 },
+        { opacity: .5, offset: .29 }, { opacity: 0, offset: .34 }, { opacity: 0, offset: .62 }, { opacity: .7, offset: .64 }, { opacity: 0, offset: .7 }], { duration: D });
+    $("#wxa .wxa-text").animate([{ opacity: 0, transform: "translateY(-50%) translateY(8px)" }, { opacity: 1, transform: "translateY(-50%)" }],
+                                { duration: 800, delay: 250, fill: "backwards", easing: "ease-out" });
+    setTimeout(() => {                              // then fade out (unless a newer weather took over)
+      if (playWx.id !== id) return;
+      box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 700, fill: "forwards" }).finished.then(() => { if (playWx.id === id) { box.hidden = true; fx.innerHTML = ""; } });
+    }, D);
   }
   document.addEventListener("click", (e) => { const b = e.target.closest(".wx-src[data-url]"); if (b) api.open_url(b.dataset.url); });
+  $("#wxa").addEventListener("click", () => { playWx.id = (playWx.id || 0) + 1; $("#wxa").hidden = true; $("#wxaFx").innerHTML = ""; });
   // The bar's sky, by the local hour of the shift (POTA's shifts are 15° bands: Late 18-02, Early 02-08 local):
   // Late starts at dusk (the moon rises), its second half and Early's first are the middle of the night (stars, the
   // moon high), Early's second half is the dawn (the sun rises) and it ends in the morning (the sun climbs into the

@@ -10,7 +10,7 @@ import urllib.parse
 from potacommon import fetch_json
 
 URL = "https://api.open-meteo.com/v1/forecast"
-EVERY = 30 * 60        # seconds between two looks while recording (its "current" is 15-minute data)
+EVERY = 15 * 60        # seconds between two looks while recording: its "current" is 15-minute data (4 calls an hour)
 AHEAD = 3              # hours the alerts look ahead
 RAIN = 60              # % precipitation probability worth a notice
 GUST = 15.0            # m/s (54 km/h): a gust that takes antennas and canopies down
@@ -19,7 +19,7 @@ GUST = 15.0            # m/s (54 km/h): a gust that takes antennas and canopies 
 def group(code):
     """A WMO weather code -> clear / cloudy / overcast / fog / drizzle / rain / snow / showers / thunder."""
     code = int(code or 0)
-    for top, name in ((0, "clear"), (2, "cloudy"), (3, "overcast"), (48, "fog"), (57, "drizzle"), (67, "rain"),
+    for top, name in ((1, "clear"), (2, "cloudy"), (3, "overcast"), (48, "fog"), (57, "drizzle"), (67, "rain"),
                       (77, "snow"), (82, "showers"), (86, "snow"), (99, "thunder")):
         if code <= top:
             return name
@@ -27,6 +27,18 @@ def group(code):
 
 
 WET = {"drizzle", "rain", "snow", "showers", "thunder"}
+# the WMO code's own wording, with its strength: (name for the copy "wx.k.<name>", level 1 light / 2 moderate / 3 heavy)
+KINDS = {0: ("clear", 0), 1: ("mainlyClear", 0), 2: ("partly", 0), 3: ("overcast", 0), 45: ("fog", 0), 48: ("fog", 0),
+         51: ("drizzleLight", 1), 53: ("drizzle", 1), 55: ("drizzleHeavy", 2), 56: ("freezingDrizzle", 1), 57: ("freezingDrizzle", 2),
+         61: ("rainLight", 1), 63: ("rain", 2), 65: ("rainHeavy", 3), 66: ("freezingRain", 1), 67: ("freezingRain", 3),
+         71: ("snowLight", 1), 73: ("snow", 2), 75: ("snowHeavy", 3), 77: ("snowGrains", 1),
+         80: ("showersLight", 1), 81: ("showers", 2), 82: ("showersHeavy", 3), 85: ("snowShowersLight", 1), 86: ("snowShowersHeavy", 3),
+         95: ("thunder", 2), 96: ("thunderHail", 3), 99: ("thunderHail", 3)}
+
+
+def kind(code):
+    """A WMO weather code -> (name, level): "rainHeavy", 3. An unknown code reads as its group."""
+    return KINDS.get(int(code or 0), (group(code), 2))
 
 
 def fetch(lat, lon):
@@ -45,23 +57,30 @@ def summarize(d):
     now = (cur.get("time") or "")[:13]                     # "2026-10-22T17" - the hour we are in
     times = hourly.get("time") or []
     i = next((k for k, x in enumerate(times) if x[:13] >= now), len(times))
-    ahead = range(i, min(i + AHEAD + 1, len(times)))
-    pick = lambda key: [v for v in (hourly.get(key) or [None] * len(times))[ahead.start:ahead.stop] if v is not None]   # noqa: E731
-    rain, codes, gusts = pick("precipitation_probability"), pick("weather_code"), pick("wind_gusts_10m")
+    hours = list(range(i, min(i + AHEAD + 1, len(times))))          # hours[0] = the hour we are in
+    col = lambda key: hourly.get(key) or [None] * len(times)          # noqa: E731
+    pr, cd, gu = col("precipitation_probability"), col("weather_code"), col("wind_gusts_10m")
+    first = lambda ok: next((n for n, j in enumerate(hours) if ok(j)), None)   # noqa: E731 - hours from now
+    rain = [pr[j] for j in hours if pr[j] is not None]
     g = group(cur.get("weather_code"))
+    k, level = kind(cur.get("weather_code"))
     # the next sunrise or sunset at the park
     events = sorted([(x, "sunrise") for x in daily.get("sunrise") or []] + [(x, "sunset") for x in daily.get("sunset") or []])
-    nxt = next(((x, k) for x, k in events if x > (cur.get("time") or "")), None)
-    out = {"group": g, "temp": cur.get("temperature_2m"), "wind": cur.get("wind_speed_10m"),
+    nxt = next(((x, e) for x, e in events if x > (cur.get("time") or "")), None)
+    out = {"group": g, "kind": k, "level": level, "temp": cur.get("temperature_2m"), "wind": cur.get("wind_speed_10m"),
            "gust": cur.get("wind_gusts_10m"), "rain": max(rain) if rain else None,
            "sun": {"kind": nxt[1], "at": nxt[0][11:16]} if nxt else None, "alerts": {}}
-    if g == "thunder" or any(group(c) == "thunder" for c in codes):
-        out["alerts"]["thunder"] = True
-    if g not in WET and rain and max(rain) >= RAIN:
-        out["alerts"]["rain"] = max(rain)
-    top = max([x for x in gusts + [cur.get("wind_gusts_10m")] if x is not None], default=0)
-    if top >= GUST:
-        out["alerts"]["wind"] = top
+    # alerts: {name: {"in": hours from now (0 = now / this hour), ...}} - the first hour it shows within AHEAD
+    t_in = 0 if g == "thunder" else first(lambda j: cd[j] is not None and group(cd[j]) == "thunder")
+    if t_in is not None:
+        out["alerts"]["thunder"] = {"in": t_in}
+    r_in = None if g in WET else first(lambda j: (pr[j] or 0) >= RAIN)
+    if r_in is not None:
+        out["alerts"]["rain"] = {"in": r_in, "p": max(rain)}
+    gusts = [gu[j] for j in hours if gu[j] is not None]
+    w_in = 0 if (cur.get("wind_gusts_10m") or 0) >= GUST else first(lambda j: (gu[j] or 0) >= GUST)
+    if w_in is not None:
+        out["alerts"]["wind"] = {"in": w_in, "g": max(gusts + [cur.get("wind_gusts_10m") or 0])}
     out["at"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     return out
 
