@@ -97,6 +97,7 @@ class Api:
     # behind Api.bar and froze the app. tests/test_api_private.py keeps it that way.
     _weather = None                    # weather.summarize() at the parks while recording, + seq and new (alerts to notify)
     _wx_stop = threading.Event()       # set = stop looking (each recording gets its own)
+    _wx_seq = 0                        # every look's number, counting on over recordings
     def __init__(self):
         self._window = None
         self._bar = None               # BarMode, once the window exists
@@ -140,7 +141,7 @@ class Api:
             threading.Thread(target=self._weather_loop, args=(at, stop, japan), daemon=True).start()
 
     def _weather_loop(self, at, stop, japan=False):
-        seq = 0
+        first = True
         while not stop.is_set():
             try:
                 w = weather.fetch(*at)
@@ -160,10 +161,11 @@ class Api:
                     except Exception as e:
                         logging.warning("jma forecast: %s", e)
                         weather.add_jma_forecast(w, (self._weather or {}).get("jma_forecast"))
-                seq += 1
+                Api._wx_seq += 1                # never repeats across recordings: a window that saw the last one takes this
                 with self._lock:
                     if not stop.is_set():
-                        self._weather = dict(w, seq=seq, new=weather.news(self._weather, w))
+                        self._weather = dict(w, seq=Api._wx_seq, first=first, new=weather.news(self._weather, w))
+                        first = False
             except Exception as e:             # no weather is no reason to bother the operator
                 logging.warning("weather: %s", e)
             stop.wait(weather.EVERY)

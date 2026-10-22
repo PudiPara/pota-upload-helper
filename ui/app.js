@@ -267,7 +267,9 @@
     const { parks, start } = live;
     st.spots.clear(); st.qsos.clear(); st.lastAt = 0; st.start = utcMs(start); st.cheered = null; st.parks = parks; st.seq = 0;
     st.locs = live.locs || {}; st.day = utcDay(); st.shifts = live.shifts || {};
-    st.wxSeq = live.weather ? live.weather.seq : 0; renderWeather(live.weather, false);   // no notice for a reopened window
+    // a new session (another park): the last place's notices and weather go; a reopened window takes what there is now
+    notice.queue = []; $("#storm").hidden = true; document.body.classList.remove("has-storm");
+    st.wxSeq = live.weather ? live.weather.seq : 0; renderWeather(live.weather || null, false);   // no notice for a reopened window
   // the bar opens with the session: a fresh start inside a shift plays its rise; a reopened bar does not
     st.shiftOn = BAR && Date.now() - utcMs(start) < 60e3 ? [] : activeShifts();
     st.operator = live.operator || ""; $("#dashOpBox").hidden = !st.operator; $("#dashOp").innerHTML = opOptions(st.operator);   // club station only
@@ -318,6 +320,7 @@
     if (BAR && r.look && applyLook(r.look)) { st.barW = 0; fitBar(); }  // 設定 → 表示 changed in the main window
     if (r.status) $("#liveStatus").textContent = r.status;
     if (r.weather && r.weather.seq !== st.wxSeq) { st.wxSeq = r.weather.seq; renderWeather(r.weather, true); }
+    else if (!r.weather && st.weather) renderWeather(null, false);   // a new place: nothing of the last one until its own look
     if (!BAR) {
       $("#clockWarn").hidden = r.clock == null;
       if (r.clock != null) $("#clockWarn").textContent = t(r.clock > 0 ? "live.warn.clockAhead" : "live.warn.clockBehind", { m: Math.max(1, Math.round(Math.abs(r.clock) / 60)) });
@@ -405,7 +408,11 @@
       return t("wx.alert." + k, { when: whenText(a.in), p: a.p, g: fmtWind(a.g || 0) }); };
     line.hidden = !w;
     st.weather = w;
-    if (!w) return;
+    if (!w) {                                    // no look yet (a new place): nothing of the last one stays up
+      notice.queue = []; $("#storm").hidden = true; document.body.classList.remove("has-storm");
+      if (lmap.tab === "weather") renderWxTab();
+      return;
+    }
     // one line, never wrapped: what it is like now, the gravest warning (and how many more), and the 天気 tab for the rest
     const parts = [`${WX_ICON[w.group] || ""} ${t("wx.k." + w.kind)}`];
     if (w.temp != null) parts.push(fmtTemp(w.temp));
@@ -426,7 +433,7 @@
     }
     if (notify && notices.length) showNotices(notices, w);   // thunder and wind: their own notice, apart from the weather
     // the bar: the first look of a recording, and a new alert, play the weather over the bar
-    if (notify && BAR && (w.seq === 1 || fresh.length)) playWx(w, barLine ? [barLine] : []);
+    if (notify && BAR && (w.first || fresh.length)) playWx(w, barLine ? [barLine] : []);
   }
   // A thunderstorm on the way is dangerous at a park with an antenna up: both windows put a yellow screen over
   // everything with what to do, flashing for a few seconds, and it stays until the operator closes it.
@@ -468,9 +475,18 @@
     const [key, w] = item, [icon, level, title, body, short] = noticeOf(key, w), a = w.alerts[key] || {};
     const words = { when: whenText(a.in), g: fmtWind(a.g || 0), name: key.startsWith("jma:") ? t("jma." + key.slice(4)) : "" };
     box.dataset.icon = icon; box.className = "storm lv" + level;
+    // what a click does: the next notice (how many are left) or close - in the bar a click anywhere, in the main window the button
+    const left = notice.queue.length;
+    $("#stormHint").textContent = left ? t("wx.storm.hintNext", { n: left }) : t("wx.storm.hintClose");
+    $("#stormOk").textContent = left ? t("wx.storm.next", { n: left }) : t("wx.storm.ok");
     // the JMA's: where it is in force too, so the operator knows the warning is for this place
     $("#stormName").textContent = title ? t(title) : t("jma." + key.slice(4)) + (w.jma_place ? t("jma.at", { place: w.jma_place }) : "");
     $("#stormBody").textContent = BAR ? t(short, words).replace(/^[^\p{L}\p{N}]+/u, "") : t(body, words);   // the bar: the short line, its mark is on the plate
+    if (BAR) {                                     // the warning comes first: the sky stops and plays again after it
+      if (!$("#sky").hidden && playSky.last) { const again = playSky.last; setTimeout(() => playSky(...again), 700); }
+      playSky.id = (playSky.id || 0) + 1; playWx.id = (playWx.id || 0) + 1;
+      $("#sky").hidden = true; $("#wxa").hidden = true; $("#wxaFx").innerHTML = "";
+    }
     box.hidden = false; document.body.classList.add("has-storm");
     box.getAnimations().forEach((x) => x.cancel());
     const [c1, c2] = PULSE[level];
@@ -485,7 +501,8 @@
   // (night when the next sun event is the sunrise), the sun or moon glowing through, clouds drifting, rain, snow, mist,
   // lightning or gusts (Web Animations API), and the temperature large. It waits for the sky (Early / Late Shift).
   function playWx(w, alertLines) {
-    if (!$("#sky").hidden) { setTimeout(() => playWx(w, alertLines), 700); return; }
+    // one at a time in the bar: a warning notice, then the shift's sky, then the weather
+    if (!$("#sky").hidden || !$("#storm").hidden) { setTimeout(() => playWx(w, alertLines), 700); return; }
     const box = $("#wxa"), fx = $("#wxaFx"), W = innerWidth, H = innerHeight, D = 5200, g = w.group;
     const rnd = (a, b) => a + Math.random() * (b - a);
     const id = (playWx.id = (playWx.id || 0) + 1);
@@ -535,7 +552,9 @@
                                 { duration: 800, delay: 250, fill: "backwards", easing: "ease-out" });
     setTimeout(() => {                              // then fade out (unless a newer weather took over)
       if (playWx.id !== id) return;
-      box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 700, fill: "forwards" }).finished.then(() => { if (playWx.id === id) { box.hidden = true; fx.innerHTML = ""; } });
+      // hidden by the clock, not the animation's end: a hidden or covered window may not run animations at all
+      box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 700, fill: "forwards" });
+      setTimeout(() => { if (playWx.id === id) { box.hidden = true; fx.innerHTML = ""; } }, 720);
     }, D);
   }
   document.addEventListener("click", (e) => { const b = e.target.closest(".wx-src[data-url]"); if (b) api.open_url(b.dataset.url); });
@@ -613,6 +632,8 @@
     return shift === "early" ? (half ? "dawn" : "night") : (half ? "night" : "dusk");
   }
   function playSky(shift, rise) {
+    if (!$("#storm").hidden) { setTimeout(() => playSky(shift, rise), 700); return; }   // a warning first: the sky after it
+    playSky.last = [shift, rise];
     const sc = SKY[skyScene(shift, rise)], box = $("#sky"), orb = $("#skyOrb"), D = 4200;
     const w = st.shifts[shift];
     $("#skyName").textContent = SHIFT_NAMES[shift];
@@ -651,7 +672,8 @@
                                 { duration: 700, delay: 500, fill: "backwards", easing: "ease-out" });
     setTimeout(() => {                              // hold a moment, then fade out (unless a newer sky took over)
       if (playSky.id !== id) return;
-      box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 700, fill: "forwards" }).finished.then(() => { if (playSky.id === id) box.hidden = true; });
+      box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 700, fill: "forwards" });   // hidden by the clock (as playWx)
+      setTimeout(() => { if (playSky.id === id) box.hidden = true; }, 720);
     }, D + 1600);
   }
   $("#sky").addEventListener("click", () => { playSky.id = (playSky.id || 0) + 1; $("#sky").hidden = true; });
