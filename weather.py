@@ -13,6 +13,7 @@ URL = "https://api.open-meteo.com/v1/forecast"
 EVERY = 15 * 60        # seconds between two looks while recording: its "current" is 15-minute data (4 calls an hour)
 AHEAD = 3              # hours the alerts look ahead
 RAIN = 60              # % precipitation probability worth a notice
+TABLE = 13             # hours in the 天気 tab's table (now and the next 12)
 GUST = 15.0            # m/s (54 km/h): a gust that takes antennas and canopies down
 
 
@@ -46,7 +47,8 @@ def fetch(lat, lon):
     q = urllib.parse.urlencode({
         "latitude": round(lat, 3), "longitude": round(lon, 3), "timezone": "auto", "forecast_days": 2,
         "wind_speed_unit": "ms", "current": "temperature_2m,weather_code,wind_speed_10m,wind_gusts_10m",
-        "hourly": "precipitation_probability,weather_code,wind_gusts_10m", "daily": "sunrise,sunset"})
+        "hourly": "precipitation_probability,weather_code,wind_gusts_10m,temperature_2m,precipitation,wind_speed_10m,"
+                  "wind_direction_10m,is_day", "daily": "sunrise,sunset"})
     return summarize(fetch_json(URL + "?" + q, timeout=15))
 
 
@@ -81,8 +83,20 @@ def summarize(d):
     w_in = 0 if (cur.get("wind_gusts_10m") or 0) >= GUST else first(lambda j: (gu[j] or 0) >= GUST)
     if w_in is not None:
         out["alerts"]["wind"] = {"in": w_in, "g": max(gusts + [cur.get("wind_gusts_10m") or 0])}
+    # the 天気 tab's table: the next TABLE hours from the one we are in, park time
+    hk = lambda key, j: (hourly.get(key) or [None] * len(times))[j]          # noqa: E731
+    out["hours"] = [{"t": times[j][11:16], "date": times[j][:10], "kind": kind(hk("weather_code", j))[0],
+                     "group": group(hk("weather_code", j)), "day": hk("is_day", j) != 0, "temp": hk("temperature_2m", j),
+                     "mm": hk("precipitation", j), "pop": hk("precipitation_probability", j), "wind": hk("wind_speed_10m", j),
+                     "dir": hk("wind_direction_10m", j)} for j in range(i, min(i + TABLE, len(times)))]
     out["at"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     return out
+
+
+def add_jma_forecast(w, fc):
+    """Japan: the JMA's own forecast for the park's area (jma.forecast) beside the numbers, for the 天気 tab."""
+    w["jma_forecast"] = fc
+    return w
 
 
 def add_jma(w, found):

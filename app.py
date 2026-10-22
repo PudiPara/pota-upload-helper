@@ -151,6 +151,11 @@ class Api:
                         logging.warning("jma: %s", e)
                         found = (self._weather or {}).get("jma") or []
                     weather.add_jma(w, found)
+                    try:                       # the JMA's forecast for the 天気 tab
+                        weather.add_jma_forecast(w, jma.forecast(*at))
+                    except Exception as e:
+                        logging.warning("jma forecast: %s", e)
+                        weather.add_jma_forecast(w, (self._weather or {}).get("jma_forecast"))
                 seq += 1
                 with self._lock:
                     if not stop.is_set():
