@@ -245,6 +245,7 @@
  "live.event.tip": "POTA のイベント期間・アワードの時間帯です（Early / Late Shift は公園の経度から出した目安）", "res.rover": "{date}: {n} 公園でアクティベーション成立", "res.rover.award": "{date}: {n} 公園でアクティベーション成立 — Rover アワード「{award}」の数", "res.fix": "アップロード後に間違いに気づいたとき: 直して上げ直しても、間違った行は pota.app に残ります（CALL やバンドを直した行は別の QSO として足されます）。アップロードから 24 時間以内なら My Log Uploads で自分で削除してから上げ直せます。それを過ぎたら pota.app の Request Support で削除を頼んでください。", "res.fix.open": "My Log Uploads を開く",
  "cfg.ops.h": "オペレーター", "cfg.ops.p": "クラブのコールで運用するときに、記録を始める画面と運用中の画面で選べます。",
  "b.hunterNoProfile": "! pota.app に {call} のプロフィールが見つかりません（pota.app に登録していないコールなど）。P2P の照合には保存済みのデータだけ使います。",
+ "sky.start": "{from}〜{to} の時間帯です", "sky.end": "この時間帯は終わりました",
  "api.notRecording": "記録していません。",
  "api.spotsFail": "スポットを取得できませんでした: {err}",
  "api.fileNotFound": "ファイルが見つかりません。もう一度選んでください。",

@@ -155,6 +155,7 @@
  "live.event.tip": "Okres wydarzenia POTA lub przedział dyplomu (Early / Late Shift: wyliczone z długości geograficznej parku)", "res.rover": "{date}: aktywowano {n} parków", "res.rover.award": "{date}: aktywowano {n} parków — wystarczy na dyplom Rover „{award}”", "res.fix": "Błąd po wysłaniu? Ponowne wysłanie poprawionego pliku zostawia błędne wiersze na pota.app (wiersz z innym CALL lub pasmem dochodzi jako kolejne QSO). W ciągu 24 godzin od wysłania możesz sam usunąć go w My Log Uploads i wysłać ponownie; później poproś przez Request Support na pota.app.", "res.fix.open": "Otwórz My Log Uploads",
  "cfg.ops.h": "Operator", "cfg.ops.p": "Przy pracy znakiem klubowym wybierzesz ich na ekranie startowym i podczas nagrywania.",
  "b.hunterNoProfile": "! pota.app nie ma profilu dla {call} (znak niezarejestrowany na pota.app?). Dopasowanie P2P korzysta tylko z zapisanych danych.",
+ "sky.start": "od {from} do {to}", "sky.end": "Ten przedział się skończył",
  "api.notRecording": "Zapis nie jest włączony.",
   "api.spotsFail": "Nie udało się pobrać spotów: {err}", "api.fileNotFound": "Nie znaleziono pliku. Wybierz go ponownie.",
   "api.logRead": "Nie można odczytać logu: {err}", "api.updCheckFail": "Sprawdzanie aktualizacji nie powiodło się: {err}", "api.updFail": "Aktualizacja nie powiodła się: {err}",

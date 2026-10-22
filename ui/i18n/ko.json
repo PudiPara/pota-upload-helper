@@ -155,6 +155,7 @@
  "live.event.tip": "POTA 이벤트 기간이나 어워드 시간대입니다(Early / Late Shift는 공원 경도로 계산한 기준)", "res.rover": "{date}: {n}개 공원에서 액티베이션 성립", "res.rover.award": "{date}: {n}개 공원에서 액티베이션 성립 — Rover 어워드 「{award}」 조건", "res.fix": "업로드 후 잘못을 발견했다면: 고쳐서 다시 올려도 잘못된 줄은 pota.app에 남습니다(CALL이나 밴드를 고친 줄은 다른 QSO로 추가됩니다). 업로드 후 24시간 안이면 My Log Uploads에서 직접 삭제하고 다시 올릴 수 있습니다. 그 뒤에는 pota.app의 Request Support로 삭제를 요청하세요.", "res.fix.open": "My Log Uploads 열기",
  "cfg.ops.h": "오퍼레이터", "cfg.ops.p": "클럽 콜로 운용할 때 기록 시작 화면과 운용 중 화면에서 고를 수 있습니다.",
  "b.hunterNoProfile": "! pota.app에 {call}의 프로필이 없습니다(pota.app에 등록하지 않은 콜 등). P2P 대조에는 저장된 데이터만 사용합니다.",
+ "sky.start": "{from}~{to} 시간대입니다", "sky.end": "이 시간대가 끝났습니다",
  "api.notRecording": "기록 중이 아닙니다.",
   "api.spotsFail": "스팟을 가져오지 못했습니다: {err}", "api.fileNotFound": "파일을 찾을 수 없습니다. 다시 선택하세요.",
   "api.logRead": "로그를 읽지 못했습니다: {err}", "api.updCheckFail": "업데이트 확인 실패: {err}", "api.updFail": "업데이트 실패: {err}",

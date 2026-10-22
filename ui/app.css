@@ -600,6 +600,27 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 @keyframes bar-in { from { opacity: 0; transform: translateY(8px); } }
 .bar-empty { color: var(--ink-2); font-size: 12.5px; line-height: 1.5; padding-top: 4px; }
 
+/* ---------- Early / Late Shift in the bar: the sky (playSky in app.js animates the layers' opacity and the orb) ---------- */
+.sky { position: fixed; inset: 0; z-index: 18; overflow: hidden; cursor: pointer; color: #FFFFFF; background: #0B1530; }
+.sky-l, .sky-stars { position: absolute; inset: 0; opacity: 0; }
+.sky-l[data-sky="night"] { background: linear-gradient(#0B1530, #23306A); }
+.sky-l[data-sky="dawn"] { background: linear-gradient(#45488C, #E58A6E 62%, #F7C77E); }
+.sky-l[data-sky="day"] { background: linear-gradient(#4F9BD8, #BFE2F4); }
+.sky-l[data-sky="dusk"] { background: linear-gradient(#2E2A60, #C4566C 60%, #EFA25C); }
+.sky-stars { background:
+  radial-gradient(1.5px 1.5px at 8% 22%, #fff 99%, transparent), radial-gradient(1px 1px at 17% 58%, #fff 99%, transparent),
+  radial-gradient(1.5px 1.5px at 33% 14%, #fff 99%, transparent), radial-gradient(1px 1px at 46% 40%, #fff 99%, transparent),
+  radial-gradient(1px 1px at 58% 12%, #fff 99%, transparent), radial-gradient(1.5px 1.5px at 69% 34%, #fff 99%, transparent),
+  radial-gradient(1px 1px at 81% 18%, #fff 99%, transparent), radial-gradient(1.5px 1.5px at 92% 46%, #fff 99%, transparent),
+  radial-gradient(1px 1px at 25% 36%, #fff 99%, transparent), radial-gradient(1px 1px at 75% 60%, #fff 99%, transparent); }
+.sky-orb { position: absolute; left: 22%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; }
+.sky-orb.is-sun { background: radial-gradient(circle at 45% 40%, #FFF3C4, #FFC24F 70%); box-shadow: 0 0 22px 8px rgba(255, 186, 84, .65); }
+.sky-orb.is-moon { background: radial-gradient(circle at 38% 36%, #FFFDF0, #E4DEC4 75%); box-shadow: 0 0 16px 4px rgba(240, 236, 205, .45); }
+.sky-hills { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 34%; fill: #12261C; }
+.sky-text { position: absolute; left: 40%; top: 50%; transform: translateY(-50%); display: grid; gap: 2px; text-shadow: 0 1px 6px rgba(0, 0, 0, .45); }
+.sky-text strong { font-size: 30px; font-weight: 900; letter-spacing: .02em; line-height: 1; }
+.sky-text span { font-size: 13.5px; font-weight: 700; }
+
 /* ---------- 10 QSO reached ---------- */
 .cheer {
   position: fixed; inset: 0; display: grid; place-items: center; align-content: center; gap: 4px;
