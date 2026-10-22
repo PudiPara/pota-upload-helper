@@ -163,4 +163,4 @@ Zmiany zgłaszaj na osobnej gałęzi jako Pull Request. Dla każdego PR testy ur
 
 MIT
 
-Do wyświetlania flag dołączona jest czcionka z [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), zawierająca tylko flagi z Twemoji (CC-BY 4.0). Mapa korzysta z [Leaflet](https://leafletjs.com/) (BSD-2-Clause) i kafelków © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
+Do wyświetlania flag dołączona jest czcionka z [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), zawierająca tylko flagi z Twemoji (CC-BY 4.0). Mapa korzysta z [Leaflet](https://leafletjs.com/) (BSD-2-Clause) i kafelków © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Dane pogodowe z [Open-Meteo](https://open-meteo.com/) (CC BY 4.0).

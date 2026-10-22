@@ -163,4 +163,4 @@ Please make changes on a branch and open a Pull Request. Every PR runs the tests
 
 MIT
 
-The country flags use the font from [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), which contains only the Twemoji (CC-BY 4.0) flags, bundled with the app. The maps use [Leaflet](https://leafletjs.com/) (BSD-2-Clause) and tiles © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
+The country flags use the font from [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), which contains only the Twemoji (CC-BY 4.0) flags, bundled with the app. The maps use [Leaflet](https://leafletjs.com/) (BSD-2-Clause) and tiles © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Weather data by [Open-Meteo](https://open-meteo.com/) (CC BY 4.0).

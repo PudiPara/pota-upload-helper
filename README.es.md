@@ -163,4 +163,4 @@ Haz los cambios en una rama y abre un Pull Request. En cada PR se ejecutan las p
 
 MIT
 
-Para las banderas se incluye la fuente de [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), que contiene solo las banderas de Twemoji (CC-BY 4.0). Los mapas usan [Leaflet](https://leafletjs.com/) (BSD-2-Clause) y teselas © de los colaboradores de [OpenStreetMap](https://www.openstreetmap.org/copyright).
+Para las banderas se incluye la fuente de [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), que contiene solo las banderas de Twemoji (CC-BY 4.0). Los mapas usan [Leaflet](https://leafletjs.com/) (BSD-2-Clause) y teselas © de los colaboradores de [OpenStreetMap](https://www.openstreetmap.org/copyright). Datos meteorológicos de [Open-Meteo](https://open-meteo.com/) (CC BY 4.0).

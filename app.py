@@ -27,6 +27,7 @@ import i18n
 import mypota
 import qsolog
 import updater
+import weather
 from builder import build, find_activation_qsos, list_activations
 from i18n import t
 from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, adif_mode, band_name, base_call, clock_skew, data_path, data_version, fetch_json, grid_center,
@@ -93,6 +94,8 @@ class Api:
     # All state is private (underscore). pywebview exposes every public attribute of this object to
     # JavaScript and (6.x) walks them recursively; on Windows that walk entered the WinForms window
     # behind Api.bar and froze the app. tests/test_api_private.py keeps it that way.
+    _weather = None                    # weather.summarize() at the parks while recording, + seq and new (alerts to notify)
+    _wx_stop = threading.Event()       # set = stop looking (each recording gets its own)
     def __init__(self):
         self._window = None
         self._bar = None               # BarMode, once the window exists
@@ -123,6 +126,29 @@ class Api:
         self._logger.start(resume={"id": live.get("id"), "start": live["start"]})
         self._locs = live.get("locs") or {}
         self._operator = live.get("operator") or ""
+        self._start_weather(live["parks"])
+
+    def _start_weather(self, parks):
+        """Look at the weather at the parks now and every weather.EVERY while this recording lasts."""
+        self._wx_stop.set()
+        self._wx_stop = stop = threading.Event()
+        self._weather = None
+        at = middle([p for p in map(park_at, parks) if p])
+        if at:
+            threading.Thread(target=self._weather_loop, args=(at, stop), daemon=True).start()
+
+    def _weather_loop(self, at, stop):
+        seq = 0
+        while not stop.is_set():
+            try:
+                w = weather.fetch(*at)
+                seq += 1
+                with self._lock:
+                    if not stop.is_set():
+                        self._weather = dict(w, seq=seq, new=weather.news(self._weather, w))
+            except Exception as e:             # no weather is no reason to bother the operator
+                logging.warning("weather: %s", e)
+            stop.wait(weather.EVERY)
 
     def _first_hunted(self, max_age=30):
         """mypota.first_hunted over the app log, recomputed at most every max_age seconds."""
@@ -140,6 +166,8 @@ class Api:
         if not self._logger:
             return None
         self._logger.stop()
+        self._wx_stop.set()
+        self._weather = None
         sess = dict(self._logger.session)
         self._logger = None
         save_settings({"live": None})
@@ -152,7 +180,8 @@ class Api:
     def get_state(self):
         s = load_settings()
         live = ({"parks": self._logger.parks, "start": self._logger.session["start"], "locs": self._locs,
-                 "operator": self._operator, "shifts": shift_hours(self._logger.parks)} if self._recording() else None)
+                 "operator": self._operator, "shifts": shift_hours(self._logger.parks), "weather": self._weather}
+                if self._recording() else None)
         year = time.gmtime().tm_year
         calls = clean_calls(s.get("calls"), s.get("call"))
         lookup = s.get("lookup") or ["qrz"]
@@ -299,6 +328,7 @@ class Api:
         self._logger.start()
         sess = self._logger.session
         self._locs, self._operator = locs, operator
+        self._start_weather(parks)
         save_settings({"live": {"id": sess["id"], "parks": parks, "call": call, "start": sess["start"], "locs": locs,
                                 "operator": operator}})
         return {"ok": True, "parks": parks, "start": sess["start"], "loc": loc, "locs": locs, "operator": operator,
@@ -345,7 +375,7 @@ class Api:
                     "qsos": [e for e in self._qso_events if e["at"] > qsince],
                     "status": str(self._status), "receiver": self._receiver_texts(),
                     "running": self._recording(), "look": self._look(), "bar": bool(self._bar and self._bar.active),
-                    "clock": clock_skew()}
+                    "clock": clock_skew(), "weather": self._weather}
 
     def _look(self, s=None):
         """設定 → 表示 for both windows: {font_scale, theme}."""
