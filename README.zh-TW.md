@@ -163,4 +163,4 @@ python3 -m unittest discover -s tests
 
 MIT
 
-國旗顯示使用了隨附的 [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill)（MIT）字型，其中只收錄 Twemoji（CC-BY 4.0）的國旗。地圖使用 [Leaflet](https://leafletjs.com/)（BSD-2-Clause）與 © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors 的圖磚。天氣資料來自 [Open-Meteo](https://open-meteo.com/)（CC BY 4.0）。
+國旗顯示使用了隨附的 [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill)（MIT）字型，其中只收錄 Twemoji（CC-BY 4.0）的國旗。地圖使用 [Leaflet](https://leafletjs.com/)（BSD-2-Clause）與 © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors 的圖磚。天氣資料來自 [Open-Meteo](https://open-meteo.com/)（CC BY 4.0）。日本公園的注意報與警報來自日本氣象廳（出處：氣象廳網站），公園所在市町村使用國土地理院的逆地理編碼。

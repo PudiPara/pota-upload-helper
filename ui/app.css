@@ -356,6 +356,13 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .wx.is-alert { border-color: var(--amber); background: var(--amber-bg); }
 .wx-alert { color: var(--amber-ink); font-weight: 700; }
 .wx-src { margin-left: auto; font-size: 11.5px; color: var(--ink-3); }
+.wx-src + .wx-src { margin-left: 0; }
+/* the JMA's warnings in the JMA's colours by 警戒レベル相当: 2 注意報 yellow, 3 警報 red, 4 危険警報 purple, 5 特別警報 black */
+.jma { padding: 1px 8px 2px; border-radius: 4px; font-size: 11.5px; font-weight: 800; line-height: 1.5; }
+.jma-l2 { background: #F2E700; color: #161616; }
+.jma-l3 { background: #FF2800; color: #FFFFFF; }
+.jma-l4 { background: #AA00AA; color: #FFFFFF; }
+.jma-l5 { background: #0C000C; color: #FFFFFF; }
 .bar-wx { color: var(--amber-ink); font-weight: 700; font-size: 11.5px; white-space: nowrap; min-width: 0; flex-shrink: 100; overflow: hidden; text-overflow: ellipsis; }   /* gives way before the parks do */
 .bar.is-measure .bar-wx { display: none; }          /* a weather alert never widens the bar: it takes the room there is */
 .live-tabs + .live-map, .live-tabs ~ .live-grid { margin-top: 10px; }
@@ -663,6 +670,20 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .storm strong { display: inline-flex; align-items: center; gap: .25em; font-size: 40px; font-weight: 900; line-height: 1.1;
   background: #161616; color: #FFD400; padding: 8px 22px 10px 16px; border-radius: 6px; }
 .storm-bolt { width: .85em; height: .85em; fill: currentColor; flex: none; }
+.storm-wind { width: 1.05em; height: 1.05em; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; flex: none;
+  margin: -.04em 0 0; }   /* its strokes sit low in the box: lifted to the words' middle */
+.storm[data-icon="bolt"] .storm-wind, .storm[data-icon="wind"] .storm-bolt { display: none; }
+/* the JMA's colours by 警戒レベル相当: 2 注意報 yellow (the base above), 3 警報 red, 4 危険警報 purple, 5 特別警報 black;
+   on red / purple / black the words are white and the plate white with the colour */
+.storm.lv2 { background: #F2E700; }
+.storm.lv3 { --lv: #FF2800; }
+.storm.lv4 { --lv: #AA00AA; }
+.storm.lv5 { --lv: #0C000C; }
+.storm.lv3, .storm.lv4, .storm.lv5 { background: var(--lv); color: #FFFFFF; }
+.storm.lv3::before, .storm.lv3::after, .storm.lv4::before, .storm.lv4::after, .storm.lv5::before, .storm.lv5::after {
+  background: repeating-linear-gradient(-45deg, #FFFFFF 0 14px, transparent 14px 28px); }
+.storm.lv3 strong, .storm.lv4 strong, .storm.lv5 strong { background: #FFFFFF; color: var(--lv); }
+.storm.lv3 .storm-ok, .storm.lv4 .storm-ok, .storm.lv5 .storm-ok { background: #FFFFFF; border-color: #FFFFFF; color: var(--lv); }
 .storm p { margin: 0; max-width: 34em; font-size: 17px; font-weight: 700; line-height: 1.5; }
 .storm .storm-ok { background: #161616; color: #FFD400; border-color: #161616; font-size: 15px; font-weight: 800; padding: 9px 26px; }
 /* the main window: a slim notice bar across the top of the page (beside the rail, not over it), like a site's

@@ -163,4 +163,4 @@ Per le modifiche crea un branch e apri una Pull Request. A ogni PR i test girano
 
 MIT
 
-Per le bandiere è incluso il font di [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), che contiene solo le bandiere di Twemoji (CC-BY 4.0). La mappa usa [Leaflet](https://leafletjs.com/) (BSD-2-Clause) e i tile di © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Dati meteo di [Open-Meteo](https://open-meteo.com/) (CC BY 4.0).
+Per le bandiere è incluso il font di [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT), che contiene solo le bandiere di Twemoji (CC-BY 4.0). La mappa usa [Leaflet](https://leafletjs.com/) (BSD-2-Clause) e i tile di © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Dati meteo di [Open-Meteo](https://open-meteo.com/) (CC BY 4.0). Avvisi per i parchi in Giappone: agenzia meteorologica giapponese (fonte: sito della JMA); il comune del parco: geocodificatore inverso del GSI.
