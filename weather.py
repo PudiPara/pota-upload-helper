@@ -11,6 +11,7 @@ from potacommon import fetch_json
 
 URL = "https://api.open-meteo.com/v1/forecast"
 EVERY = 15 * 60        # seconds between two looks while recording: its "current" is 15-minute data (4 calls an hour)
+JMA_EVERY = 5 * 60     # Japan: the JMA's warnings are looked at this often (a warning issued while on the air)
 AHEAD = 3              # hours the alerts look ahead
 RAIN = 60              # % precipitation probability worth a notice
 TABLE = 13             # hours in the 天気 tab's table (now and the next 12)

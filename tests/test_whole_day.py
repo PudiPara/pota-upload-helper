@@ -36,6 +36,22 @@ class FinishBuildsTheWholeDay(unittest.TestCase):
         self.assertIn("JA1AAA", first); self.assertNotIn("JA1BBA", first)          # only its own session
 
 
+class JmaWithoutOpenMeteo(unittest.TestCase):
+    def test_warnings_go_out_when_open_meteo_fails(self):
+        api = app.Api.__new__(app.Api)
+        api._lock, api._weather = app.threading.Lock(), None
+        saved = app.jma.warnings, app.jma.place, app.jma.forecast
+        app.jma.warnings = lambda lat, lon: [{"code": "14", "level": 2}]
+        app.jma.place = lambda lat, lon: "沖縄県沖縄市"
+        app.jma.forecast = lambda lat, lon: None
+        stop = types.SimpleNamespace(is_set=lambda: False, wait=lambda s: setattr(stop, "is_set", lambda: True))
+        try:
+            api._weather_loop((26.3, 127.8), stop, japan=True)          # weather.fetch is offline here: it fails
+        finally:
+            app.jma.warnings, app.jma.place, app.jma.forecast = saved
+        self.assertEqual((api._weather["alerts"], api._weather["new"]), ({"jma:14": {"level": 2}}, ["jma:14"]))
+
+
 if __name__ == "__main__":
     unittest.main()
 

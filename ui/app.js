@@ -422,7 +422,7 @@
       return;
     }
     // one line, never wrapped: what it is like now, the gravest warning (and how many more), and the 天気 tab for the rest
-    const parts = [`${WX_ICON[w.group] || ""} ${t("wx.k." + w.kind)}`];
+    const parts = w.kind ? [`${WX_ICON[w.group] || ""} ${t("wx.k." + w.kind)}`] : [];   // no kind: Open-Meteo has not answered yet
     if (w.temp != null) parts.push(fmtTemp(w.temp));
     if (w.wind != null) parts.push(t("wx.windShort", { v: fmtWind(w.wind) }));
     const top = official[0];
@@ -511,6 +511,7 @@
   // (night when the next sun event is the sunrise), the sun or moon glowing through, clouds drifting, rain, snow, mist,
   // lightning or gusts (Web Animations API), and the temperature large. It waits for the sky (Early / Late Shift).
   function playWx(w, alertLines) {
+    if (!w.kind) return;                         // Open-Meteo has not answered yet: no scene (the JMA's notices still come)
     // one at a time in the bar: a warning notice, then the shift's sky, then the weather
     if (!$("#sky").hidden || !$("#storm").hidden || playSky.waiting) { setTimeout(() => playWx(w, alertLines), 700); return; }
     const box = $("#wxa"), fx = $("#wxaFx"), W = innerWidth, H = innerHeight, D = 5200, g = w.group;

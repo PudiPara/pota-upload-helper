@@ -145,10 +145,22 @@ class Api:
             threading.Thread(target=self._weather_loop, args=(at, stop, japan), daemon=True).start()
 
     def _weather_loop(self, at, stop, japan=False):
-        first = True
+        """Open-Meteo every weather.EVERY; in Japan the JMA every weather.JMA_EVERY too, and whatever Open-Meteo did
+        (a failed look keeps its last answer, or none yet: the JMA's warnings still go out)."""
+        first, om, om_at = True, None, 0.0
         while not stop.is_set():
             try:
-                w = weather.fetch(*at)
+                slow = time.time() - om_at >= weather.EVERY - 5   # Open-Meteo's turn (and the JMA's forecast's)
+                if slow:
+                    try:
+                        om, om_at = weather.fetch(*at), time.time()
+                    except Exception as e:     # no weather is no reason to bother the operator
+                        logging.warning("weather: %s", e)
+                        om_at = time.time()    # the next try at the next EVERY, not at the JMA's next look
+                if om is None and not japan:
+                    stop.wait(weather.EVERY)
+                    continue
+                w = dict(om or {"alerts": {}, "hours": [], "sun": None})   # Japan with no Open-Meteo yet: the JMA's only
                 if japan:                      # the JMA's warnings, and no alerts of the forecast's own (weather.add_jma)
                     try:
                         found = jma.warnings(*at)
@@ -160,19 +172,20 @@ class Api:
                     except Exception:          # the warnings still show, without the name
                         where = None
                     weather.add_jma(w, found, where)
-                    try:                       # the JMA's forecast for the 天気 tab
-                        weather.add_jma_forecast(w, jma.forecast(*at))
+                    last_fc = (self._weather or {}).get("jma_forecast")
+                    try:                       # the JMA's forecast for the 天気 tab: at Open-Meteo's pace (it changes a few times a day)
+                        weather.add_jma_forecast(w, jma.forecast(*at) if slow or not last_fc else last_fc)
                     except Exception as e:
                         logging.warning("jma forecast: %s", e)
-                        weather.add_jma_forecast(w, (self._weather or {}).get("jma_forecast"))
+                        weather.add_jma_forecast(w, last_fc)
                 Api._wx_seq += 1                # never repeats across recordings: a window that saw the last one takes this
                 with self._lock:
                     if not stop.is_set():
                         self._weather = dict(w, seq=Api._wx_seq, first=first, new=weather.news(self._weather, w))
                         first = False
-            except Exception as e:             # no weather is no reason to bother the operator
+            except Exception as e:
                 logging.warning("weather: %s", e)
-            stop.wait(weather.EVERY)
+            stop.wait(weather.JMA_EVERY if japan else weather.EVERY)
 
     def _first_hunted(self, max_age=30):
         """mypota.first_hunted over the app log, recomputed at most every max_age seconds."""
