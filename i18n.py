@@ -61,3 +61,14 @@ def t(key, **kw):
         except (KeyError, IndexError, ValueError):
             return s
     return s
+
+
+class Text:
+    """A message translated when it is shown, not when it is made: the 運用中 status line outlives a language
+    change (it was made up to a minute earlier, by the spot logger)."""
+
+    def __init__(self, key, **kw):
+        self.key, self.kw = key, kw
+
+    def __str__(self):
+        return t(self.key, **self.kw)
