@@ -41,7 +41,9 @@ def records(adif_path=None, recs=None):
     """The records to work on (the app log's, or an ADIF file's), MODE/SUBMODE and BAND as ADIF writes them."""
     out = [fix_mode_band(dict(r)) for r in (recs if recs is not None else read_adif(adif_path))]
     for r in out:
-        r["CALL"] = (r.get("CALL") or "").upper().strip()      # ADIF's characters are A-Z 0-9 /
+        for k in ("CALL", "MODE", "SUBMODE"):                   # CALL: A-Z 0-9 /; modes as the ADIF tables spell them
+            if r.get(k) or k == "CALL":
+                r[k] = (r.get(k) or "").upper().strip()
     return out
 
 

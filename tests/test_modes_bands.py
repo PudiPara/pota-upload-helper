@@ -89,5 +89,26 @@ class EditorAndNotes(unittest.TestCase):
         self.assertIn("b.note.badTime", keys(rec(TIME_ON="")))
 
 
+
+class AsciiOut(unittest.TestCase):
+    def test_written_values_are_ascii(self):
+        path = os.path.join(tempfile.mkdtemp(), "x.adi")
+        potacommon.write_adif(path, [{"CALL": "JA1ABC", "RST_RCVD": "５９", "OPERATOR": "山田",
+                                      "GRIDSQUARE": "PM95", "MY_GRIDSQUARE": "東京", "SUBMODE": "ft4"}],
+                              ["CALL", "RST_RCVD", "OPERATOR", "GRIDSQUARE", "MY_GRIDSQUARE"])
+        body = open(path, "rb").read()
+        body.decode("ascii")                                               # nothing outside ASCII
+        self.assertIn(b"<RST_RCVD:2>59 ", body)
+        self.assertIn(b"<GRIDSQUARE:4>PM95 ", body)
+        self.assertNotIn(b"OPERATOR", body)
+        self.assertNotIn(b"MY_GRIDSQUARE", body)
+        self.assertEqual(potacommon.adif_value("GRIDSQUARE", "PM95XQ12"), "PM95XQ12")
+        self.assertEqual(potacommon.adif_value("GRIDSQUARE", "PM9"), "")
+
+    def test_build_upper_cases_modes(self):
+        r = builder.records(recs=[rec(CALL="ja1abc", MODE="mfsk", SUBMODE="ft4x")])[0]
+        self.assertEqual((r["CALL"], r["MODE"], r["SUBMODE"]), ("JA1ABC", "MFSK", "FT4X"))
+
+
 if __name__ == "__main__":
     unittest.main()
