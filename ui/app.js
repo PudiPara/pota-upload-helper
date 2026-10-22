@@ -563,6 +563,8 @@
     const hm = (iso) => (iso || "").slice(11, 16);
     // the park's point is one pin: a big park, or one near a border, may have other weather where the operator is
     let html = `<p class="wx-note">${esc(t("wx.tab.note"))}</p>`;
+    // Japan: evacuation orders (避難指示 ...) come from the municipality, not the JMA, and are not here
+    if (w.jma) html += `<p class="wx-note">${esc(t("wx.tab.evac"))}</p>`;
     // say where: the JMA issues them for each municipality (not the prefecture or the region)
     if (w.jma) html += `<section class="wx-sec"><h3>${esc(w.jma_place ? t("wx.tab.jmaWarnAt", { place: w.jma_place }) : t("wx.tab.jmaWarn"))}<small>${esc(t("wx.tab.jmaBy"))}</small></h3>${w.jma.length
       // one row per class, gravest first: 特別警報 / 危険警報 / 警報 / 注意報 (警戒レベル相当 5-2), only the classes in force
