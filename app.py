@@ -33,7 +33,7 @@ from builder import activation_days, build, find_activation_qsos, list_activatio
 from i18n import t
 from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, adif_mode, band_name, base_call, clock_skew, data_path, data_version, fetch_json, grid_center,
                         iso_date,
-                        iso_minutes, load_settings, lock_instance, count_key, mode_known, mode_of, my_call, my_parks_of, pota_events, read_adif, rec_minutes, resource,
+                        iso_minutes, load_settings, lock_instance, offline, count_key, mode_known, mode_of, my_call, my_parks_of, pota_events, read_adif, rec_minutes, resource,
                         save_settings, split_parks, LOG_NAME, setup_log)
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
@@ -41,7 +41,7 @@ from spots import (SESSION_MARGIN, SpotLogger, clear_records, common_locations, 
                    distance_km, park_info, parks_middle, park_status, linear_parks, shift_hours, shipped_parks, summarize, tag_candidate)
 from window import BarMode, set_zoom
 
-SETTINGS_KEYS = ("call", "calls", "op_list", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "guide_seen", "beta", "p2p_auto", "lookup", "on_top", "font_scale", "theme", "bar_style", "dist_unit")   # "live" is set by start_live/finish_live only
+SETTINGS_KEYS = ("call", "calls", "op_list", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "guide_seen", "beta", "offline", "p2p_auto", "lookup", "on_top", "font_scale", "theme", "bar_style", "dist_unit")   # "live" is set by start_live/finish_live only
 DATE_RE = re.compile(r"\d{8}")
 LOOK_SCALES = (1, 1.15, 1.3)            # 設定 → 表示 → 文字の大きさ
 LOOK_THEMES = ("", "light", "dark")     # 設定 → 表示 → 配色 ("" = the OS)
@@ -239,7 +239,7 @@ class Api:
                 "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
                 "listeners": self.listeners(), "hamlog": sys.platform == "win32", "lang": s.get("lang") or "", "langs": i18n.available(),
                 "country": s.get("country") or "", "countries": countries(),
-                "terms_accepted": s.get("terms_accepted") or "", "guide_seen": bool(s.get("guide_seen")), "beta": bool(s.get("beta")), "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")), **self._look(s), "dist_unit": s.get("dist_unit") or "", "bar_on_top": s.get("bar_on_top", True) is not False,
+                "terms_accepted": s.get("terms_accepted") or "", "guide_seen": bool(s.get("guide_seen")), "beta": bool(s.get("beta")), "net": offline(), "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")), **self._look(s), "dist_unit": s.get("dist_unit") or "", "bar_on_top": s.get("bar_on_top", True) is not False,
                 "lookup": lookup if isinstance(lookup, list) else [lookup],
                 "log_count": qsolog.count(), "receiver": self._receiver_texts(), "mypota": mypota.status()}
 
@@ -463,7 +463,7 @@ class Api:
                     "qsos": [e for e in self._qso_events if e["at"] > qsince],
                     "status": str(self._status), "receiver": self._receiver_texts(),
                     "running": self._recording(), "look": self._look(), "bar": bool(self._bar and self._bar.active),
-                    "clock": clock_skew(), "weather": self._weather}
+                    "clock": clock_skew(), "weather": self._weather, "net": offline()}
 
     def _look(self, s=None):
         """設定 → 表示 for both windows: {font_scale, theme, bar_style}."""
@@ -565,7 +565,7 @@ class Api:
                 self._spots_cache = (time.time(), spots)
             except Exception as e:
                 if not spots:
-                    return {"ok": False, "error": t("api.spotsFail", err=e)}
+                    return {"ok": False, "error": t("net.spots") if offline() else t("api.spotsFail", err=e)}
         worked = []
         if self._recording():
             worked = sorted({base_call(r.get("CALL")) for r in qsolog.between(session_since(self._logger.session["start"]))})

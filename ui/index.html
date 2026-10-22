@@ -102,6 +102,7 @@
             <p class="park-apart" id="parkApart" hidden></p>
             <p class="park-spread" id="parkSpread" hidden></p>
             <p class="park-spread" id="parkLinear" hidden></p>
+            <p class="park-spread" id="startOffline" hidden data-i18n="live.offlineNote"></p>
             <p class="error" id="liveError" hidden></p>
             <div class="start-actions"><button class="btn btn-primary" id="startLive" data-i18n="live.start">記録を始める</button></div>
           </div>
@@ -124,7 +125,7 @@
         <div class="bar" id="bar" hidden>
           <div class="bar-tile pywebview-drag-region"><div class="bar-ring" id="barRing"><strong id="barCount">0</strong><span id="barGoal">/10</span></div><span class="bar-tile-clock" id="barTileClock">00:00:00</span></div>
           <div class="bar-body">
-            <div class="bar-top pywebview-drag-region"><i class="bar-live"></i><span class="bar-parks" id="barParks"></span><small class="bar-per" id="barPer"></small><span class="bar-clock" id="barElapsed">00:00:00</span></div>
+            <div class="bar-top pywebview-drag-region"><i class="bar-live"></i><span class="bar-parks" id="barParks"></span><span class="bar-net" id="barNet" hidden></span><small class="bar-per" id="barPer"></small><span class="bar-clock" id="barElapsed">00:00:00</span></div>
             <ol class="qsos qsos-bar" id="barQsos"></ol>
             <div class="bar-empty" id="barEmpty" data-i18n="bar.empty">ロガーからの QSO を待っています。</div>
           </div>
@@ -140,6 +141,7 @@
             <div class="dash-head">
               <span class="dash-onair"><i class="bar-live"></i><span data-i18n="bar.title">運用中</span></span>
               <span class="dash-event" id="dashEvent" hidden data-i18n-title="live.event.tip"></span>
+              <span class="dash-event net-chip" id="netChip" hidden data-i18n-title="net.tip"></span>
               <span class="dash-status" id="liveStatus"></span>
             </div>
             <div class="dash-parks" id="signParks"></div>
@@ -388,6 +390,11 @@
               <button role="radio" data-theme="dark" data-i18n="cfg.look.dark">ダーク</button>
             </div></div>
           <p class="cfg-help cfg-help-after" data-i18n="cfg.look.p"></p>
+        </section>
+        <section class="cfg-block" data-tab="general">
+          <h2 data-i18n="cfg.net.h">通信</h2>
+          <label class="switch"><input type="checkbox" id="offlineMode"><span class="switch-ui"></span><span data-i18n="cfg.net.offline">オフラインで使う（インターネットに接続しない）</span></label>
+          <p class="cfg-help cfg-help-after" data-i18n="cfg.net.p"></p>
         </section>
         <section class="cfg-block" data-tab="general">
           <h2 data-i18n="cfg.window.h">ウインドウ</h2>

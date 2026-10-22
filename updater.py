@@ -17,7 +17,7 @@ import urllib.request
 import zipfile
 
 from i18n import t
-from potacommon import USER_AGENT, VERSION, data_version, fetch_json
+from potacommon import USER_AGENT, VERSION, data_version, fetch_json, net_check
 
 REPO = "PudiPara/potaroo"
 LATEST = "https://api.github.com/repos/%s/releases/latest" % REPO        # public releases only (no prerelease)
@@ -98,6 +98,7 @@ def check(beta=False):
 def download(url, dest, timeout=600):
     if not url.startswith(DOWNLOAD_PREFIXES):
         raise ValueError(t("updater.badUrl", url=url))
+    net_check(url)
     try:
         req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(req, timeout=60) as r, open(dest, "wb") as fh:

@@ -326,6 +326,7 @@
     if (BAR && !r.running) { api.set_bar(false); return; }             // finished in the main window
     if (BAR && r.look && applyLook(r.look)) { st.barW = 0; fitBar(); }  // 設定 → 表示 changed in the main window
     if (r.status) $("#liveStatus").textContent = r.status;
+    renderNet(r.net);
     if (r.weather && r.weather.seq !== st.wxSeq) { st.wxSeq = r.weather.seq; renderWeather(r.weather, true); }
     else if (!r.weather && st.weather) renderWeather(null, false);   // a new place: nothing of the last one until its own look
     if (!BAR) {
@@ -1346,7 +1347,17 @@
     toast(t("set.saved"));
   });
   // the listeners' state for 設定 when nothing is recording (while recording, poll() brings it every second)
-  setInterval(async () => { if (api && !BAR && !st.pollOn) updateReceiver((await api.poll_live(1e12, 1e12)).receiver); }, 4000);
+  setInterval(async () => { if (api && !BAR && !st.pollOn) { const r = await api.poll_live(1e12, 1e12); updateReceiver(r.receiver); renderNet(r.net); } }, 4000);
+  // offline (Python: potacommon.offline): "manual" = 設定 → 通信, "down" = pota.app has not answered lately. Recording goes
+  // on; spots, P2P candidates, weather, maps and updates rest, and the start screen says so
+  function renderNet(n) {
+    n = n || "";
+    const word = n ? t(n === "manual" ? "net.manual" : "net.down") : "";
+    $("#netChip").hidden = !n; $("#netChip").textContent = word;
+    $("#barNet").hidden = !n; $("#barNet").textContent = word;
+    $("#startOffline").hidden = !n;
+  }
+  $("#offlineMode").addEventListener("change", async (e) => { await api.save({ offline: e.target.checked }); renderNet(e.target.checked ? "manual" : ""); });
 
   // ---------- updates ----------
   let upd = null;
@@ -1749,7 +1760,7 @@
     $("#version").textContent = `v${s.version}`;
     st.dataVersion = s.data_version || "";
     $("#dataVersion").textContent = st.dataVersion ? t("ver.data", { v: st.dataVersion }) : "";
-    st.operators = s.operators || {}; st.opList = s.op_list || []; renderOps(); renderCalls(); showOperator(); $("#p2pAuto").checked = !!s.p2p_auto; $("#beta").checked = !!s.beta; $("#onTop").checked = !!s.on_top; $("#barOnTop").checked = s.bar_on_top !== false;
+    st.operators = s.operators || {}; st.opList = s.op_list || []; renderOps(); renderCalls(); showOperator(); $("#p2pAuto").checked = !!s.p2p_auto; $("#beta").checked = !!s.beta; $("#offlineMode").checked = s.net === "manual"; renderNet(s.net); $("#onTop").checked = !!s.on_top; $("#barOnTop").checked = s.bar_on_top !== false;
     st.lookup = s.lookup || ["qrz"]; renderLookup();
     st.mypota = s.mypota || {}; renderMypota();
     setParks(s.parks);
