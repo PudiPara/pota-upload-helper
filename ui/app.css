@@ -363,6 +363,12 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .wx-sec h3 { margin: 0 0 10px; font-size: 13.5px; display: flex; align-items: baseline; gap: 10px; }
 .wx-sec h3 small { font-size: 11.5px; font-weight: 500; color: var(--ink-3); }
 .wx-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+/* with a 警報 or graver in force: the evacuation note stands out (warning red, bold, ⚠) */
+.wx-note.wx-note-evac { display: flex; gap: 8px; align-items: flex-start; padding: 10px 14px; border: 2px solid #FF2800; border-radius: var(--r-md);
+  background: #FFF1EE; color: #B81D00; font-size: 13px; font-weight: 800; line-height: 1.5; }
+.wx-note-evac::before { content: "⚠"; font-size: 16px; line-height: 1.2; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .wx-note.wx-note-evac { background: rgba(255, 40, 0, .14); color: #FF9C85; } }
+:root[data-theme="dark"] .wx-note.wx-note-evac { background: rgba(255, 40, 0, .14); color: #FF9C85; }
 .wx-note { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ink-3); }
 /* a class per row (like the JMA's warning page): "警報 / レベル3" over the phenomena as plates of one width */
 .wx-class { display: grid; gap: 6px; padding: 8px 0 2px; }
@@ -742,6 +748,8 @@ body.is-bar .storm::before, body.is-bar .storm::after { height: 8px; }
 body.is-bar .storm strong { font-size: 18px; padding: 2px 12px 3px 9px; border-radius: 4px; }
 body.is-bar .storm p { font-size: 12.5px; line-height: 1.35; }
 body.is-bar .storm .storm-ok { display: none; }
+.storm-hint { display: none; }
+body.is-bar .storm-hint { display: block; font-size: 10.5px; font-weight: 700; opacity: .75; }   /* the bar closes on a click: it says so */
 /* behind the words: clouds pass under the temperature without washing it out */
 .wxa-scrim { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10, 20, 40, .42), rgba(10, 20, 40, .22) 55%, rgba(10, 20, 40, 0) 85%); }
 .wxa-cloud { position: absolute; width: 110px; height: 34px; border-radius: 34px; background: var(--cloud); filter: blur(3px); }
