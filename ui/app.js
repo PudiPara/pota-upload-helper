@@ -385,17 +385,24 @@
     $("#dashEvent").textContent = names.concat(activeShifts().map((k) => SHIFT_NAMES[k])).join(" · ");
     $("#dashEvent").hidden = !$("#dashEvent").textContent;
   }
-  // The bar's sky: the sun (Early Shift) or the moon (Late Shift) rises when recording starts in one or one begins,
-  // and moves on when it ends: Early Shift ends at 08 local, so the sun climbs out of sight into the day; Late Shift's
-  // moon sets into a dawn. Layers' opacity at the start, middle, end; path = the orb's way (rise / set / climb).
+  // The bar's sky, by the local hour of the shift (POTA's shifts are 15° bands: Late 18-02, Early 02-08 local):
+  // Late starts at dusk (the moon rises), its second half and Early's first are the middle of the night (stars, the
+  // moon high), Early's second half is the dawn (the sun rises) and it ends in the morning (the sun climbs into the
+  // day). Late's end is Early's start (same band, same hour): that moment plays Early's night.
+  // Layers' opacity at the start, middle, end; path = the orb's way.
   const SKY = {
-    "early-rise": { orb: "sun", path: "rise", night: [1, .6, 0], dawn: [0, 1, 0], day: [0, 0, 1], stars: [1, .3, 0] },
-    "early-set": { orb: "sun", path: "climb", dawn: [1, .3, 0], day: [0, .8, 1], stars: [0, 0, 0] },
-    "late-rise": { orb: "moon", path: "rise", dusk: [1, .5, 0], night: [0, .7, 1], stars: [0, .6, 1] },
-    "late-set": { orb: "moon", path: "set", night: [1, .8, 0], dawn: [0, .5, 1], stars: [1, .5, 0] },
+    dusk: { orb: "moon", path: "rise", dusk: [1, .5, 0], night: [0, .7, 1], stars: [0, .6, 1], meteors: 1 },
+    night: { orb: "moon", path: "drift", night: [1, 1, 1], stars: [.2, .8, 1], meteors: 2 },
+    dawn: { orb: "sun", path: "rise", night: [1, .6, 0], dawn: [0, 1, 0], day: [0, 0, 1], stars: [1, .3, 0] },
+    morning: { orb: "sun", path: "climb", dawn: [1, .3, 0], day: [0, .8, 1], stars: [0, 0, 0] },
   };
+  function skyScene(shift, rise) {
+    if (!rise) return shift === "early" ? "morning" : "night";
+    const w = st.shifts[shift], half = (new Date(Date.now()).getUTCHours() - w[0] + 24) % 24 >= w[1] / 2;
+    return shift === "early" ? (half ? "dawn" : "night") : (half ? "night" : "dusk");
+  }
   function playSky(shift, rise) {
-    const sc = SKY[shift + (rise ? "-rise" : "-set")], box = $("#sky"), orb = $("#skyOrb"), D = 4200;
+    const sc = SKY[skyScene(shift, rise)], box = $("#sky"), orb = $("#skyOrb"), D = 4200;
     const w = st.shifts[shift], at = (h) => new Date(Date.UTC(2000, 0, 1, h)).toLocaleTimeString(st.lang, { hour: "2-digit", minute: "2-digit" });
     $("#skyName").textContent = SHIFT_NAMES[shift];
     $("#skyLine").textContent = rise ? t("sky.start", { from: at(w[0]), to: at(w[0] + w[1]) }) : t("sky.end");
@@ -408,9 +415,21 @@
     $("#sky .sky-stars").animate(sc.stars.map((x) => ({ opacity: x })), opt);
     const low = "translate(-22px, 74px)", high = "translate(0, -18px)", past = "translate(22px, 74px)", top = "translate(26px, -84px)";   // behind the hills / over them / above the bar
     const PATHS = { rise: [[low, high], "cubic-bezier(.2, .6, .3, 1)"], set: [[high, past], "cubic-bezier(.6, 0, .8, .4)"],
-                    climb: [[high, top], "cubic-bezier(.5, 0, .7, .6)"] };
+                    climb: [[high, top], "cubic-bezier(.5, 0, .7, .6)"], drift: [["translate(-36px, -4px)", "translate(8px, -20px)"], "ease-out"] };
     const [path, easing] = PATHS[sc.path];
     orb.animate(path.map((tr) => ({ transform: tr })), { ...opt, easing });
+    // shooting stars in the night scenes: a streak across the upper sky at a random moment, behind the hills
+    $$("#sky .sky-meteor").forEach((m) => m.remove());
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    for (let i = 0; i < (sc.meteors || 0); i++) {
+      const m = document.createElement("i"), x = rnd(.3, .8) * innerWidth, y = rnd(.04, .3) * innerHeight, len = rnd(90, 150);
+      m.className = "sky-meteor"; $("#sky").insertBefore(m, $("#sky .sky-hills"));
+      m.animate([{ transform: `translate(${x}px, ${y}px) rotate(20deg)`, opacity: 0 },
+                 { opacity: 1, offset: .25 },
+                 { transform: `translate(${x + len}px, ${y + len * .364}px) rotate(20deg)`, opacity: 0 }],   // tan 20°
+                { duration: rnd(650, 900), delay: rnd(D * .3, D * .9) + i * 600, easing: "ease-in", fill: "both" })
+        .finished.then(() => m.remove(), () => m.remove());
+    }
     $("#sky .sky-text").animate([{ opacity: 0, transform: "translateY(-50%) translateX(8px)" }, { opacity: 1, transform: "translateY(-50%)" }],
                                 { duration: 700, delay: 500, fill: "backwards", easing: "ease-out" });
     setTimeout(() => {                              // hold a moment, then fade out (unless a newer sky took over)
@@ -424,7 +443,7 @@
     const now = activeShifts(), was = st.shiftOn || [];
     st.shiftOn = now;
     const gone = was.find((k) => !now.includes(k)), came = now.find((k) => !was.includes(k));
-    if (gone) playSky(gone, false); else if (came) playSky(came, true);
+    if (came) playSky(came, true); else if (gone) playSky(gone, false);   // 02 local: Late ends as Early starts
   }
   // the count, the ring and the note under it; from 30 minutes before 0000Z the note says how long is left
   function renderCount() {
