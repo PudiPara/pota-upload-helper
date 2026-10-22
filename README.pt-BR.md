@@ -55,7 +55,7 @@ Em FT8 e modos parecidos, na hora você não sabe se a outra estação está tra
 
 O parque da outra estação é decidido nesta ordem:
 
-1. **Log de caçador do pota.app** (o que a outra estação subiu = confirmado), cruzado a ±5 minutos na mesma banda
+1. **Log de caçador do pota.app** (o que a outra estação subiu = confirmado), cruzado a ±15 minutos na mesma banda
 2. **Os parques confirmados ou digitados durante a ativação** (ao gerar do log do app). QSOs não confirmados não viram P2P
 3. **Spots gravados durante a ativação** (só ao gerar de um arquivo ADIF; spots de 30 minutos antes até 10 minutos depois do QSO)
 4. SIG_INFO / POTA_REF do programa de log

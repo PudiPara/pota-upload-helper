@@ -17,7 +17,7 @@ API = "https://api.pota.app"
 PARK_RE = re.compile(r"\b([A-Z0-9]{1,4}-\d{4,5})\b")
 APP_NAME = "Potaroo"
 OLD_NAME = "POTA Upload Helper"      # the name until 2.0.0: its data folder is moved over on first start
-VERSION = "2.0.65"
+VERSION = "2.0.66"
 
 
 def _moved(new, old):
@@ -145,7 +145,14 @@ def write_json(path, obj):
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(obj, fh, ensure_ascii=False, indent=1)
-    os.replace(tmp, path)
+    for i in range(10):              # Windows: a reader holding the file open refuses the rename for a moment
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            if i == 9:
+                raise
+            time.sleep(0.05)
 
 
 def load_settings():

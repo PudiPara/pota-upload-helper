@@ -881,7 +881,7 @@
   // Esc, or when the next QSO arrives; a newer celebration is not closed by an older one's end.
   function celebrate(sel, poppers) {
     const id = (celebrate.id = (celebrate.id || 0) + 1);
-    $(sel).hidden = false;
+    hideCelebrations(); $(sel).hidden = false;
     Promise.all([poppers, new Promise((r) => setTimeout(r, 3000))]).then(() => { if (celebrate.id === id) $(sel).hidden = true; });
   }
 
@@ -893,7 +893,7 @@
     if (!parks.length) return;
     parks.forEach((p) => st.huntedShown.add(p));
     $("#huntedParks").innerHTML = plates(parks);
-    $("#cheer").hidden = true; celebrate("#hunted", burst());
+    celebrate("#hunted", burst());
   }
   function hideCelebrations() { $("#hunted").hidden = true; $("#cheer").hidden = true; $("#award").hidden = true; }
   // An achievement reached while recording (not confirmed until the log is uploaded): the medal drops in spinning,
@@ -902,7 +902,6 @@
   function showAward(list) {
     if (!list || !list.length) return;
     $("#awardName").textContent = list.map(awardName).join("\n");
-    $("#cheer").hidden = true; $("#hunted").hidden = true;
     celebrate("#award", burst(48));
     $("#awardMedal").animate([{ transform: "translateY(-140px) rotateY(0deg)", opacity: 0 }, { transform: "translateY(10px) rotateY(540deg)", opacity: 1, offset: .7 },
       { transform: "translateY(0) rotateY(720deg)", opacity: 1 }], { duration: 1500, easing: "cubic-bezier(.2, .7, .3, 1)" });

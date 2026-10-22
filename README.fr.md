@@ -55,7 +55,7 @@ En FT8 et dans les modes similaires, impossible de savoir sur le moment si la st
 
 Le parc de la station en face est déterminé dans cet ordre :
 
-1. **Journal chasseur pota.app** (ce que la station a elle-même envoyé = confirmé), rapproché à ±5 minutes sur la même bande
+1. **Journal chasseur pota.app** (ce que la station a elle-même envoyé = confirmé), rapproché à ±15 minutes sur la même bande
 2. **Les parcs confirmés ou saisis pendant l’activation** (génération depuis le journal de l’application). Un QSO non confirmé ne devient pas P2P
 3. **Les spots enregistrés pendant l’activation** (seulement depuis un fichier ADIF ; spots de 30 minutes avant à 10 minutes après le QSO)
 4. SIG_INFO / POTA_REF du logger

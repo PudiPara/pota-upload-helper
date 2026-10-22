@@ -55,7 +55,7 @@ On FT8 and similar modes you cannot tell on the spot whether the other station i
 
 The other station's park is decided in this order:
 
-1. **pota.app hunter log** (what they uploaded = verified), matched within ±5 minutes on the same band
+1. **pota.app hunter log** (what they uploaded = verified), matched within ±15 minutes on the same band
 2. **Parks you confirmed or typed while on the air** (when building from the app's log). QSOs you did not confirm are not made P2P
 3. **Spots recorded while on the air** (only when building from an ADIF file; spots from 30 minutes before to 10 minutes after the QSO)
 4. SIG_INFO / POTA_REF from the logger

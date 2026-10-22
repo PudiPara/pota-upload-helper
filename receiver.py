@@ -11,6 +11,7 @@ app can sit between your logger and another program (e.g. RUMlog -> here -> OpsL
 import datetime as dt
 import html
 import json
+import logging
 import os
 import re
 import socket
@@ -270,13 +271,20 @@ class Receiver:
                         # would later point at another QSO; the record itself is the identity
                         # read back after HAMLOG (or this listener) restarted: the app may have it
                         # already, with the parks of the session it was logged in - keep that
-                        self.on_qso("backfill" if i <= back_to else "upsert", rec, None, name)
+                        self._emit("backfill" if i <= back_to else "upsert", rec, None, name)
                 last = n
             self._stop.wait(self.HAMLOG_POLL)
 
     @staticmethod
     def _hamlog_key(rec):
         return (rec.get("CALL"), rec.get("QSO_DATE"), rec.get("TIME_ON"), rec.get("BAND"), rec.get("MODE"))
+
+    def _emit(self, action, rec, uid, name):
+        """Hand a QSO to the app; an error there is logged and the listener goes on."""
+        try:
+            self.on_qso(action, rec, uid, name)
+        except Exception:
+            logging.exception("on_qso")
 
     def _hamlog_deleted(self, client, seen, n, name):
         """HAMLOG's count went down: read back the tail it still has (as far as the QSOs taken this
@@ -287,7 +295,7 @@ class Receiver:
         still = {self._hamlog_key(r) for r in (client.record(i) for i in range(n - depth + 1, n + 1)) if r}
         for rec in [r for r in seen if self._hamlog_key(r) not in still]:
             seen.remove(rec)
-            self.on_qso("delete", rec, None, name)
+            self._emit("delete", rec, None, name)
 
     def _run(self, cfg):
         name = cfg["name"]
@@ -320,5 +328,5 @@ class Receiver:
                     pass
             for action, rec, uid in parse_packet(data):
                 self._set(name, dict(base, code="receiving"))
-                self.on_qso(action, rec, uid, name)
+                self._emit(action, rec, uid, name)
         sock.close()

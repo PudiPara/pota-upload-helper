@@ -55,7 +55,7 @@ En FT8 y modos parecidos no puedes saber en el momento si la otra estación est�
 
 El parque de la otra estación se decide en este orden:
 
-1. **Log de cazador (hunter log) de pota.app** (lo que subió la otra estación = verificado), cruzado a ±5 minutos en la misma banda
+1. **Log de cazador (hunter log) de pota.app** (lo que subió la otra estación = verificado), cruzado a ±15 minutos en la misma banda
 2. **Parques que confirmaste o escribiste en el aire** (al generar desde el log de la app). Los QSO sin confirmar no se hacen P2P
 3. **Spots registrados en el aire** (solo al generar desde un archivo ADIF; spots desde 30 minutos antes hasta 10 minutos después del QSO)
 4. SIG_INFO / POTA_REF del programa de log

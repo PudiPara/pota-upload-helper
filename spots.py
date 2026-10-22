@@ -18,6 +18,7 @@ import datetime as dt
 import glob
 import gzip
 import json
+import logging
 import math
 import os
 import re
@@ -607,41 +608,48 @@ class SpotLogger:
         mine = base_call(self.call)
         seen, known, polls = {}, {}, 0
         while not self._stop.is_set():
-            now = now_utc()
             try:
-                spots = fetch_json("spot/activator")
-                self.on_status(Text("spot.updated", time=now.strftime("%H:%M"), n=len(spots)))
-            except Exception as e:
-                spots = []
-                self.on_status(Text("spot.fetchFail", time=now.strftime("%H:%M"), err=str(e)))
-            path = data_path("spots-%s.jsonl" % now.strftime("%Y%m%d"))
-            with open(path, "a", encoding="utf-8") as fh:
-                for s in spots:
-                    key = s.get("spotId")
-                    if seen.get(key) == s.get("spotTime"):
-                        continue
-                    seen[key] = s.get("spotTime")
-                    act = base_call(s.get("activator"))
-                    if act == mine:
-                        continue
-                    refs = parks_of(s)
-                    rec = {"seen": utc_stamp(now), "spotTime": s.get("spotTime"),
-                           "activator": s.get("activator"), "base": act, "parks": refs,
-                           "frequency": s.get("frequency"), "mode": s.get("mode"),
-                           "comments": s.get("comments"), "spotter": s.get("spotter"), "spotId": key}
-                    fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
-                    before = known.setdefault(act, set())
-                    added = [r for r in refs if r not in before]
-                    if added:
-                        before.update(added)
-                        self.on_activator(now.strftime("%H:%M"), s.get("activator"), sorted(before),
-                                          s.get("frequency"), s.get("mode"), len(before) > 1)
-            self.session["end"] = utc_stamp(now)
-            self._update_session()
-            if polls % 10 == 0:
-                try:
-                    load_hunter(self.call, False, log=self.on_status)
-                except Exception as e:
-                    self.on_status(Text("spot.hunterFail", err=str(e)))
+                self._poll(mine, seen, known, polls, load_hunter)
+            except Exception:                          # a bad answer or a file error: log it, keep recording
+                logging.exception("spot logger")
             polls += 1
             self._stop.wait(self.interval)
+
+    def _poll(self, mine, seen, known, polls, load_hunter):
+        """One look at pota.app's spots: record the new ones, tell the app, refresh the session's end."""
+        now = now_utc()
+        try:
+            spots = fetch_json("spot/activator")
+            self.on_status(Text("spot.updated", time=now.strftime("%H:%M"), n=len(spots)))
+        except Exception as e:
+            spots = []
+            self.on_status(Text("spot.fetchFail", time=now.strftime("%H:%M"), err=str(e)))
+        path = data_path("spots-%s.jsonl" % now.strftime("%Y%m%d"))
+        with open(path, "a", encoding="utf-8") as fh:
+            for s in spots:
+                key = s.get("spotId")
+                if seen.get(key) == s.get("spotTime"):
+                    continue
+                seen[key] = s.get("spotTime")
+                act = base_call(s.get("activator"))
+                if act == mine:
+                    continue
+                refs = parks_of(s)
+                rec = {"seen": utc_stamp(now), "spotTime": s.get("spotTime"),
+                       "activator": s.get("activator"), "base": act, "parks": refs,
+                       "frequency": s.get("frequency"), "mode": s.get("mode"),
+                       "comments": s.get("comments"), "spotter": s.get("spotter"), "spotId": key}
+                fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                before = known.setdefault(act, set())
+                added = [r for r in refs if r not in before]
+                if added:
+                    before.update(added)
+                    self.on_activator(now.strftime("%H:%M"), s.get("activator"), sorted(before),
+                                      s.get("frequency"), s.get("mode"), len(before) > 1)
+        self.session["end"] = utc_stamp(now)
+        self._update_session()
+        if polls % 10 == 0:
+            try:
+                load_hunter(self.call, False, log=self.on_status)
+            except Exception as e:
+                self.on_status(Text("spot.hunterFail", err=str(e)))

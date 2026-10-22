@@ -55,7 +55,7 @@ Bei FT8 und ähnlichen Betriebsarten weißt du im Moment des QSOs nicht, ob die 
 
 Der Park der Gegenstation wird in dieser Reihenfolge bestimmt:
 
-1. **Hunter-Log von pota.app** (was die Gegenstation hochgeladen hat = bestätigt), Abgleich ±5 Minuten auf demselben Band
+1. **Hunter-Log von pota.app** (was die Gegenstation hochgeladen hat = bestätigt), Abgleich ±15 Minuten auf demselben Band
 2. **Während des Betriebs bestätigte oder eingetippte Parks** (beim Erstellen aus dem App-Log). Unbestätigte QSOs werden nicht zu P2P
 3. **Während des Betriebs aufgezeichnete Spots** (nur beim Erstellen aus einer ADIF-Datei; Spots von 30 Minuten vor bis 10 Minuten nach dem QSO)
 4. SIG_INFO / POTA_REF aus dem Logger

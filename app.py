@@ -89,7 +89,7 @@ def qso_event(rec, uid=None, hunted=None):
             "ck": {p: count_key(rec, p) for p in my_parks_of(rec) or ["*"]},
             "note": rec.get("P2P_NOTE") or "",
             # to their parks (the decided ones, else the spot's candidate) from mine
-            "km": distance_km(my_parks_of(rec), decided_parks(rec)[1] or split_parks(rec.get("P2P_CANDIDATE")))}
+            "km": distance_km(my_parks_of(rec), qsolog.their_parks_now(rec))}
 
 
 class Api:
@@ -100,6 +100,7 @@ class Api:
     _wx_stop = threading.Event()       # set = stop looking (each recording gets its own)
     _wx_seq = 0                        # every look's number, counting on over recordings
     _award_base = None                 # the achievement keys reached when recording started (mypota.awards)
+    _award_lock = threading.Lock()     # two listeners (WSJT-X and the logger) report the same QSO at once
     def __init__(self):
         self._window = None
         self._bar = None               # BarMode, once the window exists
@@ -304,15 +305,16 @@ class Api:
                                  rec.get("BAND"), mode_of(rec) if rec.get("MODE") else None)
             ev = {"action": "delete", "call": rec.get("CALL"), "uids": gone}
         else:
-            if self._recording() and not my_parks_of(rec):
+            lg = self._logger if self._recording() else None   # one look: finish_live may clear it meanwhile
+            if lg and not my_parks_of(rec):
                 if (rec.get("MY_SIG") or "POTA").upper() == "POTA":
-                    rec["MY_SIG"], rec["MY_SIG_INFO"] = "POTA", ",".join(self._logger.parks)
+                    rec["MY_SIG"], rec["MY_SIG_INFO"] = "POTA", ",".join(lg.parks)
                 else:                                   # MY_SIG_INFO holds another program's reference (WWFF)
-                    rec["MY_POTA_REF"] = ",".join(self._logger.parks)
+                    rec["MY_POTA_REF"] = ",".join(lg.parks)
                 if self._locs:
                     rec["MY_POTA_LOCS"] = dict(self._locs)        # parks spanning prefectures/states -> where I was
-            if self._recording():
-                rec.setdefault("SESSION_CALL", self._logger.call)   # whose log: a club call's QSOs never go into mine
+            if lg:
+                rec.setdefault("SESSION_CALL", lg.call)   # whose log: a club call's QSOs never go into mine
                 if self._operator and not rec.get("OPERATOR"):
                     rec["OPERATOR"] = self._operator            # club station: who was at the radio (HAMLOG sends none)
             info = tag_candidate(rec)
@@ -343,15 +345,16 @@ class Api:
         threading.Thread(target=base, daemon=True).start()
 
     def _check_awards(self):
-        if self._award_base is None:
-            return
-        try:
-            now = self._award_keys()
-        except Exception as e:
-            logging.warning("awards: %s", e)
-            return
-        new = [dict(v, key=k) for k, v in now.items() if k not in self._award_base]
-        self._award_base |= set(now)
+        with self._award_lock:
+            if self._award_base is None:
+                return
+            try:
+                now = self._award_keys()
+            except Exception as e:
+                logging.warning("awards: %s", e)
+                return
+            new = [dict(v, key=k) for k, v in now.items() if k not in self._award_base]
+            self._award_base |= set(now)
         if new:                                    # the windows celebrate it (not confirmed until the log is uploaded)
             with self._lock:
                 self._qso_events.append({"action": "award", "awards": new, "at": time.time()})
@@ -410,12 +413,13 @@ class Api:
     def _in_session(self, rec):
         """Does this QSO belong in the running session's list: logged at one of its parks today (a park
         shared with an earlier session keeps its count), or since the session started."""
-        if not self._recording():
+        lg = self._logger
+        if not (lg and lg.running()):
             return False
-        if set(my_parks_of(rec)) & set(self._logger.parks):
+        if set(my_parks_of(rec)) & set(lg.parks):
             return True
         t = rec_minutes(rec)
-        return t is None or t >= session_since(self._logger.session["start"])
+        return t is None or t >= session_since(lg.session["start"])
 
     def _on_spot(self, tm, act, parks, freq, mode, twofer):
         with self._lock:
@@ -847,7 +851,9 @@ def main():
     win.events.closing += closing
     api._bar.zoom = load_settings().get("font_scale", 1)
     win.events.loaded += lambda: set_zoom(win, api._bar.zoom)
-    webview.start(debug=bool(os.environ.get("POTAROO_DEBUG")))
+    # OpenStreetMap's tile policy asks apps to name themselves in the User-Agent (the maps' tiles are the web view's only fetch)
+    webview.start(debug=bool(os.environ.get("POTAROO_DEBUG")),
+                  user_agent="Mozilla/5.0 (compatible; Potaroo/%s; +https://github.com/PudiPara/potaroo)" % VERSION)
     # The windows are gone. Exit now: pywebview answers each JS call on a non-daemon thread that waits
     # for the run loop, and one still waiting when it stopped (poll_live every second) kept the process
     # alive with its windows frozen on screen (macOS, "固まる" on closing the window).

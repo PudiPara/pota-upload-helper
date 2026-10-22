@@ -55,7 +55,7 @@ W FT8 i podobnych emisjach nie wiadomo na bieżąco, czy druga stacja nadaje z p
 
 Park drugiej stacji ustalany jest w tej kolejności:
 
-1. **Log huntera z pota.app** (to, co wysłała druga stacja = potwierdzone). Dopasowanie: czas ±5 minut, to samo pasmo
+1. **Log huntera z pota.app** (to, co wysłała druga stacja = potwierdzone). Dopasowanie: czas ±15 minut, to samo pasmo
 2. **Park potwierdzony lub wpisany podczas aktywacji** (przy tworzeniu z logu aplikacji). Niepotwierdzone QSO nie są uznawane za P2P
 3. **Spoty zapisane podczas aktywacji** (tylko przy tworzeniu z pliku ADIF; spoty od 30 minut przed do 10 minut po QSO)
 4. SIG_INFO / POTA_REF z programu do logowania

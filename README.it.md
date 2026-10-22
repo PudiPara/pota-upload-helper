@@ -55,7 +55,7 @@ In FT8 e simili, sul momento non puoi sapere se l’altra stazione trasmette da 
 
 Il parco dell’altra stazione è deciso in quest’ordine:
 
-1. **Log hunter di pota.app** (ciò che l’altra stazione ha caricato = confermato), confrontato a ±5 minuti sulla stessa banda
+1. **Log hunter di pota.app** (ciò che l’altra stazione ha caricato = confermato), confrontato a ±15 minuti sulla stessa banda
 2. **I parchi confermati o digitati durante l’attivazione** (generando dal log dell’app). I QSO non confermati non diventano P2P
 3. **Spot registrati durante l’attivazione** (solo generando da un file ADIF; spot da 30 minuti prima a 10 minuti dopo il QSO)
 4. SIG_INFO / POTA_REF dal logger
