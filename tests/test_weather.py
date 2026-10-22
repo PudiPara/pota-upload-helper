@@ -40,6 +40,12 @@ class WeatherTest(unittest.TestCase):
         self.assertEqual(weather.news(storm, storm), [])                         # nothing new
         self.assertEqual(weather.news(calm, {"alerts": {"wind": {"in": 0, "g": 16}}}), ["wind"])
 
+    def test_japan_keeps_the_present_only(self):
+        w = weather.add_jma(weather.summarize(answer(codes=(95, 95, 95, 95, 95), rain=(0, 10, 70, 0, 0))),
+                            [{"code": "14", "level": 2}], "沖縄県沖縄市")
+        self.assertEqual((w["alerts"], w["hours"], w["rain"]), ({"jma:14": {"level": 2}}, [], None))   # no forecast of its own
+        self.assertEqual(w["temp"], 17.9)                                                            # the present stays
+
     def test_kinds(self):
         self.assertEqual([weather.kind(c) for c in (61, 63, 65, 71, 75, 82, 99)],
                          [("rainLight", 1), ("rain", 2), ("rainHeavy", 3), ("snowLight", 1), ("snowHeavy", 3), ("showersHeavy", 3), ("thunderHail", 3)])

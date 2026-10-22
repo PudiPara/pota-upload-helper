@@ -36,6 +36,41 @@ class FinishBuildsTheWholeDay(unittest.TestCase):
         self.assertIn("JA1AAA", first); self.assertNotIn("JA1BBA", first)          # only its own session
 
 
+class JmaWithoutOpenMeteo(unittest.TestCase):
+    def test_warnings_go_out_when_open_meteo_fails(self):
+        api = app.Api.__new__(app.Api)
+        api._lock, api._weather = app.threading.Lock(), None
+        saved = app.jma.warnings, app.jma.place, app.jma.forecast, app.jma.feed_news
+        app.jma.feed_news = lambda lat, lon: False                       # offline: the feed has nothing new
+        app.jma.warnings = lambda lat, lon: [{"code": "14", "level": 2}]
+        app.jma.place = lambda lat, lon: "沖縄県沖縄市"
+        app.jma.forecast = lambda lat, lon: None
+        stop = types.SimpleNamespace(is_set=lambda: False, wait=lambda s: setattr(stop, "is_set", lambda: True))
+        try:
+            api._weather_loop((26.3, 127.8), stop, japan=True)          # weather.fetch is offline here: it fails
+        finally:
+            app.jma.warnings, app.jma.place, app.jma.forecast, app.jma.feed_news = saved
+        self.assertEqual((api._weather["alerts"], api._weather["new"]), ({"jma:14": {"level": 2}}, ["jma:14"]))
+
+
+class JmaFeed(unittest.TestCase):
+    def test_a_new_bulletin_from_the_park_office(self):
+        feed = lambda *ids: "".join("<entry><id>https://www.data.jma.go.jp/developer/xml/data/%s.xml</id></entry>" % i for i in ids)
+        saved = app.jma.areas, app.jma._feed_text, dict(app.jma._feed)
+        app.jma.areas = lambda lat, lon: ("471000", ["4721100"])
+        texts = iter([feed("20261022120000_0_VPWW53_471000"),                            # the first look: noted only
+                      feed("20261022120000_0_VPWW53_471000", "20261022121000_0_VPWW53_014100"),   # another office
+                      None,                                                               # unchanged (304)
+                      feed("20261022121000_0_VPWW53_014100", "20261022122000_0_VPWW55_471000")])  # ours: 大雨
+        app.jma._feed_text = lambda: next(texts)
+        app.jma._feed.update(seen=None)
+        try:
+            self.assertEqual([app.jma.feed_news(26.3, 127.8) for _ in range(4)], [False, False, False, True])
+        finally:
+            app.jma.areas, app.jma._feed_text = saved[0], saved[1]
+            app.jma._feed.clear(); app.jma._feed.update(saved[2])
+
+
 if __name__ == "__main__":
     unittest.main()
 

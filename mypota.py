@@ -10,6 +10,7 @@ Nothing here talks to pota.app.
 """
 import csv
 import io
+import os
 import time
 
 from potacommon import count_key, data_path, my_parks_of, read_json, their_parks_of, utc_stamp, write_json
@@ -69,8 +70,22 @@ def goals(n, kilo=False):
     return out
 
 
+_cache = (None, {})
+
+
 def _load():
-    return read_json(data_path(FILE), {})
+    """mypota.json, read again only when the file changed (awards look at it on every QSO). Its size is part of the
+    key: Windows' file times are coarse, two writes close together kept one time (CI caught it)."""
+    global _cache
+    path = data_path(FILE)
+    try:
+        st = os.stat(path)
+        key = (path, st.st_mtime_ns, st.st_size)
+    except OSError:
+        return {}
+    if _cache[0] != key:
+        _cache = (key, read_json(path, {}))
+    return _cache[1]
 
 
 def _rows(text):
@@ -109,6 +124,8 @@ def import_files(paths):
     for kind, parks in got.items():
         data[kind] = {"at": utc_stamp(), "parks": parks}
     write_json(data_path(FILE), data)
+    global _cache
+    _cache = (None, {})                    # read it again whatever the file's time says
     return {"ok": True, **{k: len(v["parks"]) for k, v in data.items() if k in ("hunter", "activator")}}
 
 

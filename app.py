@@ -41,10 +41,11 @@ from spots import (SESSION_MARGIN, SpotLogger, clear_records, common_locations, 
                    distance_km, park_info, parks_middle, park_status, linear_parks, shift_hours, shipped_parks, summarize, tag_candidate)
 from window import BarMode, set_zoom
 
-SETTINGS_KEYS = ("call", "calls", "op_list", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "guide_seen", "p2p_auto", "lookup", "on_top", "font_scale", "theme", "dist_unit")   # "live" is set by start_live/finish_live only
+SETTINGS_KEYS = ("call", "calls", "op_list", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "guide_seen", "p2p_auto", "lookup", "on_top", "font_scale", "theme", "bar_style", "dist_unit")   # "live" is set by start_live/finish_live only
 DATE_RE = re.compile(r"\d{8}")
 LOOK_SCALES = (1, 1.15, 1.3)            # 設定 → 表示 → 文字の大きさ
 LOOK_THEMES = ("", "light", "dark")     # 設定 → 表示 → 配色 ("" = the OS)
+LOOK_BARS = ("", "compact", "square")   # 設定 → ウインドウ → バーの形 ("" = the standard wide one)
 SPOT_INTERVAL = 60       # seconds between pota.app spot polls while recording
 
 
@@ -88,7 +89,7 @@ def qso_event(rec, uid=None, hunted=None):
             "ck": {p: count_key(rec, p) for p in my_parks_of(rec) or ["*"]},
             "note": rec.get("P2P_NOTE") or "",
             # to their parks (the decided ones, else the spot's candidate) from mine
-            "km": distance_km(my_parks_of(rec), decided_parks(rec)[1] or split_parks(rec.get("P2P_CANDIDATE")))}
+            "km": distance_km(my_parks_of(rec), qsolog.their_parks_now(rec))}
 
 
 class Api:
@@ -99,6 +100,7 @@ class Api:
     _wx_stop = threading.Event()       # set = stop looking (each recording gets its own)
     _wx_seq = 0                        # every look's number, counting on over recordings
     _award_base = None                 # the achievement keys reached when recording started (mypota.awards)
+    _award_lock = threading.Lock()     # two listeners (WSJT-X and the logger) report the same QSO at once
     def __init__(self):
         self._window = None
         self._bar = None               # BarMode, once the window exists
@@ -143,10 +145,33 @@ class Api:
             threading.Thread(target=self._weather_loop, args=(at, stop, japan), daemon=True).start()
 
     def _weather_loop(self, at, stop, japan=False):
-        first = True
+        """Open-Meteo every weather.EVERY. In Japan the JMA's warnings too: read again as soon as the JMA's feed lists a
+        new bulletin from the park's office (looked at every jma.FEED_EVERY), and every weather.JMA_EVERY anyway, whatever
+        Open-Meteo did (a failed look keeps its last answer, or none yet: the JMA's warnings still go out)."""
+        first, om, om_at, jma_at = True, None, 0.0, 0.0
         while not stop.is_set():
             try:
-                w = weather.fetch(*at)
+                now = time.time()
+                slow = now - om_at >= weather.EVERY - 5   # Open-Meteo's turn (and the JMA's forecast's)
+                issued = False
+                if japan:
+                    try:
+                        issued = jma.feed_news(*at)
+                    except Exception as e:     # the feed is a shortcut: the JMA_EVERY look still comes
+                        logging.warning("jma feed: %s", e)
+                if not (slow or issued or (japan and now - jma_at >= weather.JMA_EVERY - 5)):
+                    stop.wait(jma.FEED_EVERY)
+                    continue
+                if slow:
+                    try:
+                        om, om_at = weather.fetch(*at), time.time()
+                    except Exception as e:     # no weather is no reason to bother the operator
+                        logging.warning("weather: %s", e)
+                        om_at = time.time()    # the next try at the next EVERY, not at the JMA's next look
+                if om is None and not japan:
+                    stop.wait(weather.EVERY)
+                    continue
+                w = dict(om or {"alerts": {}, "hours": [], "sun": None})   # Japan with no Open-Meteo yet: the JMA's only
                 if japan:                      # the JMA's warnings, and no alerts of the forecast's own (weather.add_jma)
                     try:
                         found = jma.warnings(*at)
@@ -158,19 +183,21 @@ class Api:
                     except Exception:          # the warnings still show, without the name
                         where = None
                     weather.add_jma(w, found, where)
-                    try:                       # the JMA's forecast for the 天気 tab
-                        weather.add_jma_forecast(w, jma.forecast(*at))
+                    jma_at = now
+                    last_fc = (self._weather or {}).get("jma_forecast")
+                    try:                       # the JMA's forecast for the 天気 tab: at Open-Meteo's pace (it changes a few times a day)
+                        weather.add_jma_forecast(w, jma.forecast(*at) if slow or not last_fc else last_fc)
                     except Exception as e:
                         logging.warning("jma forecast: %s", e)
-                        weather.add_jma_forecast(w, (self._weather or {}).get("jma_forecast"))
+                        weather.add_jma_forecast(w, last_fc)
                 Api._wx_seq += 1                # never repeats across recordings: a window that saw the last one takes this
                 with self._lock:
                     if not stop.is_set():
                         self._weather = dict(w, seq=Api._wx_seq, first=first, new=weather.news(self._weather, w))
                         first = False
-            except Exception as e:             # no weather is no reason to bother the operator
+            except Exception as e:
                 logging.warning("weather: %s", e)
-            stop.wait(weather.EVERY)
+            stop.wait(jma.FEED_EVERY if japan else weather.EVERY)
 
     def _first_hunted(self, max_age=30):
         """mypota.first_hunted over the app log, recomputed at most every max_age seconds."""
@@ -210,7 +237,7 @@ class Api:
         return {"version": VERSION, "data_version": data_version(), "call": calls[0] if calls else "", "calls": calls, "operators": s.get("operators") or {}, "op_list": clean_calls(s.get("op_list"), ""), "events": pota_events(year) + pota_events(year + 1), "parks": s.get("parks", ""),
                 "prefix": "home" if s.get("prefix", "home") else "", "adif": s.get("adif", ""), "out": s.get("out", DEFAULT_OUT),
                 "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
-                "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
+                "listeners": self.listeners(), "hamlog": sys.platform == "win32", "lang": s.get("lang") or "", "langs": i18n.available(),
                 "country": s.get("country") or "", "countries": countries(),
                 "terms_accepted": s.get("terms_accepted") or "", "guide_seen": bool(s.get("guide_seen")), "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")), **self._look(s), "dist_unit": s.get("dist_unit") or "", "bar_on_top": s.get("bar_on_top", True) is not False,
                 "lookup": lookup if isinstance(lookup, list) else [lookup],
@@ -231,6 +258,8 @@ class Api:
             keep.pop("font_scale")
         if "font_scale" in keep and self._bar:
             self._bar.set_zoom(keep["font_scale"])            # both windows, now
+        if "bar_style" in keep and keep["bar_style"] not in LOOK_BARS:
+            keep.pop("bar_style")
         if "theme" in keep and keep["theme"] not in LOOK_THEMES:
             keep.pop("theme")
         if "dist_unit" in keep and keep["dist_unit"] not in ("km", "mi"):
@@ -301,15 +330,16 @@ class Api:
                                  rec.get("BAND"), mode_of(rec) if rec.get("MODE") else None)
             ev = {"action": "delete", "call": rec.get("CALL"), "uids": gone}
         else:
-            if self._recording() and not my_parks_of(rec):
+            lg = self._logger if self._recording() else None   # one look: finish_live may clear it meanwhile
+            if lg and not my_parks_of(rec):
                 if (rec.get("MY_SIG") or "POTA").upper() == "POTA":
-                    rec["MY_SIG"], rec["MY_SIG_INFO"] = "POTA", ",".join(self._logger.parks)
+                    rec["MY_SIG"], rec["MY_SIG_INFO"] = "POTA", ",".join(lg.parks)
                 else:                                   # MY_SIG_INFO holds another program's reference (WWFF)
-                    rec["MY_POTA_REF"] = ",".join(self._logger.parks)
+                    rec["MY_POTA_REF"] = ",".join(lg.parks)
                 if self._locs:
                     rec["MY_POTA_LOCS"] = dict(self._locs)        # parks spanning prefectures/states -> where I was
-            if self._recording():
-                rec.setdefault("SESSION_CALL", self._logger.call)   # whose log: a club call's QSOs never go into mine
+            if lg:
+                rec.setdefault("SESSION_CALL", lg.call)   # whose log: a club call's QSOs never go into mine
                 if self._operator and not rec.get("OPERATOR"):
                     rec["OPERATOR"] = self._operator            # club station: who was at the radio (HAMLOG sends none)
             info = tag_candidate(rec)
@@ -340,15 +370,16 @@ class Api:
         threading.Thread(target=base, daemon=True).start()
 
     def _check_awards(self):
-        if self._award_base is None:
-            return
-        try:
-            now = self._award_keys()
-        except Exception as e:
-            logging.warning("awards: %s", e)
-            return
-        new = [dict(v, key=k) for k, v in now.items() if k not in self._award_base]
-        self._award_base |= set(now)
+        with self._award_lock:
+            if self._award_base is None:
+                return
+            try:
+                now = self._award_keys()
+            except Exception as e:
+                logging.warning("awards: %s", e)
+                return
+            new = [dict(v, key=k) for k, v in now.items() if k not in self._award_base]
+            self._award_base |= set(now)
         if new:                                    # the windows celebrate it (not confirmed until the log is uploaded)
             with self._lock:
                 self._qso_events.append({"action": "award", "awards": new, "at": time.time()})
@@ -407,12 +438,13 @@ class Api:
     def _in_session(self, rec):
         """Does this QSO belong in the running session's list: logged at one of its parks today (a park
         shared with an earlier session keeps its count), or since the session started."""
-        if not self._recording():
+        lg = self._logger
+        if not (lg and lg.running()):
             return False
-        if set(my_parks_of(rec)) & set(self._logger.parks):
+        if set(my_parks_of(rec)) & set(lg.parks):
             return True
         t = rec_minutes(rec)
-        return t is None or t >= session_since(self._logger.session["start"])
+        return t is None or t >= session_since(lg.session["start"])
 
     def _on_spot(self, tm, act, parks, freq, mode, twofer):
         with self._lock:
@@ -434,9 +466,9 @@ class Api:
                     "clock": clock_skew(), "weather": self._weather}
 
     def _look(self, s=None):
-        """設定 → 表示 for both windows: {font_scale, theme}."""
+        """設定 → 表示 for both windows: {font_scale, theme, bar_style}."""
         s = s or load_settings()
-        return {"font_scale": s.get("font_scale", 1), "theme": s.get("theme", "")}
+        return {"font_scale": s.get("font_scale", 1), "theme": s.get("theme", ""), "bar_style": s.get("bar_style", "")}
 
     def session_qsos(self, start_iso, parks=""):
         """The live list when a session starts or the window reopens: today's QSOs at any of these
@@ -507,7 +539,7 @@ class Api:
         """The bar measured its content: make the window that size (no line wraps, nothing to spare;
         taller with a bigger text size)."""
         try:
-            width, height = max(360, min(2000, int(width))), max(80, min(300, int(height)))
+            width, height = max(200, min(2000, int(width))), max(60, min(400, int(height)))
         except (TypeError, ValueError):
             return False
         if self._bar:
@@ -829,9 +861,8 @@ def main():
     # the shipped park list (97k lines) is read beside the window's start-up, not before it
     threading.Thread(target=lambda: setattr(i18n, "examples", example_parks(load_settings().get("country") or "")), daemon=True).start()
     api = Api()
-    from window import BAR_W
     win = webview.create_window(APP_NAME, resource("ui", "index.html"), js_api=api,
-                                width=1180, height=800, min_size=(BAR_W, 160), on_top=bool(load_settings().get("on_top")))
+                                width=1180, height=800, min_size=(600, 160), on_top=bool(load_settings().get("on_top")))
     api._window = win
     api._bar = BarMode(win, resource("ui", "index.html"), api, APP_NAME + " - " + t("bar.title"),
                        keep_on_top=bool(load_settings().get("on_top")), bar_on_top=load_settings().get("bar_on_top", True) is not False)
@@ -845,7 +876,9 @@ def main():
     win.events.closing += closing
     api._bar.zoom = load_settings().get("font_scale", 1)
     win.events.loaded += lambda: set_zoom(win, api._bar.zoom)
-    webview.start(debug=bool(os.environ.get("POTAROO_DEBUG")))
+    # OpenStreetMap's tile policy asks apps to name themselves in the User-Agent (the maps' tiles are the web view's only fetch)
+    webview.start(debug=bool(os.environ.get("POTAROO_DEBUG")),
+                  user_agent="Mozilla/5.0 (compatible; Potaroo/%s; +https://github.com/PudiPara/potaroo)" % VERSION)
     # The windows are gone. Exit now: pywebview answers each JS call on a non-daemon thread that waits
     # for the run loop, and one still waiting when it stopped (poll_live every second) kept the process
     # alive with its windows frozen on screen (macOS, "固まる" on closing the window).

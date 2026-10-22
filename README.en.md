@@ -28,7 +28,8 @@ On FT8 and similar modes you cannot tell on the spot whether the other station i
 - **Distance and map**: the straight-line distance to the other station's park is shown, e.g. "~820 km" (for a 2fer, from the midpoint of the parks). The Map tab centres on your position and draws lines to the parks you worked P2P. Distances can be shown in km or miles.
 - **A celebration every 10 QSOs**: confetti marks the moment the activation becomes valid, and every 10 QSOs after that.
 - **Finishing writes the file**: "Finish this park" writes that day's upload file (`JL1FVA@JP-1266-20261020.adi`) to your output folder and takes you back to the first screen. If the other station was a 2fer, the QSO is repeated once per park; if you were a 2fer, you get one file per park. Closing the app during an activation does not end it: recording resumes the next time you start the app (you are asked before it closes).
-- **Weather and warnings**: once recording starts, the park's weather is checked every 15 minutes, and the bar and the main window tell you when thunder, strong wind or heavy rain is coming. For parks in Japan the JMA's advisories and warnings are shown for the municipality (thunder and warnings as a bold banner), and the Weather tab shows the next hours. Evacuation orders come from the municipality and are not shown.
+- **Upload outside 03:00–11:00 UTC**: during these hours pota.app's database maintenance often makes uploads end in "Unknown Failure", and POTA has asked by e-mail and social media to avoid them (it is not on docs.pota.app). The results box shows these hours in your local time and highlights them while it is that time now.
+- **Weather and warnings**: once recording starts, the park's weather is checked every 15 minutes. For parks in Japan, the JMA's advisories and warnings are shown for the municipality (thunder and warnings as a bold banner), and the Weather tab's forecast is the JMA's own (under Japan's Meteorological Service Act only the JMA's forecast is shown for a place in Japan). Elsewhere, the bar and the main window tell you when thunder, strong wind or heavy rain is coming, and the Weather tab shows Open-Meteo's next hours. Evacuation orders come from the municipality and are not shown.
 - **Shifts and events**: when Early Shift / Late Shift begins or ends, the bar plays a sunrise or moonrise. During POTA events such as Support Your Parks, a chip says so.
 - **Awards within reach**: a QSO that reaches Rover, Unique Parks, Repeat Offender or Kilo brings a medal and confetti (pota.app confirms it once your log is uploaded). A station calling again from another park gets "last time from …" on its row.
 - **Club stations and the clock**: a club station can register operators and switch them while on the air. A note appears when the computer's clock is a minute or more off from pota.app (P2P needs both logs within 15 minutes).
@@ -54,7 +55,7 @@ On FT8 and similar modes you cannot tell on the spot whether the other station i
 
 The other station's park is decided in this order:
 
-1. **pota.app hunter log** (what they uploaded = verified), matched within ±5 minutes on the same band
+1. **pota.app hunter log** (what they uploaded = verified), matched within ±15 minutes on the same band
 2. **Parks you confirmed or typed while on the air** (when building from the app's log). QSOs you did not confirm are not made P2P
 3. **Spots recorded while on the air** (only when building from an ADIF file; spots from 30 minutes before to 10 minutes after the QSO)
 4. SIG_INFO / POTA_REF from the logger

@@ -28,7 +28,8 @@ W FT8 i podobnych emisjach nie wiadomo na bieżąco, czy druga stacja nadaje z p
 - **Odległość i mapa**: odległość w linii prostej do parku drugiej stacji wyświetlana jest jako np. „ok. 820 km” (dla 2fer liczona od punktu pośrodku parków). Na karcie „Mapa” od Twojej pozycji prowadzone są linie do parków, z którymi zrobiłeś P2P. Jednostkę odległości wybierasz: km lub mile.
 - **Świętowanie co 10 QSO**: w chwili zaliczenia aktywacji i potem co 10 QSO aplikacja daje znać konfetti.
 - **Zakończenie tworzy pliki**: „Zakończ ten park” zapisuje w wybranym folderze plik do wysłania za ten dzień (`JL1FVA@JP-1266-20261020.adi`) i wraca do pierwszego ekranu. Jeśli druga stacja miała 2fer, QSO jest powielane dla każdego jej parku; jeśli Ty masz 2fer, pliki są rozdzielane na parki. Zamknięcie aplikacji w trakcie nie kończy aktywacji: po następnym uruchomieniu zapis jest kontynuowany (przed zamknięciem pojawia się pytanie).
-- **Pogoda i ostrzeżenia**: po rozpoczęciu zapisu pogoda w parku jest sprawdzana co 15 minut; pasek i główne okno ostrzegają przed nadchodzącą burzą, silnym wiatrem lub ulewą. Dla parków w Japonii widać komunikaty i ostrzeżenia JMA dla gminy (burza i ostrzeżenia jako wyraźny pasek), a karta Pogoda pokazuje najbliższe godziny. Nakazy ewakuacji wydają gminy i aplikacja ich nie pokazuje.
+- **Wysyłaj poza 03:00–11:00 UTC**: w tych godzinach konserwacja bazy pota.app często kończy wysyłkę błędem „Unknown Failure”, a POTA prosiło e-mailem i w mediach społecznościowych, by ich unikać (nie ma tego na docs.pota.app). Pole wyników pokazuje te godziny w czasie lokalnym i wyróżnia je, gdy właśnie trwają.
+- **Pogoda i ostrzeżenia**: po rozpoczęciu zapisu pogoda w parku jest sprawdzana co 15 minut. Dla parków w Japonii widać komunikaty i ostrzeżenia JMA dla gminy (burza i ostrzeżenia jako wyraźny pasek), a prognoza w karcie Pogoda pochodzi od JMA (japońska ustawa o służbie meteorologicznej: dla miejsca w Japonii pokazuje się tylko jej prognozę). Gdzie indziej pasek i główne okno ostrzegają przed nadchodzącą burzą, silnym wiatrem lub ulewą, a karta Pogoda pokazuje najbliższe godziny z Open-Meteo. Nakazy ewakuacji wydają gminy i aplikacja ich nie pokazuje.
 - **Zmiany i wydarzenia**: gdy Early Shift / Late Shift się zaczyna lub kończy, pasek pokazuje wschód słońca lub księżyca. W czasie wydarzeń POTA, np. Support Your Parks, informuje o tym etykieta.
 - **Dyplomy w zasięgu**: QSO, które osiąga Rover, Unique Parks, Repeat Offender lub Kilo, przynosi medal i konfetti (pota.app potwierdza je po wysłaniu logu). Stacja wołająca ponownie z innego parku dostaje w wierszu „poprzednio z …”.
 - **Stacje klubowe i zegar**: stacja klubowa może zapisać operatorów i zmieniać ich w trakcie aktywacji. Gdy zegar komputera różni się od pota.app o minutę lub więcej, pojawia się uwaga (P2P wymaga najwyżej 15 minut różnicy między logami).
@@ -54,7 +55,7 @@ W FT8 i podobnych emisjach nie wiadomo na bieżąco, czy druga stacja nadaje z p
 
 Park drugiej stacji ustalany jest w tej kolejności:
 
-1. **Log huntera z pota.app** (to, co wysłała druga stacja = potwierdzone). Dopasowanie: czas ±5 minut, to samo pasmo
+1. **Log huntera z pota.app** (to, co wysłała druga stacja = potwierdzone). Dopasowanie: czas ±15 minut, to samo pasmo
 2. **Park potwierdzony lub wpisany podczas aktywacji** (przy tworzeniu z logu aplikacji). Niepotwierdzone QSO nie są uznawane za P2P
 3. **Spoty zapisane podczas aktywacji** (tylko przy tworzeniu z pliku ADIF; spoty od 30 minut przed do 10 minut po QSO)
 4. SIG_INFO / POTA_REF z programu do logowania

@@ -45,6 +45,7 @@
     if (!$("#view-spots").hidden) { spotsOptions(); renderSpotsPage(); }
     if (!$("#view-record").hidden) renderRecord();
     if (!$("#view-history").hidden) renderHistory();
+    if (!$("#view-build").hidden) $("#buildHours").innerHTML = uploadHoursHtml();
     if (st.source) renderActs({ items: st.acts, path: st.adif }, st.source === "adif" && !st.adif);
   }
 
@@ -117,13 +118,17 @@
   }
   // 設定 → 表示: the text size (the web view's own zoom, set by Python: window.py set_zoom) and light / dark
   // (data-theme; "" = follow the OS). Both windows: the bar picks a change up in poll_live and grows with the text.
-  const LOOK = { font_scale: 1, theme: "" };
+  const LOOK = { font_scale: 1, theme: "", bar_style: "" };
+  // the bar's shapes, like a phone's widget sizes (設定 → ウインドウ → バーの形): CSS px, times the text size
+  const BAR_SIZES = { "": [440, 100], compact: [360, 88], square: [220, 220] };
   function applyLook(s) {
     const z = [1, 1.15, 1.3].includes(+s.font_scale) ? +s.font_scale : 1, th = ["light", "dark"].includes(s.theme) ? s.theme : "";
-    if (z === LOOK.font_scale && th === LOOK.theme) return false;
-    Object.assign(LOOK, { font_scale: z, theme: th });
+    const bs = BAR_SIZES[s.bar_style] ? s.bar_style : "";
+    if (z === LOOK.font_scale && th === LOOK.theme && bs === LOOK.bar_style) return false;
+    Object.assign(LOOK, { font_scale: z, theme: th, bar_style: bs });
     if (th) document.documentElement.dataset.theme = th; else delete document.documentElement.dataset.theme;
-    segSet("#fontScale", "scale", String(z)); segSet("#themeSel", "theme", th);
+    Object.keys(BAR_SIZES).forEach((k) => k && document.body.classList.toggle("bar-" + k, k === bs));   // the bar's shape (CSS)
+    segSet("#fontScale", "scale", String(z)); segSet("#themeSel", "theme", th); segSet("#barStyle", "bar", bs);
     return true;
   }
   // distances: always "about" (a park is one point for the whole park); km or miles (設定 → 表示); one
@@ -146,6 +151,7 @@
     $$(".nav-item").forEach((b) => b.classList.toggle("is-active", b.dataset.view === view));
     ["live", "spots", "build", "history", "record", "config"].forEach((v) => ($("#view-" + v).hidden = v !== view));
     $(".main").scrollTo(0, 0);
+    if (view === "build") $("#buildHours").innerHTML = uploadHoursHtml();   // POTA's upload hours, before any file is made
     if (view === "build" && st.source === "app") loadActs();
     if (view === "config") api.poll_live(1e12, 1e12).then((r) => updateReceiver(r.receiver));
     if (view === "spots") loadSpotsPage();
@@ -302,7 +308,7 @@
     clearTimeout(st.timer); st.timer = setTimeout(tick, 1000 - (((ms % 1000) + 1000) % 1000) + 20);   // the next whole second
     const p = (n) => String(n).padStart(2, "0");
     const tm = `${p(Math.floor(s / 3600))}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}`;
-    $("#elapsed").textContent = tm; $("#barElapsed").textContent = tm;
+    $("#elapsed").textContent = tm; $("#barElapsed").textContent = tm; $("#barTileClock").textContent = tm;
     if (!BAR && s % 15 === 0) renderStats();      // "N 分前" and the last hour move on with the clock
     if (utcDay() !== st.day) newDay();            // 0000Z: a new activation starts, the session goes on
     else if (s % 15 === 0) renderCount();         // the minutes left before 0000Z
@@ -416,7 +422,7 @@
       return;
     }
     // one line, never wrapped: what it is like now, the gravest warning (and how many more), and the 天気 tab for the rest
-    const parts = [`${WX_ICON[w.group] || ""} ${t("wx.k." + w.kind)}`];
+    const parts = w.kind ? [`${WX_ICON[w.group] || ""} ${t("wx.k." + w.kind)}`] : [];   // no kind: Open-Meteo has not answered yet
     if (w.temp != null) parts.push(fmtTemp(w.temp));
     if (w.wind != null) parts.push(t("wx.windShort", { v: fmtWind(w.wind) }));
     const top = official[0];
@@ -505,8 +511,9 @@
   // (night when the next sun event is the sunrise), the sun or moon glowing through, clouds drifting, rain, snow, mist,
   // lightning or gusts (Web Animations API), and the temperature large. It waits for the sky (Early / Late Shift).
   function playWx(w, alertLines) {
+    if (!w.kind) return;                         // Open-Meteo has not answered yet: no scene (the JMA's notices still come)
     // one at a time in the bar: a warning notice, then the shift's sky, then the weather
-    if (!$("#sky").hidden || !$("#storm").hidden) { setTimeout(() => playWx(w, alertLines), 700); return; }
+    if (!$("#sky").hidden || !$("#storm").hidden || playSky.waiting) { setTimeout(() => playWx(w, alertLines), 700); return; }
     const box = $("#wxa"), fx = $("#wxaFx"), W = innerWidth, H = innerHeight, D = 5200, g = w.group;
     const id = (playWx.id = (playWx.id || 0) + 1);
     box.getAnimations({ subtree: true }).forEach((x) => x.cancel());
@@ -635,7 +642,8 @@
     return shift === "early" ? (half ? "dawn" : "night") : (half ? "night" : "dusk");
   }
   function playSky(shift, rise) {
-    if (!$("#storm").hidden) { setTimeout(() => playSky(shift, rise), 700); return; }   // a warning first: the sky after it
+    playSky.waiting = !$("#storm").hidden;        // the weather waits for a sky still waiting (they used to start together)
+    if (playSky.waiting) { setTimeout(() => playSky(shift, rise), 700); return; }   // a warning first: the sky after it
     playSky.last = [shift, rise];
     const sc = SKY[skyScene(shift, rise)], box = $("#sky"), orb = $("#skyOrb"), D = 4200;
     const w = st.shifts[shift];
@@ -875,7 +883,7 @@
   // Esc, or when the next QSO arrives; a newer celebration is not closed by an older one's end.
   function celebrate(sel, poppers) {
     const id = (celebrate.id = (celebrate.id || 0) + 1);
-    $(sel).hidden = false;
+    hideCelebrations(); $(sel).hidden = false;
     Promise.all([poppers, new Promise((r) => setTimeout(r, 3000))]).then(() => { if (celebrate.id === id) $(sel).hidden = true; });
   }
 
@@ -887,7 +895,7 @@
     if (!parks.length) return;
     parks.forEach((p) => st.huntedShown.add(p));
     $("#huntedParks").innerHTML = plates(parks);
-    $("#cheer").hidden = true; celebrate("#hunted", burst());
+    celebrate("#hunted", burst());
   }
   function hideCelebrations() { $("#hunted").hidden = true; $("#cheer").hidden = true; $("#award").hidden = true; }
   // An achievement reached while recording (not confirmed until the log is uploaded): the medal drops in spinning,
@@ -896,7 +904,6 @@
   function showAward(list) {
     if (!list || !list.length) return;
     $("#awardName").textContent = list.map(awardName).join("\n");
-    $("#cheer").hidden = true; $("#hunted").hidden = true;
     celebrate("#award", burst(48));
     $("#awardMedal").animate([{ transform: "translateY(-140px) rotateY(0deg)", opacity: 0 }, { transform: "translateY(10px) rotateY(540deg)", opacity: 1, offset: .7 },
       { transform: "translateY(0) rotateY(720deg)", opacity: 1 }], { duration: 1500, easing: "cubic-bezier(.2, .7, .3, 1)" });
@@ -922,16 +929,26 @@
     if (!box.hidden && box.dataset.uid === q.uid) return;
     box.dataset.uid = q.uid; box.hidden = false;
     $("#askCall").textContent = q.call; $("#askParks").innerHTML = plates(q.candidate, q.new);
-    fitBar();                                      // a 3fer question is wider than the row under it
+    fitBar();                                      // a 3fer question gets smaller type, not a wider bar
   }
-  // the bar window is as wide as its content needs: no wraps, nothing to spare (window.py BarMode.fit)
+  // The bar keeps its shape's size (BAR_SIZES x the text size); a line that would not fit - a 3fer, a long P2P row,
+  // the question - gets smaller type step by step, never below 85 % (still readable), instead of widening the bar
+
+  const over = (box) => box.scrollWidth > box.clientWidth + 1 || box.scrollHeight > box.clientHeight + 1;
+  function shrinkToFit(el, box = el) {          // box: where it must fit (the row's line wraps inside the QSO box)
+    if (!el) return;
+    el.style.zoom = "";
+    for (let z = 1; over(box) && z > 0.85;) { z = Math.round((z - 0.05) * 100) / 100; el.style.zoom = z; }
+  }
   function fitBar() {
-    const bar = $("#bar"); bar.classList.add("is-measure");
-    let w = Math.ceil(bar.getBoundingClientRect().width);
-    bar.classList.remove("is-measure");
-    if (!$("#ask").hidden) w = Math.max(w, Math.ceil($(".ask-q").getBoundingClientRect().width) + 32);   // its 16 px sides
-    w = Math.max(360, Math.round(w * LOOK.font_scale));   // window px (CSS px x zoom); 360: the P2P question's buttons
-    const h = Math.round(100 * LOOK.font_scale);
+    shrinkToFit($(".bar-top")); shrinkToFit($(".ask-q"));
+    const row = $("#barQsos .qso-p2p");
+    if (row) {                                     // still too long at 85 %: the side notes go (the main window's list keeps them)
+      row.classList.remove("is-tight"); shrinkToFit(row, $("#barQsos"));
+      if (over($("#barQsos"))) { row.classList.add("is-tight"); shrinkToFit(row, $("#barQsos")); }
+    }
+    const [cw, ch] = BAR_SIZES[LOOK.bar_style] || BAR_SIZES[""];
+    const w = Math.round(cw * LOOK.font_scale), h = Math.round(ch * LOOK.font_scale);   // window px (CSS px x zoom)
     const z = LOOK.font_scale;                     // innerWidth / innerHeight are CSS px: compare in window px
     if ((Math.abs(w - innerWidth * z) > 2 || Math.abs(h - innerHeight * z) > 2) && w + "x" + h !== st.barW) { st.barW = w + "x" + h; api.fit_bar(w, h); }
   }
@@ -1268,6 +1285,7 @@
   $("#openPota").addEventListener("click", () => api.open_url("https://pota.app/"));
 
   // ================================================================ settings
+  // Turbo HAMLOG runs on Windows only: Python says whether this is Windows (get_state "hamlog")
   const KINDS = [["n1mm", "N1MM"], ["wsjtx", "WSJT-X"], ["adif", "ADIF"], ["hamlog", "Turbo HAMLOG"]];
   const recvState = (l) => { const s = st.receiver[l.name]; return s && typeof s === "object" ? s : { code: l.enabled ? "" : "off", text: l.enabled ? "" : t("set.off") }; };
   const recvClass = (s) => (s.code === "error" || s.code === "badforward") ? "is-bad" : (s.code === "listening" || s.code === "receiving") ? "is-ok" : "";
@@ -1278,7 +1296,7 @@
       return `<div class="lis${hl ? " is-hamlog" : ""}" data-i="${i}">
         <label class="switch" title="${esc(t("set.toggle"))}"><input type="checkbox" data-k="enabled" ${l.enabled ? "checked" : ""}><span class="switch-ui"></span></label>
         <label>${esc(t("set.name"))}<input type="text" data-k="name" value="${esc(l.name)}"></label>
-        <label>${esc(t("set.kind"))}<select data-k="kind">${KINDS.map(([v, k]) => `<option value="${v}"${l.kind === v ? " selected" : ""}>${k}</option>`).join("")}</select></label>
+        <label>${esc(t("set.kind"))}<select data-k="kind">${KINDS.filter(([v]) => v !== "hamlog" || st.hamlog || hl).map(([v, k]) => `<option value="${v}"${l.kind === v ? " selected" : ""}>${k}</option>`).join("")}</select></label>
         ${hl ? `<p class="lis-note">${esc(t("set.hamlog.note"))}</p>` : `
         <label>${esc(t("set.port"))}<input type="text" inputmode="numeric" data-k="port" value="${esc(l.port)}"></label>
         <label>${esc(t("set.mc"))}<input type="text" data-k="multicast" placeholder="${esc(t("set.mc.ph"))}" value="${esc(l.multicast)}"></label>
@@ -1596,6 +1614,7 @@
   $("#onTop").addEventListener("change", (e) => api.set_on_top(e.target.checked));
   $("#barOnTop").addEventListener("change", (e) => api.set_bar_on_top(e.target.checked));
   $$("#fontScale button").forEach((b) => b.addEventListener("click", () => { applyLook({ ...LOOK, font_scale: +b.dataset.scale }); api.save({ font_scale: LOOK.font_scale }); }));
+  $$("#barStyle button").forEach((b) => b.addEventListener("click", () => { applyLook({ ...LOOK, bar_style: b.dataset.bar }); api.save({ bar_style: LOOK.bar_style }); }));
   $$("#distUnit button").forEach((b) => b.addEventListener("click", () => {
     st.distUnit = b.dataset.unit; segSet("#distUnit", "unit", distUnit()); api.save({ dist_unit: st.distUnit }); renderQsos(); renderSpots();
   }));
@@ -1702,10 +1721,10 @@
   async function boot() {
     api = window.pywebview.api;
     const s = await api.get_state();
-    applyLook(s); segSet("#fontScale", "scale", String(LOOK.font_scale)); segSet("#themeSel", "theme", LOOK.theme);
+    applyLook(s); segSet("#fontScale", "scale", String(LOOK.font_scale)); segSet("#themeSel", "theme", LOOK.theme); segSet("#barStyle", "bar", LOOK.bar_style);
     st.distUnit = s.dist_unit || "";
     Object.assign(st, { call: s.call || "", calls: s.calls || [], prefix: s.prefix, out: s.out, adif: s.adif, source: s.source || "app", listeners: s.listeners,
-                        langs: s.langs || [["ja", "日本語"]], events: s.events || [], termsAccepted: s.terms_accepted || "", guideSeen: s.guide_seen, countries: s.countries || [] });
+                        langs: s.langs || [["ja", "日本語"]], events: s.events || [], termsAccepted: s.terms_accepted || "", guideSeen: s.guide_seen, hamlog: s.hamlog, countries: s.countries || [] });
     $("#lang").innerHTML = st.langs.map(([c, name]) => `<option value="${esc(c)}">${esc(name)}</option>`).join("");
     const lang = s.lang || pickLang(navigator.language);
     if (!s.lang) api.save({ lang });
