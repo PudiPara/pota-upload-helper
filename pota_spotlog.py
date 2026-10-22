@@ -7,13 +7,14 @@
 import argparse
 import time
 
+from potacommon import my_call
 from spots import SpotLogger
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--parks", required=True, help="your park(s), comma separated")
-    ap.add_argument("--call", default="JL1FVA")
+    ap.add_argument("--call", default=my_call())
     ap.add_argument("--interval", type=int, default=60)
     ap.add_argument("--prefix", default="", help="only print activators whose park starts with this (e.g. JP)")
     args = ap.parse_args()

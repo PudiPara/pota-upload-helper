@@ -15,6 +15,7 @@ from contextlib import contextmanager
 from potacommon import adif_mode, base_call, data_path, minutes, mode_of, my_parks_of, rec_minutes, split_parks, their_parks_of
 
 TWIN_WINDOW = 3          # minutes
+_ready = set()           # databases whose table and indexes are made (once per process, not per connection)
 _lock = threading.Lock()
 
 
@@ -23,14 +24,18 @@ def _conn():
     """A connection under the module lock, committed and closed on the way out."""
     with _lock:
         os.makedirs(data_path(), exist_ok=True)
-        con = sqlite3.connect(data_path("qsolog.db"), check_same_thread=False)
+        path = data_path("qsolog.db")
+        con = sqlite3.connect(path, check_same_thread=False)
         try:
-            con.execute("""CREATE TABLE IF NOT EXISTS qso (
-                uid TEXT PRIMARY KEY, call TEXT, qso_date TEXT, time_on TEXT, band TEXT, mode TEXT,
-                data TEXT, source TEXT, received REAL, deleted INTEGER DEFAULT 0, ext_id TEXT)""")
-            if "ext_id" not in [r[1] for r in con.execute("PRAGMA table_info(qso)")]:
-                con.execute("ALTER TABLE qso ADD COLUMN ext_id TEXT")
-            con.execute("CREATE INDEX IF NOT EXISTS qso_date ON qso(qso_date)")
+            if path not in _ready or not os.path.exists(path):
+                con.execute("""CREATE TABLE IF NOT EXISTS qso (
+                    uid TEXT PRIMARY KEY, call TEXT, qso_date TEXT, time_on TEXT, band TEXT, mode TEXT,
+                    data TEXT, source TEXT, received REAL, deleted INTEGER DEFAULT 0, ext_id TEXT)""")
+                if "ext_id" not in [r[1] for r in con.execute("PRAGMA table_info(qso)")]:
+                    con.execute("ALTER TABLE qso ADD COLUMN ext_id TEXT")
+                con.execute("CREATE INDEX IF NOT EXISTS qso_date ON qso(qso_date)")
+                con.execute("CREATE INDEX IF NOT EXISTS qso_ext ON qso(ext_id)")   # a logger's edit / delete by its id
+                _ready.add(path)
             yield con
             con.commit()
         finally:
@@ -191,9 +196,9 @@ def twins(uid):
 
 
 # ---------------------------------------------------------------- edits and deletes
-def delete(ext_id=None, call=None, qso_date=None, time_on=None):
-    """Delete a QSO the logger deleted (by its id there, else call/date/time) and its copies.
-    -> the uids deleted."""
+def delete(ext_id=None, call=None, qso_date=None, time_on=None, band=None, mode=None):
+    """Delete a QSO the logger deleted (by its id there, else call/date/time and the band / mode when known)
+    and its copies. -> the uids deleted."""
     gone = []
     with _conn() as con:
         targets = []
@@ -201,7 +206,7 @@ def delete(ext_id=None, call=None, qso_date=None, time_on=None):
             targets = con.execute("SELECT call, qso_date, time_on, band, mode FROM qso WHERE ext_id=? AND deleted=0",
                                   (ext_id,)).fetchall()
         if not targets and call:
-            targets = [(call.upper(), qso_date, time_on or "", None, None)]
+            targets = [(call.upper(), qso_date, time_on or "", (band or "").lower() or None, mode or None)]
         for c, d, t, band, mode in targets:
             for uid in _twins(con, d, c, t, band, mode):
                 if con.execute("UPDATE qso SET deleted=1 WHERE uid=? AND deleted=0", (uid,)).rowcount:
@@ -278,9 +283,16 @@ def clear():
 
 
 def between(t0, t1=None):
-    """Records whose time is within [t0, t1] (minutes, see potacommon.minutes; t1=None: up to now)."""
+    """Records whose time is within [t0, t1] (minutes, see potacommon.minutes; t1=None: up to now).
+    Reads only the UTC days the window covers (records() widens them for copies over 0000Z)."""
+    day = lambda m: time.strftime("%Y%m%d", time.gmtime(m * 60))
+    d0, d1 = day(t0), day(t1 if t1 is not None else time.time() // 60)
+    dates, d = [], dt.datetime.strptime(d0, "%Y%m%d")
+    while d.strftime("%Y%m%d") <= d1:
+        dates.append(d.strftime("%Y%m%d"))
+        d += dt.timedelta(days=1)
     out = []
-    for r in records():
+    for r in records(dates):
         t = rec_minutes(r)
         if t is not None and t0 <= t and (t1 is None or t <= t1):
             out.append(r)
@@ -300,15 +312,15 @@ def dedupe(recs):
         # park is a second QSO, not the logger's copy of the first one
         k = (base_call(r.get("CALL")), (r.get("BAND") or "").lower(), mode_of(r), tuple(my_parks_of(r)))
         if k in last and t - last[k][0] <= TWIN_WINDOW:
-            prev = last[k][1]
+            t0, i = last[k]
+            prev = kept[i]
             if (bool(r.get("P2P_DECISION")), len(r)) > (bool(prev.get("P2P_DECISION")), len(prev)):
                 if r.get("QSO_DATE") != prev.get("QSO_DATE"):      # over 0000Z: the day it started (ADIF, pota.app)
                     r = dict(r, QSO_DATE=prev["QSO_DATE"], TIME_ON=prev.get("TIME_ON"))
-                kept[kept.index(prev)] = r
-                last[k] = (last[k][0], r)
+                kept[i] = r
             continue
+        last[k] = (t, len(kept))
         kept.append(r)
-        last[k] = (t, r)
     return kept
 
 

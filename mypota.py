@@ -21,10 +21,11 @@ ACTIVATED_MIN = 10        # QSOs that make an activation count (pota.app's rule)
 
 # pota.app achievements (docs.pota.app → Achievement Certificates)
 # Unique Reference: parks hunted / activated; an activator's park counts once it has 10 QSOs in all, over any attempts
-UNIQUE_STEPS = (10, 20, 30, 40, 50, 75, *range(100, 1001, 100), *range(1500, 8001, 500))
-# Repeat Offender: every 20 activations (activator) / QSOs (hunter) at one park, five names a tier, up to Tier 5
+UNIQUE_STEPS = (10, 20, 30, 40, 50, 75, *range(100, 1001, 100), *range(1500, 20001, 500))
+# Repeat Offender: every 20 activations (activator) / QSOs (hunter) at one park, five names a tier, tiers without end
 RO_NAMES = ("Oasis", "Fox Den", "Bear Cave", "Fishing Hole", "Eagle's Nest")
-RO_STEP, RO_TOP = 20, 500
+RO_STEP = 20
+TIERS = ("Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten")
 KILO = 1000               # Kilo: 1000 QSOs from one park (activator only)
 # Rover: parks activated (10 QSOs each) in one UTC day
 ROVER = ((30, "Lion"), (25, "Leopard"), (20, "Ostrich"), (15, "Cheetah"), (10, "Rhino"), (5, "Warthog"))
@@ -36,9 +37,15 @@ def next_unique(n):
 
 
 def _ro_name(k):
-    """The k-th Repeat Offender level (1 = Oasis at 20): "Fox Den", "Oasis Tier 2" ..."""
+    """The k-th Repeat Offender level (1 = Oasis at 20): "Fox Den", "Tier Two Oasis" (as docs.pota.app writes it) ..."""
     tier = (k - 1) // len(RO_NAMES) + 1
-    return RO_NAMES[(k - 1) % len(RO_NAMES)] + (" Tier %d" % tier if tier > 1 else "")
+    word = TIERS[tier - 2] if 2 <= tier <= len(TIERS) + 1 else str(tier)
+    return ("Tier %s " % word if tier > 1 else "") + RO_NAMES[(k - 1) % len(RO_NAMES)]
+
+
+def rover(parks):
+    """The Rover award for this many parks activated in one UTC day, or None."""
+    return next((a for k, a in ROVER if parks >= k), None)
 
 
 def goals(n, kilo=False):
@@ -54,10 +61,10 @@ def goals(n, kilo=False):
         elif n >= KILO // 2:
             out.update(next="Kilo", left=KILO - n)
         return out
-    k = min(n // RO_STEP, RO_TOP // RO_STEP)
+    k = n // RO_STEP
     if k:
         out["has"].append(_ro_name(k))
-    if n < RO_TOP and (k or n >= RO_STEP // 2):
+    if k or n >= RO_STEP // 2:
         out.update(next=_ro_name(k + 1), left=(k + 1) * RO_STEP - n)
     return out
 
@@ -231,7 +238,7 @@ def awards(app_records=(), app_days=(), day=None):
     out = {}
     if day:
         n = len({p for d, per in app_days if d == day for p, q in per.items() if q >= ACTIVATED_MIN})
-        name = next((a for k, a in ROVER if n >= k), None)
+        name = rover(n)
         if name:
             out["rover:%s:%s" % (day, name)] = {"kind": "rover", "name": name, "n": n}
     data = _load()

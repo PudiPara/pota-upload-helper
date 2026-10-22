@@ -28,6 +28,10 @@ Em FT8 e modos parecidos, na hora você não sabe se a outra estação está tra
 - **Distância e mapa**: mostra a distância em linha reta até o parque da outra estação, por exemplo “aprox. 820 km” (num 2fer, a partir do ponto médio entre os parques). A aba “Mapa” traça linhas da sua posição até os parques trabalhados em P2P. A unidade de distância pode ser km ou milhas.
 - **Comemoração a cada 10 QSOs**: confete no momento em que a ativação é concluída e depois a cada 10 QSOs.
 - **Encerrar gera os arquivos**: “Encerrar a ativação neste parque” grava na pasta escolhida o arquivo de upload do dia (`JL1FVA@JP-1266-20261020.adi`) e volta à primeira tela. Se a outra estação é um 2fer, o QSO é repetido para cada parque dela; se o 2fer é você, é gerado um arquivo por parque. Fechar o app durante uma ativação não a encerra: na próxima abertura o registro continua de onde parou (antes de fechar, o app pede confirmação).
+- **Tempo e alertas**: ao começar o registro, o tempo do parque é verificado a cada 15 minutos; a barra e a janela principal avisam quando trovoadas, vento forte ou chuva intensa se aproximam. Para parques no Japão aparecem os avisos e alertas da JMA por município (trovoada e alertas numa faixa destacada), e a aba Tempo mostra as próximas horas. Ordens de evacuação vêm dos municípios e não são mostradas.
+- **Shifts e eventos**: quando a Early Shift / Late Shift começa ou termina, a barra mostra um nascer do sol ou da lua. Durante eventos POTA como Support Your Parks, uma etiqueta avisa.
+- **Diplomas ao alcance**: um QSO que atinge Rover, Unique Parks, Repeat Offender ou Kilo traz medalha e confete (o pota.app confirma depois que o log é enviado). Uma estação que chama de novo de outro parque ganha «da última vez de …» na linha.
+- **Estações de clube e relógio**: uma estação de clube pode cadastrar operadores e trocá-los durante a ativação. Um aviso aparece se o relógio do computador diferir um minuto ou mais do pota.app (o P2P exige até 15 minutos entre os dois logs).
 
 | Barra | Mapa |
 |---|---|
@@ -41,6 +45,8 @@ Em FT8 e modos parecidos, na hora você não sabe se a outra estação está tra
 - **Exibição**: dá para mudar o tamanho do texto (Padrão / Maior / Muito grande) e as cores (Igual ao sistema / Claro / Escuro). As escolhas também valem para a barra.
 - **Encaminhamento**: os dados recebidos podem ser repassados sem alteração para outro app (RUMlog → este app → OpsLog).
 - **Dados dos parques atualizados todo mês**: a lista de parques e suas posições vêm no app e são atualizadas todo mês para a versão mais recente do pota.app (chegam como uma pequena atualização própria, separada da atualização do app).
+- **Guia de início**: na primeira abertura, sete passos levam do indicativo aos arquivos. Abra de novo quando quiser em «Guia de início», no canto inferior esquerdo.
+- **Progresso do 6 Pack**: Suas estatísticas POTA contam os parques ativados e trabalhados em P2P nos 6 m (pelo registro do app).
 
 | Suas estatísticas POTA | Arquivos de upload |
 |---|---|

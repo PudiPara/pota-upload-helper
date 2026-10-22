@@ -18,7 +18,7 @@ from i18n import t as tr
 from potacommon import (CALL_RE, DEFAULT_OUT, SUBMODES, band_name, base_call, count_key, data_path, fetch_json, fix_mode_band, iso_minutes, mode_known,
                         mode_of, my_parks_of, pota_key, read_adif, read_json, rec_minutes, split_parks, their_parks_of,
                         write_adif, write_json)
-from mypota import ROVER
+from mypota import ACTIVATED_MIN, rover as rover_award
 from qsolog import decided_parks
 from spots import load_sessions, load_spots, park_location_codes, their_parks_at
 
@@ -144,6 +144,11 @@ def find_activation_qsos(recs, dates=None, my_parks=None, sessions=None):
         if mp:
             activ.append((r, t, mp))
     return activ
+
+
+def activation_days(recs):
+    """[(date, {park: the QSOs that count there})] of these records: what mypota's record and awards take."""
+    return [(d, per) for d, _, _, per, _ in list_activations(recs=recs)]
 
 
 def list_activations(adif_path=None, recs=None):
@@ -293,14 +298,14 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
                         "unique": len({pota_key(o) for o in files[(mp, d, loc)]}),
                         "p2p": [{"time": tm, "call": c, "parks": ps.split(","), "source": src}
                                 for tm, c, ps, src in rep["p2p"]]})
-        lines.append(tr("b.line.file", date=d, park=mp, n=n, stations=len(rep["calls"]), short="" if counted >= 10 else tr("b.short"), file=fn))
+        lines.append(tr("b.line.file", date=d, park=mp, n=n, stations=len(rep["calls"]), short="" if counted >= ACTIVATED_MIN else tr("b.short"), file=fn))
         for tm, c, ps, src in rep["p2p"]:
             lines.append("      P2P %s %-10s %-20s [%s]" % (tm, c, ps, src))
     done = defaultdict(set)        # Rover awards: parks activated (10 QSOs) in one UTC day
     for f in summary:
-        if f["counted"] >= 10:
+        if f["counted"] >= ACTIVATED_MIN:
             done[f["date"]].add(f["park"])
-    rover = [{"date": d, "parks": len(p), "award": next((a for n, a in ROVER if len(p) >= n), "")}
+    rover = [{"date": d, "parks": len(p), "award": rover_award(len(p)) or ""}
              for d, p in sorted(done.items()) if len(p) > 1]
     if notes:
         lines.append("\n" + tr("b.notes"))

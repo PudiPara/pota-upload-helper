@@ -110,7 +110,7 @@ def candidate_info(rec):
     t_min = rec_minutes(rec)
     if t_min is None:
         return out
-    recorded = load_spots().get(base_call(rec.get("CALL")), [])
+    recorded = load_spots([rec["QSO_DATE"]]).get(base_call(rec.get("CALL")), [])
     parks, sure = their_parks_at(recorded, t_min)
     near = [(m, raw) for m, _, raw in recorded if t_min - SPOT_BEFORE <= m <= t_min + SPOT_AFTER]
     events = [(m, bool(QRT.search(raw.get("comments") or "") and _by_activator(raw))) for m, raw in near]
@@ -257,10 +257,16 @@ def _drain_history():
 
 
 # ---------------------------------------------------------------- the files the logger writes
-def load_spots():
-    """{base call: [(minute, [parks], raw)]} from every spots-*.jsonl in the data dir."""
+def load_spots(dates=None):
+    """{base call: [(minute, [parks], raw)]} from the spots-*.jsonl in the data dir: every file, or with dates
+    (QSO_DATEs) only those days and the days around them (a QSO looks SPOT_BEFORE / SPOT_AFTER around itself)."""
     out = defaultdict(list)
+    days = None
+    if dates:
+        days = {(dt.datetime.strptime(d, "%Y%m%d") + dt.timedelta(days=k)).strftime("%Y%m%d") for d in dates for k in (-1, 0, 1)}
     for f in sorted(glob.glob(data_path("spots-*.jsonl"))):
+        if days is not None and os.path.basename(f)[6:14] not in days:
+            continue
         with open(f, encoding="utf-8") as fh:
             for line in fh:
                 try:
@@ -298,10 +304,17 @@ def load_sessions():
 # that list, and for a park's comment when two parks are entered (the "does not overlap" note).
 PARKS_FILE = ("assets", "parks.tsv.gz")
 _shipped = None            # reference -> (name, "US-MI,US-ND", grid, (lat, lon) or None, active)
+_shipped_lock = threading.Lock()   # read once: main() starts it beside the window, get_state may ask meanwhile
 _fetched = {}              # reference -> pota.app's park record, for the run of the app
 
 
 def shipped_parks():
+    global _shipped
+    with _shipped_lock:
+        return _shipped if _shipped is not None else _read_shipped()
+
+
+def _read_shipped():
     global _shipped
     if _shipped is None:
         try:
@@ -320,9 +333,15 @@ def shipped_parks():
     return _shipped
 
 
+_countries = None
+
+
 def countries():
-    """The park prefixes (ISO 3166 alpha-2) that have active parks, for 設定 → 所在国."""
-    return sorted({ref.split("-")[0] for ref, p in shipped_parks().items() if p[4]})
+    """The park prefixes (ISO 3166 alpha-2) that have active parks, for 設定 → 所在国 (the list never changes in a run)."""
+    global _countries
+    if _countries is None:
+        _countries = sorted({ref.split("-")[0] for ref, p in shipped_parks().items() if p[4]})
+    return _countries
 
 
 def example_parks(country):
@@ -372,11 +391,16 @@ def middle(points):
     return (math.degrees(math.atan2(z, math.hypot(x, y))), math.degrees(math.atan2(y, x)))
 
 
+def parks_middle(refs):
+    """The middle of these parks' positions (park_at), or None when none has one."""
+    return middle([p for p in map(park_at, refs) if p])
+
+
 def shift_hours(parks):
     """POTA's Early / Late Shift awards for these parks: [UTC hour they start, hours long]. They start at 02 and 18
     local by the park pin's longitude, rounded to the hour. {} with no position.
     ponytail: the middle of the parks; for a park across states the docs take the location's pin (not shipped)."""
-    m = middle([p for p in map(park_at, parks) if p])
+    m = parks_middle(parks)
     if not m:
         return {}
     return {"early": [math.floor(2.5 - m[1] / 15) % 24, 6], "late": [math.floor(18.5 - m[1] / 15) % 24, 8]}
@@ -393,7 +417,7 @@ def distance_km(mine, theirs):
     """From the middle of my parks to the middle of theirs (each side a 2fer/3fer = the point between its
     parks), rounded to 0.1 km; None when a side has no known position. Parks are one point for a whole
     park, so the UI always says "about"."""
-    a, b = middle([p for p in map(park_at, mine) if p]), middle([p for p in map(park_at, theirs) if p])
+    a, b = parks_middle(mine), parks_middle(theirs)
     return round(great_circle_km(a, b), 1) if a and b else None
 
 
@@ -515,7 +539,7 @@ def summarize(spots, now=None, history=None, new_of=None):
                     "time": t0.strftime("%H:%M"), "ago": max(0, int((now - t0).total_seconds() // 60)),
                     "comments": newest.get("comments") or "", "spots": len(items), "pending": pending,
                     "qrt": bool(QRT.search(newest.get("comments") or "")),   # the latest spot says they are done
-                    "at": middle([p for p in map(park_at, parks) if p]),       # the map: between their parks
+                    "at": parks_middle(parks),       # the map: between their parks
                     "new": new_of(parks) if new_of else []})
     out.sort(key=lambda e: (e["ago"], e["base"]))
     return out
