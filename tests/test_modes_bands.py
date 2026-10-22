@@ -165,6 +165,19 @@ class Leftovers(unittest.TestCase):       # #35
                               recs=[rec(TIME_ON="", MY_SIG_INFO="JP-1206")], confirmed_only=True, log=lambda *a: None)["notes"]
         self.assertTrue(any("JA1ABC" in n and "HHMM" in n for n in notes))
 
+    def test_review_leftovers(self):
+        keys = lambda r: [k for k, _ in builder.problems(r, "JL1FVA")]  # noqa: E731
+        self.assertIn("b.note.badDate", keys(rec(QSO_DATE="2026101")))
+        self.assertIsNone(potacommon.rec_minutes(rec(QSO_DATE="2026101")))
+        self.assertIn("b.note.badMode", keys(rec(MODE="SSB", SUBMODE="XYZ")))
+        r = builder.records(recs=[rec(OPERATOR="jl1fva", STATION_CALLSIGN="jl1fva")])[0]
+        self.assertEqual((r["OPERATOR"], r["STATION_CALLSIGN"]), ("JL1FVA", "JL1FVA"))
+        self.assertNotIn("OPERATOR", builder.records(recs=[rec(OPERATOR="山田")])[0])
+        self.assertNotIn("FREQ", fix_mode_band(rec(FREQ="14.074.000")))
+        path = os.path.join(tempfile.mkdtemp(), "bom.adx")
+        open(path, "w", encoding="utf-8-sig").write('<?xml version="1.0"?><ADX><RECORDS><RECORD><CALL>JA1ABC</CALL></RECORD></RECORDS></ADX>')
+        self.assertEqual(potacommon.read_adif(path)[0]["CALL"], "JA1ABC")
+
     def test_decimal_comma(self):
         self.assertEqual(band_from_mhz("14,074"), "20m")
         self.assertEqual(fix_mode_band(rec(FREQ="7,074", BAND=""))["FREQ"], "7.074")

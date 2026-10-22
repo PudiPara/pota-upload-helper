@@ -312,6 +312,8 @@ def fix_mode_band(rec):
     SUBMODE), BAND from FREQ (MHz) when it has none. -> rec, changed in place."""
     if rec.get("FREQ"):
         rec["FREQ"] = freq_text(rec["FREQ"])
+        if not re.fullmatch(r"\d+(\.\d*)?|\.\d+", rec["FREQ"]):
+            rec.pop("FREQ")                      # not a number ("14.074.000"): FREQ is optional for POTA, BAND is not
     sub = (rec.get("SUBMODE") or "").upper().strip()
     if sub in SUBMODES:
         rec.update(MODE=SUBMODES[sub], SUBMODE=sub)
@@ -467,7 +469,7 @@ def parse_adx(root):
 
 def read_adif(path):
     """The records of an ADI file, or of an ADX one (ADIF's XML form)."""
-    text = open(path, encoding="utf-8", errors="ignore").read()
+    text = open(path, encoding="utf-8-sig", errors="ignore").read()      # -sig: .NET loggers write a BOM
     head = text.lstrip()[:200].upper()
     if head.startswith("<?XML") or head.startswith("<ADX"):
         import xml.etree.ElementTree as ET
@@ -523,7 +525,8 @@ def minutes(date_yyyymmdd, hhmm):
 def rec_minutes(rec):
     """A record's QSO_DATE + TIME_ON in minutes, or None (no TIME_ON is no time, not 00:00)."""
     try:
-        return minutes(rec.get("QSO_DATE") or "", rec["TIME_ON"]) if rec.get("TIME_ON") else None
+        date = rec.get("QSO_DATE") or ""
+        return minutes(date, rec["TIME_ON"]) if rec.get("TIME_ON") and re.fullmatch(r"\d{8}", date) else None
     except ValueError:
         return None
 

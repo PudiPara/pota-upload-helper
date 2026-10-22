@@ -15,7 +15,7 @@ import re
 from collections import defaultdict
 
 from i18n import t as tr
-from potacommon import (DEFAULT_OUT, band_name, base_call, count_key, data_path, fetch_json, fix_mode_band, iso_minutes, mode_known,
+from potacommon import (CALL_RE, DEFAULT_OUT, SUBMODES, band_name, base_call, count_key, data_path, fetch_json, fix_mode_band, iso_minutes, mode_known,
                         mode_of, my_parks_of, pota_key, read_adif, read_json, rec_minutes, split_parks, their_parks_of,
                         write_adif, write_json)
 from qsolog import decided_parks
@@ -50,9 +50,11 @@ def records(adif_path=None, recs=None):
     """The records to work on (the app log's, or an ADIF file's), MODE/SUBMODE and BAND as ADIF writes them."""
     out = [fix_mode_band(dict(r)) for r in (recs if recs is not None else read_adif(adif_path))]
     for r in out:
-        for k in ("CALL", "MODE", "SUBMODE"):                   # CALL: A-Z 0-9 /; modes as the ADIF tables spell them
+        for k in ("CALL", "MODE", "SUBMODE", "OPERATOR", "STATION_CALLSIGN"):   # calls: A-Z 0-9 /; modes as ADIF spells them
             if r.get(k) or k == "CALL":
                 r[k] = (r.get(k) or "").upper().strip()
+        if r.get("OPERATOR") and not CALL_RE.fullmatch(r["OPERATOR"]):
+            r.pop("OPERATOR")                    # not a callsign: the file then writes the chosen call
     return out
 
 
@@ -64,6 +66,13 @@ def problems(rec, call):
     mode, call_ = rec.get("MODE") or "", (rec.get("CALL") or "").upper()
     if not mode_known(rec):
         out.append(("b.note.badMode", {"mode": mode or "-"}))
+    elif rec.get("SUBMODE") and rec["SUBMODE"].upper() not in SUBMODES:   # pota.app keeps the SUBMODE
+        out.append(("b.note.badMode", {"mode": rec["SUBMODE"]}))
+    try:
+        if dt.datetime.strptime(rec.get("QSO_DATE") or "", "%Y%m%d").year < 1930 or len(rec["QSO_DATE"]) != 8:
+            raise ValueError
+    except (ValueError, KeyError):
+        out.append(("b.note.badDate", {"value": rec.get("QSO_DATE") or "-"}))
     if not band_name(rec.get("BAND")):
         out.append(("b.note.noBand", {}))
     if call_ and call_ in {call.upper(), (rec.get("OPERATOR") or "").upper()}:
@@ -168,9 +177,9 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
     spots = load_spots()
     activ = find_activation_qsos(recs, dates, my_parks)
     # a QSO without a valid time can't be placed in a session or a file: say so instead of leaving it out quietly
-    untimed = [tr("b.note.badTime", date=r.get("QSO_DATE") or "-", time="----", call=r.get("CALL") or "-",
-                  value=r.get("TIME_ON") or "-") for r in recs
-               if (not dates or r.get("QSO_DATE") in dates) and rec_minutes(r) is None]
+    untimed = [tr(k, date=r.get("QSO_DATE") or "-", time=hhmm(r) or "----", call=r.get("CALL") or "-", **kw)
+               for r in recs if (not dates or r.get("QSO_DATE") in dates) and rec_minutes(r) is None
+               for k, kw in problems(r, call) if k in ("b.note.badTime", "b.note.badDate")]
     if not activ:
         msg = tr("b.noActivation")
         return {"text": msg, "files": [], "out_dir": out_dir, "summary": [], "notes": [msg] + untimed}
