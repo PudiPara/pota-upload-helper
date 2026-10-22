@@ -130,13 +130,21 @@ def read_forecast(data, area):
     return out
 
 
+# the prefectures by their JIS code (the first two digits of a municipality's code)
+PREFECTURES = ("北海道 青森県 岩手県 宮城県 秋田県 山形県 福島県 茨城県 栃木県 群馬県 埼玉県 千葉県 東京都 神奈川県 新潟県 富山県 石川県 福井県 "
+               "山梨県 長野県 岐阜県 静岡県 愛知県 三重県 滋賀県 京都府 大阪府 兵庫県 奈良県 和歌山県 鳥取県 島根県 岡山県 広島県 山口県 徳島県 香川県 "
+               "愛媛県 高知県 福岡県 佐賀県 長崎県 熊本県 大分県 宮崎県 鹿児島県 沖縄県").split()
+
+
 def place(lat, lon):
-    """The municipality's name at a point in Japan as the JMA calls it ("稲城市"; the parts of a split city joined), or None."""
+    """Where the warnings at a point in Japan are for: the prefecture and the municipality as the JMA calls it
+    ("沖縄県沖縄市"; the parts of a split city joined: "神奈川県横浜市北部・横浜市南部"), or None."""
     where = areas(lat, lon)
     if not where:
         return None
     names = _area_table()["names"]
-    return "・".join(dict.fromkeys(names.get(c) or c for c in where[1]))
+    pref = int(where[1][0][:2])
+    return (PREFECTURES[pref - 1] if 1 <= pref <= 47 else "") + "・".join(dict.fromkeys(names.get(c) or c for c in where[1]))
 
 
 def warnings(lat, lon):
