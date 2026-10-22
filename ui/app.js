@@ -566,8 +566,8 @@
     // say where: the JMA issues them for each municipality (not the prefecture or the region)
     if (w.jma) html += `<section class="wx-sec"><h3>${esc(w.jma_place ? t("wx.tab.jmaWarnAt", { place: w.jma_place }) : t("wx.tab.jmaWarn"))}<small>${esc(t("wx.tab.jmaBy"))}</small></h3>${w.jma.length
       // one row per class, gravest first: 特別警報 / 危険警報 / 警報 / 注意報 (警戒レベル相当 5-2), only the classes in force
-      ? [5, 4, 3, 2].filter((lv) => w.jma.some((x) => x.level === lv)).map((lv) => `<div class="wx-class"><span class="wx-class-name">${esc(t("wx.lv." + lv))}<small>${esc(t("wx.lv.eq", { n: lv }))}</small></span>
-          <span class="wx-chips">${w.jma.filter((x) => x.level === lv).map((x) => `<span class="jma jma-l${x.level}">${esc(t("jma." + x.code))}</span>`).join("")}</span></div>`).join("")
+      ? [5, 4, 3, 2].filter((lv) => w.jma.some((x) => x.level === lv)).map((lv) => `<div class="wx-class"><span class="wx-class-name">${esc(t("wx.lv." + lv))} / ${esc(t("wx.lv.eq", { n: lv }))}</span>
+          <span class="wx-chips">${w.jma.filter((x) => x.level === lv).map((x) => `<span class="jma jma-l${x.level}" title="${esc(t("jma." + x.code))}">${esc(t("jma.p." + x.code))}</span>`).join("")}</span></div>`).join("")
       : `<span class="muted">${esc(t("wx.tab.none"))}</span>`}</section>`;
     const fc = w.jma_forecast;
     if (fc && fc.area) {
