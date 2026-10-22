@@ -29,14 +29,14 @@ import qsolog
 import updater
 from builder import build, find_activation_qsos, list_activations
 from i18n import t
-from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, adif_mode, band_name, base_call, data_path, data_version, fetch_json, grid_center,
+from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, adif_mode, band_name, base_call, clock_skew, data_path, data_version, fetch_json, grid_center,
                         iso_date,
                         iso_minutes, load_settings, lock_instance, count_key, mode_known, mode_of, my_call, my_parks_of, pota_events, read_adif, rec_minutes, resource,
                         save_settings, split_parks, LOG_NAME, setup_log)
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import (SESSION_MARGIN, SpotLogger, clear_records, common_locations, countries, example_parks, history_parks,
-                   distance_km, middle, park_at, park_info, park_status, shift_hours, shipped_parks, summarize, tag_candidate)
+                   distance_km, middle, park_at, park_info, park_status, linear_parks, shift_hours, shipped_parks, summarize, tag_candidate)
 from window import BarMode, set_zoom
 
 SETTINGS_KEYS = ("call", "calls", "op_list", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "p2p_auto", "lookup", "on_top", "font_scale", "theme", "dist_unit")   # "live" is set by start_live/finish_live only
@@ -344,7 +344,8 @@ class Api:
             return {"events": [e for e in self._events if e["at"] > since],
                     "qsos": [e for e in self._qso_events if e["at"] > qsince],
                     "status": str(self._status), "receiver": self._receiver_texts(),
-                    "running": self._recording(), "look": self._look(), "bar": bool(self._bar and self._bar.active)}
+                    "running": self._recording(), "look": self._look(), "bar": bool(self._bar and self._bar.active),
+                    "clock": clock_skew()}
 
     def _look(self, s=None):
         """設定 → 表示 for both windows: {font_scale, theme}."""
@@ -467,7 +468,7 @@ class Api:
         parks = split_parks(refs)
         km = [distance_km([a], [b]) for i, a in enumerate(parks) for b in parks[i + 1:]]
         km = [k for k in km if k is not None]
-        return dict(common_locations(refs), spread_km=max(km) if km else None)
+        return dict(common_locations(refs), spread_km=max(km) if km else None, linear=linear_parks(parks))
 
     def my_parks(self, refs):
         """{ref: mypota.activations} - this park's next activation by the operator's record (None per

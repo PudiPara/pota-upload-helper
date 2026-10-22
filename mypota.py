@@ -19,6 +19,46 @@ HUNTER_COLS = {"Reference", "First QSO Date", "QSOs"}
 ACTIVATOR_COLS = HUNTER_COLS | {"Attempts", "Activations"}
 ACTIVATED_MIN = 10        # QSOs that make an activation count (pota.app's rule)
 
+# pota.app achievements (docs.pota.app → Achievement Certificates)
+# Unique Reference: parks hunted / activated; an activator's park counts once it has 10 QSOs in all, over any attempts
+UNIQUE_STEPS = (10, 20, 30, 40, 50, 75, *range(100, 1001, 100), *range(1500, 8001, 500))
+# Repeat Offender: every 20 activations (activator) / QSOs (hunter) at one park, five names a tier, up to Tier 5
+RO_NAMES = ("Oasis", "Fox Den", "Bear Cave", "Fishing Hole", "Eagle's Nest")
+RO_STEP, RO_TOP = 20, 500
+KILO = 1000               # Kilo: 1000 QSOs from one park (activator only)
+
+
+def next_unique(n):
+    """The next Unique Reference level after n parks, or None past the last one."""
+    return next((s for s in UNIQUE_STEPS if s > n), None)
+
+
+def _ro_name(k):
+    """The k-th Repeat Offender level (1 = Oasis at 20): "Fox Den", "Oasis Tier 2" ..."""
+    tier = (k - 1) // len(RO_NAMES) + 1
+    return RO_NAMES[(k - 1) % len(RO_NAMES)] + (" Tier %d" % tier if tier > 1 else "")
+
+
+def goals(n, kilo=False):
+    """A park's achievements from its count: {"has": [names reached, highest first], "next": name,
+    "left": count to go} - "next" only from halfway (10 of 20) so a list of parks is not all hints.
+    n = activations (activator) or QSOs (hunter); kilo: n is the activator's QSOs, for Kilo."""
+    out = {"has": [], "next": None, "left": None}
+    if not n:
+        return out
+    if kilo:
+        if n >= KILO:
+            out["has"].append("Kilo")
+        elif n >= KILO // 2:
+            out.update(next="Kilo", left=KILO - n)
+        return out
+    k = min(n // RO_STEP, RO_TOP // RO_STEP)
+    if k:
+        out["has"].append(_ro_name(k))
+    if n < RO_TOP and (k or n >= RO_STEP // 2):
+        out.update(next=_ro_name(k + 1), left=(k + 1) * RO_STEP - n)
+    return out
+
 
 def _load():
     return read_json(data_path(FILE), {})
@@ -152,6 +192,15 @@ def record(app_records=(), app_days=()):
                "qsos": (csv_hunt.get(ref) or {}).get("qsos"), "added": ref not in csv_hunt}
               for ref, (ts, src) in _hunts(app_records).items()]
     activated = [dict(r, ref=ref) for ref, r in _activated(app_days).items()]
+    for r in hunted:
+        r["goals"] = goals(r["qsos"])
+    for r in activated:
+        ro, kilo = goals(r["activations"]), goals(r["qsos"], kilo=True)
+        hint = ro if ro["next"] else kilo
+        r["goals"] = {"has": kilo["has"] + ro["has"], "next": hint["next"], "left": hint["left"]}
     hunted.sort(key=lambda r: (r["first"], r["ref"]), reverse=True)
     activated.sort(key=lambda r: (r["last"], r["ref"]), reverse=True)
-    return {"hunted": hunted, "activated": activated, "imported": status()}
+    # Unique Reference: an activated park counts from 10 QSOs in all, a hunted one from its first QSO
+    n = {"hunted": len(hunted), "activated": sum(1 for r in activated if r["qsos"] >= ACTIVATED_MIN)}
+    return {"hunted": hunted, "activated": activated, "imported": status(),
+            "unique": {k: {"n": v, "next": next_unique(v)} for k, v in n.items()}}

@@ -248,6 +248,8 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 .rec-name { font-size: 12.5px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: 4px; }
 .rec-meta { display: flex; gap: 10px; align-items: center; font-size: 12px; color: var(--ink-2); white-space: nowrap; }
 .rec-src { font-size: 11px; font-weight: 700; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+.rec-goal { font-size: 11px; font-weight: 700; color: var(--amber-ink); background: var(--amber-bg); border-radius: 4px; padding: 0 5px; }
+.rec-next { color: var(--ink-2); font-weight: 400; }
 .rec-src.is-app { color: var(--pine-2); border-color: var(--pine-2); background: rgba(47, 122, 91, .08); }
 #recSearch { padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 12.5px; color: var(--ink); }
 .mypota-files { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
@@ -719,6 +721,7 @@ body.is-bar .cheer-hunt .plate { font-size: 15px; padding: 2px 9px 3px; }
 .park-row input:focus { border-color: var(--pine-2); outline: none; box-shadow: 0 0 0 3px var(--focus); }
 .park-add { margin-top: 10px; font-size: 13px; }
 .park-spread { margin-top: 8px; font-size: 12.5px; color: var(--ink-2); max-width: 46em; line-height: 1.6; }
+.park-apart.clock-warn { margin: 0 0 10px; max-width: none; }
 .park-apart { margin-top: 8px; padding: 8px 12px; border-radius: var(--r-sm); background: var(--amber-bg); color: var(--amber-ink); font-size: 13px; max-width: 46em; }
 .ask-note { font-size: 11.5px; color: var(--amber-ink); background: var(--amber-bg); border-radius: 999px; padding: 1px 8px; }
 
