@@ -669,6 +669,19 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .storm strong { display: inline-flex; align-items: center; gap: .25em; font-size: 40px; font-weight: 900; line-height: 1.1;
   background: #161616; color: #FFD400; padding: 8px 22px 10px 16px; border-radius: 6px; }
 .storm-bolt { width: .85em; height: .85em; fill: currentColor; flex: none; }
+.storm-wind { width: .9em; height: .9em; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; flex: none; }
+.storm[data-icon="bolt"] .storm-wind, .storm[data-icon="wind"] .storm-bolt { display: none; }
+/* a warning (警報) red, an emergency warning (特別警報) purple: the JMA's colours, white words */
+.storm.lv2 { background: #E60012; color: #FFFFFF; }
+.storm.lv3 { background: #5F1985; color: #FFFFFF; }
+.storm.lv2::before, .storm.lv2::after, .storm.lv3::before, .storm.lv3::after {
+  background: repeating-linear-gradient(-45deg, #FFFFFF 0 14px, transparent 14px 28px); }
+.storm.lv2 strong, .storm.lv3 strong { background: #FFFFFF; }
+.storm.lv2 strong { color: #E60012; }
+.storm.lv3 strong { color: #5F1985; }
+.storm.lv2 .storm-ok, .storm.lv3 .storm-ok { background: #FFFFFF; border-color: #FFFFFF; }
+.storm.lv2 .storm-ok { color: #E60012; }
+.storm.lv3 .storm-ok { color: #5F1985; }
 .storm p { margin: 0; max-width: 34em; font-size: 17px; font-weight: 700; line-height: 1.5; }
 .storm .storm-ok { background: #161616; color: #FFD400; border-color: #161616; font-size: 15px; font-weight: 800; padding: 9px 26px; }
 /* the main window: a slim notice bar across the top of the page (beside the rail, not over it), like a site's

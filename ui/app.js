@@ -417,30 +417,55 @@
     line.classList.toggle("is-alert", alerts.length > 0);
     $("#barWx").textContent = shorts.join(" · "); $("#barWx").hidden = !shorts.length;
     if (BAR) fitBar();
-    const fresh = w.new || [], storm = fresh.includes("thunder") || fresh.includes("jma:14");
-    if (notify && !BAR) {
-      const words = fresh.filter((k) => !k.startsWith("jma:") && k !== "thunder").map(alertText);
-      const named = official.filter((x) => fresh.includes("jma:" + x.code) && !(storm && x.code === "14")).map(jmaName);
+    const fresh = w.new || [], notices = fresh.filter((k) => NOTICES[k]);
+    if (notify && !BAR) {                  // the rest: one toast (the notices below have their own screen)
+      const words = fresh.filter((k) => !k.startsWith("jma:") && !NOTICES[k]).map(alertText);
+      const named = official.filter((x) => fresh.includes("jma:" + x.code) && !NOTICES["jma:" + x.code]).map(jmaName);
       if (named.length) words.unshift(t("jma.new", { names: named.join("・") }));
       if (words.length) toast(words.join(" "));
     }
-    if (notify && storm) showStorm(w.alerts.thunder, !!w.alerts["jma:14"]);   // its own yellow notice, apart from the weather
+    if (notify && notices.length) showNotices(notices, w);   // thunder and wind: their own notice, apart from the weather
     // the bar: the first look of a recording, and a new alert, play the weather over the bar
     if (notify && BAR && (w.seq === 1 || fresh.length)) playWx(w, shorts);
   }
   // A thunderstorm on the way is dangerous at a park with an antenna up: both windows put a yellow screen over
   // everything with what to do, flashing for a few seconds, and it stays until the operator closes it.
-  // official: the JMA's 雷注意報 is in force (Japan) - its own name, and the words say so
-  function showStorm(a, official) {
-    const box = $("#storm"), when = whenText((a || {}).in);
-    $("#stormName").textContent = official ? t("jma.14") : t("wx.storm.title");
-    $("#stormBody").textContent = official ? t(BAR ? "wx.storm.jmaShort" : "wx.storm.jma")
-      : BAR ? t("wx.alert.thunder", { when }).replace(/^\S+\s+/, "") : t("wx.storm.body", { when });   // the bar: the short line, its ⚡ is on the plate
-    box.hidden = false; document.body.classList.add("has-storm");
-    box.getAnimations().forEach((a) => a.cancel());
-    box.animate([{ background: "#FFD400" }, { background: "#FF9F00" }, { background: "#FFD400" }], { duration: 700, iterations: 5 });
+  // What matters to a station in the field - lightning and wind - has its own notice in both windows: the JMA's for a
+  // park in Japan (its name, in its colour: advisory yellow, warning red, emergency purple), the forecast's elsewhere.
+  // {alert key: [icon, level, title (null = the JMA's own name), body key, the bar's short body key]}
+  const NOTICES = {
+    "jma:14": ["bolt", 1, null, "wx.storm.jma", "wx.storm.jmaShort"],
+    "jma:15": ["wind", 1, null, "wx.notice.windJma", "wx.notice.windJmaShort"],
+    "jma:13": ["wind", 1, null, "wx.notice.windJma", "wx.notice.windJmaShort"],
+    "jma:05": ["wind", 2, null, "wx.notice.stormJma", "wx.notice.stormJmaShort"],
+    "jma:02": ["wind", 2, null, "wx.notice.stormJma", "wx.notice.stormJmaShort"],
+    "jma:35": ["wind", 3, null, "wx.notice.emergency", "wx.notice.emergencyShort"],
+    "jma:32": ["wind", 3, null, "wx.notice.emergency", "wx.notice.emergencyShort"],
+    thunder: ["bolt", 1, "wx.storm.title", "wx.storm.body", "wx.alert.thunder"],
+    wind: ["wind", 1, "wx.notice.windTitle", "wx.notice.wind", "wx.notice.windShort"],
+  };
+  const PULSE = { 1: ["#FFD400", "#FF9F00"], 2: ["#E60012", "#9E000C"], 3: ["#5F1985", "#3A0E52"] };
+  const notice = { queue: [] };
+  // the new ones, gravest first, one at a time: closing one shows the next
+  function showNotices(keys, w) {
+    notice.queue = keys.map((k) => [k, w]).concat(notice.queue.filter(([k]) => !keys.includes(k)))
+      .sort((a, b) => NOTICES[b[0]][1] - NOTICES[a[0]][1]);
+    nextNotice();
   }
-  const closeStorm = () => { $("#storm").hidden = true; document.body.classList.remove("has-storm"); };
+  function nextNotice() {
+    const box = $("#storm"), item = notice.queue.shift();
+    if (!item) { box.hidden = true; document.body.classList.remove("has-storm"); return; }
+    const [key, w] = item, [icon, level, title, body, short] = NOTICES[key], a = w.alerts[key] || {};
+    const words = { when: whenText(a.in), g: fmtWind(a.g || 0) };
+    box.dataset.icon = icon; box.className = "storm lv" + level;
+    $("#stormName").textContent = title ? t(title) : t("jma." + key.slice(4));
+    $("#stormBody").textContent = BAR ? t(short, words).replace(/^[^\p{L}\p{N}]+/u, "") : t(body, words);   // the bar: the short line, its mark is on the plate
+    box.hidden = false; document.body.classList.add("has-storm");
+    box.getAnimations().forEach((x) => x.cancel());
+    const [c1, c2] = PULSE[level];
+    box.animate([{ background: c1 }, { background: c2 }, { background: c1 }], { duration: 700, iterations: 5 });
+  }
+  const closeStorm = () => nextNotice();
   // when an alert comes: hours from now from Python (0 = this hour)
   const whenText = (n) => (!n ? t("wx.when.soon") : n === 1 ? t("wx.when.1") : t("wx.when.n", { n }));
   $("#stormOk").addEventListener("click", closeStorm);
