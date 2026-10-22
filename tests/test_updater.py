@@ -36,6 +36,16 @@ class UpdaterTest(unittest.TestCase):
         tl = updater.summarize(REL, platform="darwin", installed="/private/var/folders/x/AppTranslocation/y/d/Potaroo.app")
         self.assertTrue(tl["translocated"])
 
+    def test_test_versions_only_with_beta(self):
+        public, pre = {"tag_name": "v9.1.0", "assets": []}, {"tag_name": "v9.2.0", "prerelease": True, "assets": []}
+        saved = updater.fetch_json
+        updater.fetch_json = lambda url, timeout=0: public if url == updater.LATEST else [pre, public, {"tag_name": "v9.9.9", "draft": True}]
+        try:
+            self.assertEqual((updater.check()["latest"], updater.check()["prerelease"]), ("9.1.0", False))   # everyone
+            self.assertEqual((updater.check(True)["latest"], updater.check(True)["prerelease"]), ("9.2.0", True))   # 試験版 on
+        finally:
+            updater.fetch_json = saved
+
     def test_not_newer_when_same_or_older(self):
         same = updater.summarize({"tag_name": "v" + potacommon.VERSION, "assets": []}, platform="darwin", installed=None)
         self.assertFalse(same["newer"])

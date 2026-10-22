@@ -41,7 +41,7 @@ from spots import (SESSION_MARGIN, SpotLogger, clear_records, common_locations, 
                    distance_km, park_info, parks_middle, park_status, linear_parks, shift_hours, shipped_parks, summarize, tag_candidate)
 from window import BarMode, set_zoom
 
-SETTINGS_KEYS = ("call", "calls", "op_list", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "guide_seen", "p2p_auto", "lookup", "on_top", "font_scale", "theme", "bar_style", "dist_unit")   # "live" is set by start_live/finish_live only
+SETTINGS_KEYS = ("call", "calls", "op_list", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "guide_seen", "beta", "p2p_auto", "lookup", "on_top", "font_scale", "theme", "bar_style", "dist_unit")   # "live" is set by start_live/finish_live only
 DATE_RE = re.compile(r"\d{8}")
 LOOK_SCALES = (1, 1.15, 1.3)            # 設定 → 表示 → 文字の大きさ
 LOOK_THEMES = ("", "light", "dark")     # 設定 → 表示 → 配色 ("" = the OS)
@@ -239,7 +239,7 @@ class Api:
                 "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
                 "listeners": self.listeners(), "hamlog": sys.platform == "win32", "lang": s.get("lang") or "", "langs": i18n.available(),
                 "country": s.get("country") or "", "countries": countries(),
-                "terms_accepted": s.get("terms_accepted") or "", "guide_seen": bool(s.get("guide_seen")), "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")), **self._look(s), "dist_unit": s.get("dist_unit") or "", "bar_on_top": s.get("bar_on_top", True) is not False,
+                "terms_accepted": s.get("terms_accepted") or "", "guide_seen": bool(s.get("guide_seen")), "beta": bool(s.get("beta")), "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")), **self._look(s), "dist_unit": s.get("dist_unit") or "", "bar_on_top": s.get("bar_on_top", True) is not False,
                 "lookup": lookup if isinstance(lookup, list) else [lookup],
                 "log_count": qsolog.count(), "receiver": self._receiver_texts(), "mypota": mypota.status()}
 
@@ -761,7 +761,7 @@ class Api:
     # ================================================================ updates (GitHub Releases)
     def check_update(self):
         try:
-            return {"ok": True, **updater.check()}
+            return {"ok": True, **updater.check(bool(load_settings().get("beta")))}
         except Exception as e:
             return {"ok": False, "error": t("api.updCheckFail", err=e)}
 
