@@ -28,7 +28,7 @@
   "cfg.mypota.h": "Il tuo bilancio POTA", "cfg.mypota.p": "Accedi a pota.app, scarica dalle tue statistiche gli elenchi dei parchi da hunter e da attivatore (CSV) e importali qui. I parchi non ancora cacciati hanno il segno “New” e, inserendo un parco, vedi quale attivazione sarebbe. Dopo l'importazione il bilancio cresce con il log di questa app e il tuo log hunter di pota.app. Puoi scegliere hunter_parks.csv e activator_parks.csv insieme; ognuno è riconosciuto dal contenuto, anche se rinominato.", "cfg.mypota.pick": "Importa CSV", "cfg.mypota.kind.hunter": "Hunter", "cfg.mypota.kind.activator": "Attivatore", "cfg.mypota.count": "{n} parchi · importato {at}", "cfg.mypota.missing": "Non ancora importato", "cfg.mypota.done": "Bilancio POTA importato", "api.mypotaBad": "{file} non è un elenco di parchi di pota.app (CSV)", "spots.newOnly": "Solo non cacciati", "spots.hideQrt": "Nascondi QRT", "tag.new": "New", "park.first": "Prima attivazione", "park.nth": "Attivazione n. {n} ({done} valide, {qsos} QSO finora)", "hunted.sub": "Nuovo parco cacciato",
   "cfg.p2p.h": "P2P",
   "cfg.p2p.auto": "Quando uno spot mostra il parco dell’altra stazione, registrarlo come P2P senza chiedere",
-  "cfg.p2p.p": "Spento: ogni QSO chiede sì / no. In entrambi i casi, alla creazione del file prevale l’upload dell’altra stazione (log hunter) se noto.",
+  "cfg.p2p.p": "Spento: ogni QSO chiede sì / no. In entrambi i casi, alla creazione del file prevale l’upload dell’altra stazione (log hunter) se noto. La guida POTA consiglia di scambiare e registrare i riferimenti dei parchi durante il QSO; attivalo solo se senti il loro parco in aria.",
   "region.as": "Asia",
   "region.eu": "Europa",
   "region.na": "America del Nord",

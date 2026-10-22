@@ -31,7 +31,7 @@
   "cfg.mypota.h": "POTA の実績", "cfg.mypota.p": "pota.app にログインし、自分の実績ページからハンターとアクティベーターの公園一覧（CSV）をダウンロードして、ここで読み込みます。まだハントしていない公園に「New」を付け、公園番号を入れたときに何回目のアクティベートかを表示します。読み込んだあとは、このアプリの記録と pota.app のハンターログで自動的に増えていきます。hunter_parks.csv と activator_parks.csv は 2 つまとめて選べます。ファイル名が変わっていても中身で見分けます。", "cfg.mypota.pick": "CSV を読み込む", "cfg.mypota.kind.hunter": "ハンター", "cfg.mypota.kind.activator": "アクティベーター", "cfg.mypota.count": "{n} 公園・{at} 読み込み", "cfg.mypota.missing": "未読み込み", "cfg.mypota.done": "POTA の実績を読み込みました", "api.mypotaBad": "{file} は pota.app の公園一覧（CSV）ではありません", "spots.newOnly": "未ハントのみ", "spots.hideQrt": "QRT を隠す", "tag.new": "New", "park.first": "初アクティベート", "park.nth": "{n} 回目のアクティベート（成立 {done} 回・{qsos} QSO）", "hunted.sub": "新しい公園をハント",
   "cfg.p2p.h": "P2P",
   "cfg.p2p.auto": "スポットで相手の公園が分かるときは、確認せずに P2P として記録する",
-  "cfg.p2p.p": "オフのときは QSO ごとに「はい／いいえ」を聞きます。どちらでも、相手のアップロード（ハンターログ）が分かればファイル作成時にそちらを優先します。",
+  "cfg.p2p.p": "オフのときは QSO ごとに「はい／いいえ」を聞きます。どちらでも、相手のアップロード（ハンターログ）が分かればファイル作成時にそちらを優先します。POTA のガイドでは、P2P は交信の中で互いの公園番号を交換して記録することが勧められています。オンにするのは、相手の公園番号を聞き取れている前提で使ってください。",
   "region.as": "アジア",
   "region.eu": "ヨーロッパ",
   "region.na": "北アメリカ",

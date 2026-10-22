@@ -28,7 +28,7 @@
   "cfg.mypota.h": "我的 POTA 记录", "cfg.mypota.p": "登录 pota.app，在个人统计中下载猎人和激活者的公园列表（CSV），在这里导入。尚未猎过的公园会标上“New”，输入公园编号时会显示这是第几次激活。导入后，记录会根据本应用的日志和 pota.app 的猎人日志自动增加。hunter_parks.csv 和 activator_parks.csv 可以一起选择；按内容识别，文件改名也没关系。", "cfg.mypota.pick": "导入 CSV", "cfg.mypota.kind.hunter": "猎人", "cfg.mypota.kind.activator": "激活者", "cfg.mypota.count": "{n} 个公园 · {at} 导入", "cfg.mypota.missing": "尚未导入", "cfg.mypota.done": "已导入 POTA 记录", "api.mypotaBad": "{file} 不是 pota.app 的公园列表（CSV）", "spots.newOnly": "只看未猎", "spots.hideQrt": "隐藏 QRT", "tag.new": "New", "park.first": "首次激活", "park.nth": "第 {n} 次激活（成功 {done} 次，{qsos} 个 QSO）", "hunted.sub": "猎到新公园",
   "cfg.p2p.h": "P2P",
   "cfg.p2p.auto": "当 spot 显示对方电台的公园时，不再确认，直接记为 P2P",
-  "cfg.p2p.p": "关闭时每个 QSO 都会询问“是／否”。无论哪种，生成文件时若已知对方的上传记录（猎人日志），以其为准。",
+  "cfg.p2p.p": "关闭时每个 QSO 都会询问“是／否”。无论哪种，生成文件时若已知对方的上传记录（猎人日志），以其为准。POTA 指南建议在通联中互相交换并记录公园编号；请在确实听到对方公园编号的前提下开启此项。",
   "region.as": "亚洲",
   "region.eu": "欧洲",
   "region.na": "北美洲",

@@ -251,10 +251,15 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
                                band=x.get("band"), park=p))
 
     lines, written, summary = [], [], []
+    # the upload files of this build in a folder of their own (UTC day, or first-last day), the report beside
+    # it: dragging the folder onto pota.app then takes neither report.txt nor files uploaded before
+    span = sorted(days)
+    files_dir = os.path.join(out_dir, span[0] if len(span) == 1 else "%s-%s" % (span[0], span[-1]))
+    os.makedirs(files_dir, exist_ok=True)
     for (mp, d, loc) in sorted(files, key=lambda k: (k[1], k[0], k[2])):
         # the documented name for a park crossing state lines: CALL@PARK-DATE-LOCATION.adi
         fn = "%s@%s-%s%s.adi" % (call.replace("/", "_"), mp, d, "-" + loc if loc else "")
-        write_adif(os.path.join(out_dir, fn), files[(mp, d, loc)], ORDER)
+        write_adif(os.path.join(files_dir, fn), files[(mp, d, loc)], ORDER)
         written.append(fn)
         rep = report[(mp, d, loc)]
         n, counted = len(rep["qsos"]), len(rep["count"])
@@ -273,4 +278,4 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
     text = "\n".join(lines)
     with open(os.path.join(out_dir, "report.txt"), "w", encoding="utf-8") as fh:
         fh.write(text + "\n")
-    return {"text": text, "files": written, "out_dir": out_dir, "summary": summary, "notes": notes}
+    return {"text": text, "files": written, "out_dir": files_dir, "summary": summary, "notes": notes}

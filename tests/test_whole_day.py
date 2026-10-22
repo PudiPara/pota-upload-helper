@@ -28,6 +28,7 @@ class FinishBuildsTheWholeDay(unittest.TestCase):
                                                 session={"start": start, "end": end, "parks": parks.split(","), "call": "JL1FVA"})
             r = api.finish_live(online=False)
             self.assertTrue(r["ok"], r)
+        out = os.path.join(out, "20260103")                                       # the day's own folder
         shared = open(os.path.join(out, "JL1FVA@JP-1206-20260103.adi"), encoding="utf-8").read()
         self.assertIn("JA1AAA", shared); self.assertIn("JA1BBA", shared)          # both sessions
         first = open(os.path.join(out, "JL1FVA@JP-1266-20260103.adi"), encoding="utf-8").read()

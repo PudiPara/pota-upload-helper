@@ -28,7 +28,7 @@
   "cfg.mypota.h": "我的 POTA 紀錄", "cfg.mypota.p": "登入 pota.app，從個人統計下載獵人與啟用者的公園清單（CSV），在這裡匯入。尚未獵過的公園會標上「New」，輸入公園編號時會顯示這是第幾次啟用。匯入後，紀錄會依本程式的日誌與 pota.app 的獵人日誌自動增加。hunter_parks.csv 與 activator_parks.csv 可以一起選擇；依內容辨識，檔名改了也沒關係。", "cfg.mypota.pick": "匯入 CSV", "cfg.mypota.kind.hunter": "獵人", "cfg.mypota.kind.activator": "啟用者", "cfg.mypota.count": "{n} 個公園 · {at} 匯入", "cfg.mypota.missing": "尚未匯入", "cfg.mypota.done": "已匯入 POTA 紀錄", "api.mypotaBad": "{file} 不是 pota.app 的公園清單（CSV）", "spots.newOnly": "只看未獵", "spots.hideQrt": "隱藏 QRT", "tag.new": "New", "park.first": "首次啟用", "park.nth": "第 {n} 次啟用（成功 {done} 次，{qsos} 個 QSO）", "hunted.sub": "獵到新公園",
   "cfg.p2p.h": "P2P",
   "cfg.p2p.auto": "當 spot 顯示對方電台的公園時，不再確認，直接記為 P2P",
-  "cfg.p2p.p": "關閉時每個 QSO 都會詢問「是／否」。無論哪種，產生檔案時若已知對方的上傳記錄（獵人日誌），以其為準。",
+  "cfg.p2p.p": "關閉時每個 QSO 都會詢問「是／否」。無論哪種，產生檔案時若已知對方的上傳記錄（獵人日誌），以其為準。POTA 指南建議在通聯中互相交換並記錄公園編號；請在確實聽到對方公園編號的前提下開啟此項。",
   "region.as": "亞洲",
   "region.eu": "歐洲",
   "region.na": "北美洲",

@@ -28,7 +28,7 @@
   "cfg.mypota.h": "Twój dorobek POTA", "cfg.mypota.p": "Zaloguj się do pota.app, pobierz ze swoich statystyk listy parków jako łowca i aktywator (CSV) i wczytaj je tutaj. Parki jeszcze niezaliczone dostają znak „New”, a po wpisaniu parku widać, która to byłaby aktywacja. Po wczytaniu dorobek rośnie dalej z logu tej aplikacji i Twojego logu łowcy w pota.app. Możesz wybrać hunter_parks.csv i activator_parks.csv naraz; każdy rozpoznawany jest po zawartości, także po zmianie nazwy.", "cfg.mypota.pick": "Wczytaj CSV", "cfg.mypota.kind.hunter": "Łowca", "cfg.mypota.kind.activator": "Aktywator", "cfg.mypota.count": "Parki: {n} · wczytano {at}", "cfg.mypota.missing": "Jeszcze nie wczytano", "cfg.mypota.done": "Wczytano dorobek POTA", "api.mypotaBad": "{file} nie jest listą parków pota.app (CSV)", "spots.newOnly": "Tylko nieupolowane", "spots.hideQrt": "Ukryj QRT", "tag.new": "New", "park.first": "Pierwsza aktywacja", "park.nth": "Aktywacja nr {n} (dotąd udane: {done}, {qsos} QSO)", "hunted.sub": "Nowy park upolowany",
   "cfg.p2p.h": "P2P",
   "cfg.p2p.auto": "Gdy spot pokazuje park drugiej stacji, zapisuj jako P2P bez pytania",
-  "cfg.p2p.p": "Wyłączone: każde QSO pyta tak / nie. W obu przypadkach przy tworzeniu pliku pierwszeństwo ma upload drugiej stacji (log łowcy), jeśli jest znany.",
+  "cfg.p2p.p": "Wyłączone: każde QSO pyta tak / nie. W obu przypadkach przy tworzeniu pliku pierwszeństwo ma upload drugiej stacji (log łowcy), jeśli jest znany. Przewodnik POTA zaleca wymianę i zapisanie numerów parków podczas QSO; włącz to tylko wtedy, gdy słyszysz park drugiej stacji na antenie.",
   "region.as": "Azja",
   "region.eu": "Europa",
   "region.na": "Ameryka Północna",

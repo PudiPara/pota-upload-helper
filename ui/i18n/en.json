@@ -31,7 +31,7 @@
   "cfg.mypota.h": "Your POTA record", "cfg.mypota.p": "Sign in to pota.app, download your hunter and activator park lists (CSV) from your stats, and import them here. Parks you have not hunted yet get a “New” mark, and entering a park reference shows which activation of it this would be. After the import the record keeps growing from this app's log and your pota.app hunter log. You can pick hunter_parks.csv and activator_parks.csv together; each is recognised by its contents, so a renamed file works too.", "cfg.mypota.pick": "Import CSV", "cfg.mypota.kind.hunter": "Hunter", "cfg.mypota.kind.activator": "Activator", "cfg.mypota.count": "{n} parks · imported {at}", "cfg.mypota.missing": "Not imported yet", "cfg.mypota.done": "Your POTA record was imported", "api.mypotaBad": "{file} is not a pota.app park list (CSV)", "spots.newOnly": "Unhunted only", "spots.hideQrt": "Hide QRT", "tag.new": "New", "park.first": "First activation", "park.nth": "Activation #{n} ({done} valid, {qsos} QSOs so far)", "hunted.sub": "New park hunted",
   "cfg.p2p.h": "P2P",
   "cfg.p2p.auto": "When a spot shows the other station's park, record it as P2P without asking",
-  "cfg.p2p.p": "Off: each QSO asks yes / no. Either way the other side's upload (hunter log), when known, wins at build time.",
+  "cfg.p2p.p": "Off: each QSO asks yes / no. Either way the other side's upload (hunter log), when known, wins at build time. POTA's guide recommends exchanging and logging each other's park references during the QSO; turn this on only when you hear their park on the air.",
   "region.as": "Asia",
   "region.eu": "Europe",
   "region.na": "North America",

@@ -91,7 +91,9 @@ class BuilderTest(unittest.TestCase):
     def test_build(self):
         res = builder.build(self.adif, ["20261020"], None, "JL1FVA", self.out, offline=True)
         self.assertEqual(sorted(res["files"]), ["JL1FVA@JP-1281-20261020.adi", "JL1FVA@JP-1285-20261020.adi"])
-        recs = read_adif(os.path.join(self.out, "JL1FVA@JP-1281-20261020.adi"))
+        self.assertEqual(res["out_dir"], os.path.join(self.out, "20261020"))      # this build's files in a folder of their own
+        self.assertTrue(os.path.exists(os.path.join(self.out, "report.txt")))      # the report beside it, not in it
+        recs = read_adif(os.path.join(res["out_dir"], "JL1FVA@JP-1281-20261020.adi"))
         by = {}
         for r in recs:
             by.setdefault(r["CALL"], []).append(r.get("SIG_INFO"))
@@ -169,8 +171,8 @@ class ParkAcrossPrefectures(unittest.TestCase):
         q = lambda call, t, loc: {"CALL": call, "QSO_DATE": "20260109", "TIME_ON": t, "BAND": "40m", "MODE": "CW",
                                   "MY_SIG": "POTA", "MY_SIG_INFO": "JP-0016,JP-1206", "MY_POTA_LOCS": {"JP-0016": loc}}
         recs = [q("JA1AAA", "010000", "JP-TK"), q("JA1BBB", "030000", "JP-KN")]
-        files = {f["file"]: f for f in builder.build(None, None, None, "JL1FVA", out, offline=True, recs=recs,
-                                                     confirmed_only=True, log=lambda *a: None)["summary"]}
+        res = builder.build(None, None, None, "JL1FVA", out, offline=True, recs=recs, confirmed_only=True, log=lambda *a: None)
+        files, out = {f["file"]: f for f in res["summary"]}, res["out_dir"]
         self.assertEqual(sorted(files), ["JL1FVA@JP-0016-20260109-JP-KN.adi", "JL1FVA@JP-0016-20260109-JP-TK.adi",
                                          "JL1FVA@JP-1206-20260109.adi"])
         self.assertIn("<MY_STATE:2>TK", open(os.path.join(out, "JL1FVA@JP-0016-20260109-JP-TK.adi"), encoding="utf-8").read())
