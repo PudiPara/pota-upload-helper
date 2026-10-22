@@ -11,8 +11,8 @@ import potacommon  # noqa: E402
 class SaveSettingsTogether(unittest.TestCase):
     def test_parallel_saves_keep_every_key(self):
         with tempfile.TemporaryDirectory() as d:
-            old = os.environ.get("POTAROO_DATA")
-            os.environ["POTAROO_DATA"] = d
+            old = potacommon.DATA_DIR            # data_path reads it at call time (the env only at import)
+            potacommon.DATA_DIR = d
             try:
                 ts = [threading.Thread(target=potacommon.save_settings, args=({"k%d" % i: i},)) for i in range(40)]
                 [t.start() for t in ts]
@@ -20,10 +20,7 @@ class SaveSettingsTogether(unittest.TestCase):
                 s = potacommon.load_settings()
                 self.assertEqual({k: s[k] for k in s if k.startswith("k")}, {"k%d" % i: i for i in range(40)})
             finally:
-                if old is None:
-                    os.environ.pop("POTAROO_DATA")
-                else:
-                    os.environ["POTAROO_DATA"] = old
+                potacommon.DATA_DIR = old
 
 
 if __name__ == "__main__":

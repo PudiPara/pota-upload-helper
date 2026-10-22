@@ -14,7 +14,7 @@ API = "https://api.pota.app"
 PARK_RE = re.compile(r"\b([A-Z0-9]{1,4}-\d{4,5})\b")
 APP_NAME = "Potaroo"
 OLD_NAME = "POTA Upload Helper"      # the name until 2.0.0: its data folder is moved over on first start
-VERSION = "2.0.44"
+VERSION = "2.0.45"
 
 
 def _moved(new, old):
@@ -301,22 +301,43 @@ def my_parks_of(rec):
 
 
 # ---------- ADIF ----------
-FIELD_RE = re.compile(r"<(\w+):(\d+)(?::\w)?>", re.I)
+TAG_RE = re.compile(r"<([^:<>{},\s]+)(?::(\d+)(?::[^<>]*)?)?>")      # <NAME:LEN:TYPE>, <EOR>, <EOH>
+NEXT_RE = re.compile(r"\s*(?:<|$)")
+
+
+def parse_adif(text):
+    """ADI records ({FIELD: value}, those with a CALL) from text. Each value is exactly its length long, so a
+    tag or <eor> written inside a COMMENT stays in the COMMENT; the header (up to <EOH>) is skipped. A value
+    whose length is wrong (counted in bytes, or Shift_JIS read as UTF-8) runs into the next field: then it
+    is cut where the next tag starts, so the fields after it are still read."""
+    m = re.search(r"<eoh>", text, re.I)
+    pos, recs, d = (m.end() if m else 0), [], {}
+    while True:
+        m = TAG_RE.search(text, pos)
+        if not m:
+            break
+        pos = m.end()
+        name = m.group(1).upper()
+        if m.group(2) is None:                           # <EOR> (or a stray <...> between fields)
+            if name == "EOR":
+                if d.get("CALL"):
+                    recs.append(d)
+                d = {}
+            continue
+        v = text[pos:pos + int(m.group(2))]
+        if not NEXT_RE.match(text, pos + len(v)):        # not followed by a tag: the length was wrong
+            nxt = TAG_RE.search(text, pos)               # the value ends where the next tag starts
+            if nxt and nxt.start() < pos + len(v):
+                v = text[pos:nxt.start()]
+        d[name] = v
+        pos += len(v)
+    if d.get("CALL"):
+        recs.append(d)
+    return recs
 
 
 def read_adif(path):
-    text = open(path, encoding="utf-8", errors="ignore").read()
-    m = re.search(r"<eoh>", text, re.I)
-    body = text[m.end():] if m else text
-    recs = []
-    for chunk in re.split(r"<eor>", body, flags=re.I):
-        d = {}
-        for f in FIELD_RE.finditer(chunk):
-            n = int(f.group(2))
-            d[f.group(1).upper()] = chunk[f.end():f.end() + n]
-        if "CALL" in d:
-            recs.append(d)
-    return recs
+    return parse_adif(open(path, encoding="utf-8", errors="ignore").read())
 
 
 def adif_field(name, value):

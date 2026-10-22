@@ -19,7 +19,7 @@ import threading
 import xml.etree.ElementTree as ET
 
 from i18n import t
-from potacommon import FIELD_RE, adif_mode, band_from_mhz
+from potacommon import adif_mode, band_from_mhz, parse_adif
 
 WSJTX_MAGIC = 0xADBCCBDA
 N1MM_BANDS = {"1.8": "160m", "3.5": "80m", "5": "60m", "7": "40m", "10": "30m", "14": "20m", "18": "17m",
@@ -32,18 +32,6 @@ DEFAULT_LISTENERS = [
 
 
 # ---------------------------------------------------------------- parsers
-def parse_adif_text(text):
-    text = html.unescape(text)
-    out = []
-    for chunk in re.split(r"<eor>", text, flags=re.I):
-        d = {}
-        for f in FIELD_RE.finditer(chunk):
-            d[f.group(1).upper()] = chunk[f.end():f.end() + int(f.group(2))]
-        if d.get("CALL"):
-            out.append(d)
-    return out
-
-
 def parse_n1mm(root):
     """-> ("upsert"|"delete", record, uid)"""
     g = lambda k: (root.findtext(k) or "").strip()
@@ -94,7 +82,7 @@ def parse_qlog(text):
         return []
     uid = "qlog:%s:%s" % (msg.get("logid", ""), d.get("rowid", ""))
     action = "delete" if d.get("operation") == "delete" else "upsert"
-    return [(action, r, uid) for r in parse_adif_text(d.get("value") or "")]
+    return [(action, r, uid) for r in parse_adif(d.get("value") or "")]
 
 
 def parse_packet(data):
@@ -104,7 +92,7 @@ def parse_packet(data):
         if mtype == 12:                                        # Logged ADIF
             _, off = read_qt_string(data, 12)
             adif, _ = read_qt_string(data, off)
-            return [("upsert", r, None) for r in parse_adif_text(adif)]
+            return [("upsert", r, None) for r in parse_adif(adif)]
         return []
     text = data.decode("utf-8", "replace").strip()
     if text.startswith("{"):
@@ -116,10 +104,11 @@ def parse_packet(data):
             root = None
         if root is not None and root.tag.lower() in ("contactinfo", "contactreplace", "contactdelete"):
             return [parse_n1mm(root)]
-        # XML that carries ADIF inside (RUMlog "Contact info ADIF" etc.)
-        return [("upsert", r, None) for r in parse_adif_text(text)]
+        # XML that carries ADIF inside (RUMlog "Contact info ADIF" etc.): its text, entities decoded once
+        inner = "".join(root.itertext()) if root is not None else html.unescape(text)
+        return [("upsert", r, None) for r in parse_adif(inner)]
     if re.search(r"<call:\d+", text, re.I):
-        return [("upsert", r, None) for r in parse_adif_text(text)]
+        return [("upsert", r, None) for r in parse_adif(text)]
     return []
 
 
