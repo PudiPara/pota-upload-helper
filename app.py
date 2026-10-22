@@ -29,9 +29,9 @@ import qsolog
 import updater
 from builder import build, find_activation_qsos, list_activations
 from i18n import t
-from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, base_call, data_path, data_version, fetch_json, grid_center,
+from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, adif_mode, band_name, base_call, data_path, data_version, fetch_json, grid_center,
                         iso_date,
-                        iso_minutes, load_settings, lock_instance, mode_of, my_call, my_parks_of, read_adif, rec_minutes, resource,
+                        iso_minutes, load_settings, lock_instance, mode_known, mode_of, my_call, my_parks_of, read_adif, rec_minutes, resource,
                         save_settings, split_parks, LOG_NAME, setup_log)
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
@@ -530,12 +530,12 @@ class Api:
                 if not re.fullmatch(r"\d{4}(\d{2})?", v):
                     return {"ok": False, "error": t("api.badTime")}
             elif k == "BAND":
-                v = v.lower()
-                if not re.fullmatch(r"\d+(\.\d+)?(m|cm|mm)", v):
+                v = band_name(v)                         # an ADIF band only ("11m" is not one)
+                if not v:
                     return {"ok": False, "error": t("api.badBand")}
             elif k == "MODE":
-                v = v.upper()
-                if not re.fullmatch(r"[A-Z0-9-]+", v):
+                v = v.upper().strip()                    # USB, FT4 ... are fine: qsolog.update writes MODE + SUBMODE
+                if not mode_known(adif_mode(v)):
                     return {"ok": False, "error": t("api.badMode")}
             elif k == "parks":
                 if v and not split_parks(v):

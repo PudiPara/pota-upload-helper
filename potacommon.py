@@ -192,11 +192,83 @@ def fetch_json(path, timeout=20):
 
 
 # ---------- bands and modes ----------
-BAND_EDGES = [(1.8, 2.0, "160m"), (3.5, 4.0, "80m"), (5.0, 5.5, "60m"), (7.0, 7.3, "40m"), (10.1, 10.15, "30m"),
-              (14.0, 14.35, "20m"), (18.068, 18.168, "17m"), (21.0, 21.45, "15m"), (24.89, 24.99, "12m"),
-              (28.0, 29.7, "10m"), (50.0, 54.0, "6m"), (144.0, 148.0, "2m"), (222.0, 225.0, "1.25m"),
-              (420.0, 450.0, "70cm"), (902.0, 928.0, "33cm"), (1240.0, 1300.0, "23cm")]
-PHONE_MODES = {"SSB", "USB", "LSB", "FM", "AM", "PHONE", "DV", "DMR", "C4FM", "DSTAR"}
+BAND_EDGES = [(.1357, .1378, "2190m"), (.472, .479, "630m"), (.501, .504, "560m"), (1.8, 2.0, "160m"),
+              (3.5, 4.0, "80m"), (5.06, 5.45, "60m"), (7.0, 7.3, "40m"), (10.1, 10.15, "30m"), (14.0, 14.35, "20m"),
+              (18.068, 18.168, "17m"), (21.0, 21.45, "15m"), (24.89, 24.99, "12m"), (28.0, 29.7, "10m"),
+              (40, 45, "8m"), (50.0, 54.0, "6m"), (54.000001, 69.9, "5m"), (70, 71, "4m"), (144.0, 148.0, "2m"),
+              (222.0, 225.0, "1.25m"), (420.0, 450.0, "70cm"), (902.0, 928.0, "33cm"), (1240.0, 1300.0, "23cm"),
+              (2300, 2450, "13cm"), (3300, 3500, "9cm"), (5650, 5925, "6cm"), (10000, 10500, "3cm"),
+              (24000, 24250, "1.25cm"), (47000, 47200, "6mm"), (75500, 81000, "4mm"), (119980, 123000, "2.5mm"),
+              (134000, 149000, "2mm"), (241000, 250000, "1mm"), (300000, 7500000, "submm")]   # ADIF 3.1.8 Band
+BANDS = {b for _, _, b in BAND_EDGES}
+PHONE_MODES = {"SSB", "USB", "LSB", "FM", "AM", "PHONE", "DV", "DIGITALVOICE", "DMR", "C4FM", "DSTAR", "D-STAR",
+               "FREEDV", "M17"}
+ADIF_MODES = {   # ADIF 3.1.8 Mode enumeration: MODE -> its SUBMODEs
+    "AM": "",
+    "ARDOP": "",
+    "ATV": "",
+    "CHIP": "CHIP64,CHIP128",
+    "CLO": "",
+    "CONTESTI": "",
+    "CW": "PCW",
+    "DIGITALVOICE": "C4FM,DMR,DSTAR,FREEDV,M17",
+    "DOMINO": "DOM-M,DOM4,DOM5,DOM8,DOM11,DOM16,DOM22,DOM44,DOM88,DOMINOEX,DOMINOF",
+    "DYNAMIC": "FREEDATA,VARA HF,VARA SATELLITE,VARA FM 1200,VARA FM 9600",
+    "FAX": "",
+    "FM": "",
+    "FSK441": "",
+    "FSK": "SCAMP_FAST,SCAMP_SLOW,SCAMP_VSLOW",
+    "FT8": "",
+    "HELL": "FMHELL,FSKH105,FSKH245,FSKHELL,HELL80,HELLX5,HELLX9,HFSK,PSKHELL,SLOWHELL",
+    "ISCAT": "ISCAT-A,ISCAT-B",
+    "JT4": "JT4A,JT4B,JT4C,JT4D,JT4E,JT4F,JT4G",
+    "JT6M": "",
+    "JT9": ("JT9-1,JT9-2,JT9-5,JT9-10,JT9-30,JT9A,JT9B,JT9C,JT9D,JT9E,JT9E FAST,JT9F,JT9F FAST,JT9G,"
+           "JT9G FAST,JT9H,JT9H FAST"),
+    "JT44": "",
+    "JT65": "JT65A,JT65B,JT65B2,JT65C,JT65C2",
+    "MFSK": ("FSQCALL,FST4,FST4W,FT2,FT4,JS8,JTMS,JTTY,MFSK4,MFSK8,MFSK11,MFSK16,MFSK22,MFSK31,MFSK32,MFSK64,"
+            "MFSK64L,MFSK128,MFSK128L,Q65"),
+    "MSK144": "",
+    "MTONE": "SCAMP_OO,SCAMP_OO_SLW",
+    "MT63": "",
+    "OFDM": "RIBBIT_PIX,RIBBIT_SMS",
+    "OLIVIA": "OLIVIA 4/125,OLIVIA 4/250,OLIVIA 8/250,OLIVIA 8/500,OLIVIA 16/500,OLIVIA 16/1000,OLIVIA 32/1000",
+    "OPERA": "OPERA-BEACON,OPERA-QSO",
+    "PAC": "PAC2,PAC3,PAC4",
+    "PAX": "PAX2",
+    "PKT": "",
+    "PSK": ("8PSK125,8PSK125F,8PSK125FL,8PSK250,8PSK250F,8PSK250FL,8PSK500,8PSK500F,8PSK1000,8PSK1000F,"
+           "8PSK1200F,FSK31,PSK10,PSK31,PSK63,PSK63F,PSK63RC4,PSK63RC5,PSK63RC10,PSK63RC20,PSK63RC32,PSK125,"
+           "PSK125C12,PSK125R,PSK125RC10,PSK125RC12,PSK125RC16,PSK125RC4,PSK125RC5,PSK250,PSK250C6,PSK250R,"
+           "PSK250RC2,PSK250RC3,PSK250RC5,PSK250RC6,PSK250RC7,PSK500,PSK500C2,PSK500C4,PSK500R,PSK500RC2,"
+           "PSK500RC3,PSK500RC4,PSK800C2,PSK800RC2,PSK1000,PSK1000C2,PSK1000R,PSK1000RC2,PSKAM10,PSKAM31,"
+           "PSKAM50,PSKFEC31,QPSK31,QPSK63,QPSK125,QPSK250,QPSK500,SIM31"),
+    "PSK2K": "",
+    "Q15": "",
+    "QRA64": "QRA64A,QRA64B,QRA64C,QRA64D,QRA64E",
+    "ROS": "ROS-EME,ROS-HF,ROS-MF",
+    "RTTY": "ASCI",
+    "RTTYM": "",
+    "SSB": "LSB,USB",
+    "SSTV": "",
+    "T10": "",
+    "THOR": "THOR-M,THOR4,THOR5,THOR8,THOR11,THOR16,THOR22,THOR25X4,THOR50X1,THOR50X2,THOR100",
+    "THRB": "THRBX,THRBX1,THRBX2,THRBX4,THROB1,THROB2,THROB4",
+    "TOR": "AMTORFEC,GTOR,NAVTEX,SITORB",
+    "V4": "",
+    "VOI": "",
+    "WINMOR": "",
+    "WSPR": "",
+}
+SUBMODES = {sub: mode for mode, subs in ADIF_MODES.items() for sub in subs.split(",") if sub}
+MODE_ALIASES = {"D-STAR": "DSTAR", "DV": "DIGITALVOICE", "VARAC": "VARA HF"}   # loggers' words for ADIF ones
+
+
+def band_name(value):
+    """A BAND value as ADIF spells it ("20M" -> "20m"), or "" when it is not an ADIF band ("11m", "70m")."""
+    v = (value or "").strip().lower()
+    return v if v in BANDS else ""
 
 
 def band_from_mhz(mhz):
@@ -218,13 +290,28 @@ def band_from_khz(khz):
 
 
 def adif_mode(mode):
-    """A logger's mode word -> ADIF MODE (+SUBMODE): USB/LSB are SSB submodes, FT4 an MFSK one."""
+    """A logger's mode word -> ADIF MODE (+SUBMODE): USB -> SSB + USB, FT4 -> MFSK + FT4, D-STAR -> DIGITALVOICE +
+    DSTAR (a submode is never written as the MODE; ADIF 3.1.8 Mode / Submode). Other words stay as they are."""
     m = (mode or "").upper().strip()
-    if m in ("USB", "LSB"):
-        return {"MODE": "SSB", "SUBMODE": m}
-    if m == "FT4":
-        return {"MODE": "MFSK", "SUBMODE": "FT4"}
+    m = MODE_ALIASES.get(m, m)
+    if m in SUBMODES:
+        return {"MODE": SUBMODES[m], "SUBMODE": m}
     return {"MODE": m} if m else {}
+
+
+def fix_mode_band(rec):
+    """A received record as ADIF writes it, whatever the logger sent: MODE + SUBMODE from adif_mode (left alone
+    when a SUBMODE came with it), BAND from FREQ (MHz) when it has none. -> rec, changed in place."""
+    if rec.get("MODE") and not rec.get("SUBMODE"):
+        rec.update(adif_mode(rec["MODE"]))
+    if not rec.get("BAND") and rec.get("FREQ"):
+        rec["BAND"] = band_from_mhz(rec["FREQ"])
+    return rec
+
+
+def mode_known(rec):
+    """Is the record's MODE one pota.app accepts (an ADIF mode)? Empty counts as not known."""
+    return (rec.get("MODE") or "").upper() in ADIF_MODES
 
 
 def mode_of(rec):

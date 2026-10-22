@@ -9,12 +9,15 @@ If the other station was a 2fer the QSO is repeated once per park; if you were i
 file is written for each of them (pota.app does not accept multi-value references).
 What a spot means (parks, 2fer, time windows) is spots.py's business; this module only asks it.
 """
+import datetime as dt
 import os
+import re
 from collections import defaultdict
 
 from i18n import t as tr
-from potacommon import (DEFAULT_OUT, base_call, data_path, fetch_json, iso_minutes, mode_of, my_parks_of, pota_key,
-                        read_adif, read_json, rec_minutes, split_parks, their_parks_of, write_adif, write_json)
+from potacommon import (DEFAULT_OUT, band_name, base_call, data_path, fetch_json, fix_mode_band, iso_minutes, mode_known,
+                        mode_of, my_parks_of, pota_key, read_adif, read_json, rec_minutes, split_parks, their_parks_of,
+                        write_adif, write_json)
 from qsolog import decided_parks
 from spots import load_sessions, load_spots, their_parks_at
 
@@ -32,6 +35,37 @@ def band_norm(b):
 
 def hhmm(rec):
     return (rec.get("TIME_ON") or "")[:4]
+
+
+def records(adif_path=None, recs=None):
+    """The records to work on (the app log's, or an ADIF file's), MODE/SUBMODE and BAND as ADIF writes them."""
+    return [fix_mode_band(dict(r)) for r in (recs if recs is not None else read_adif(adif_path))]
+
+
+def problems(rec, call):
+    """What pota.app (or POTA's rules) will not take in this QSO: [(note key, extra format args)]. The QSO
+    stays in the file - the operator fixes it (中身を見る) or the logger. pota.app refuses the whole file for
+    a mode or band it does not know, a contact with yourself or a future date."""
+    out = []
+    mode, call_ = rec.get("MODE") or "", (rec.get("CALL") or "").upper()
+    if not mode_known(rec):
+        out.append(("b.note.badMode", {"mode": mode or "-"}))
+    if not band_name(rec.get("BAND")):
+        out.append(("b.note.noBand", {}))
+    if call_ and call_ in {call.upper(), (rec.get("OPERATOR") or "").upper()}:
+        out.append(("b.note.self", {}))
+    if not re.fullmatch(r"[A-Z0-9/]+", call_):
+        out.append(("b.note.badCall", {}))
+    if (rec.get("QSO_DATE") or "") > dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d"):
+        out.append(("b.note.future", {}))
+    if (rec.get("PROP_MODE") or "").upper() == "RPT":
+        out.append(("b.note.repeater", {}))
+    for ref, sig, info, parks in (("POTA_REF", "SIG", "SIG_INFO", their_parks_of(rec)),
+                                  ("MY_POTA_REF", "MY_SIG", "MY_SIG_INFO", my_parks_of(rec))):
+        raw = rec.get(ref) or (rec.get(info) if (rec.get(sig) or "POTA").upper() == "POTA" else "")
+        if raw and not parks:
+            out.append(("b.note.parkUnread", {"value": raw}))
+    return out
 
 
 # ---------- data sources ----------
@@ -88,7 +122,7 @@ def list_activations(adif_path=None, recs=None):
     """[(date, 'JP-1281,JP-1285', qso_count, {park: its qso_count}, {park: lines pota.app keeps})]
     newest first, for the GUI. The parks of a day are listed, not joined as one 2fer: a day may hold
     several sessions."""
-    recs = recs if recs is not None else read_adif(adif_path)
+    recs = records(adif_path, recs)
     agg = defaultdict(lambda: [defaultdict(int), 0, defaultdict(set)])
     for r, t, mp in find_activation_qsos(recs):
         a = agg[r["QSO_DATE"]]
@@ -112,7 +146,7 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
     if not call:
         raise ValueError(tr("api.noCall"))
     out_dir = out_dir or DEFAULT_OUT
-    recs = recs if recs is not None else read_adif(adif_path)
+    recs = records(adif_path, recs)
     hunter = load_hunter(call, offline, log)
     spots = load_spots()
     activ = find_activation_qsos(recs, dates, my_parks)
@@ -128,6 +162,8 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
 
     for r, t, mp_list in activ:
         b = base_call(r["CALL"])
+        for key, kw in problems(r, call):
+            notes.append(tr(key, date=r["QSO_DATE"], time=hhmm(r), call=r["CALL"], **kw))
         band = band_norm(r.get("BAND"))
         h = [(p, x) for m, hb, p, x in hunter.get(b, []) if abs(m - t) <= HUNTER_WINDOW and (not hb or hb == band)]
         h_parks = sorted({p for p, _ in h})

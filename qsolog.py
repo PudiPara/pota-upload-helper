@@ -11,7 +11,7 @@ import threading
 import time
 from contextlib import contextmanager
 
-from potacommon import base_call, data_path, minutes, mode_of, my_parks_of, rec_minutes, split_parks, their_parks_of
+from potacommon import adif_mode, base_call, data_path, minutes, mode_of, my_parks_of, rec_minutes, split_parks, their_parks_of
 
 TWIN_WINDOW = 3          # minutes
 _lock = threading.Lock()
@@ -193,11 +193,12 @@ def update(uid, fields):
     if not row:
         return None
     rec, ext_id, source = json.loads(row[0]), row[1], row[2]
-    for k in ("CALL", "TIME_ON", "BAND", "MODE"):
+    for k in ("CALL", "TIME_ON", "BAND"):
         if k in fields:
             rec[k] = fields[k]
     if "MODE" in fields:
         rec.pop("SUBMODE", None)
+        rec.update(adif_mode(fields["MODE"]))    # "USB" -> SSB + USB, "FT4" -> MFSK + FT4
     if "parks" in fields:
         parks = split_parks(fields["parks"])
         apply_decision(rec, "manual" if parks else "no", parks)
