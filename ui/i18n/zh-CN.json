@@ -154,6 +154,7 @@
   "api.firstSpot": "正在获取第一批 spot", "api.qsoNotFound": "找不到该 QSO。", "live.operator": "操作员", "live.operator.ph": "无（本人）", "live.operator.change": "换人时重新选择", "live.operator.now": "操作员已改为 {op}，之后的 QSO 都会带上", "api.badOperator": "操作员呼号不正确。", "b.note.club": "这是俱乐部台的日志（{call}，操作员 {ops}）。请从俱乐部的 pota.app 账户上传，不要上传到个人账户；各操作员会按 OPERATOR 自动记入",
  "live.event.tip": "POTA 活动期间或奖状的时段（Early / Late Shift 按公园经度推算）", "res.rover": "{date}：{n} 个公园激活成功", "res.rover.award": "{date}：{n} 个公园激活成功——达到 Rover 奖状“{award}”", "res.fix": "上传后发现错误时：改正后重新上传，错误的行仍会留在 pota.app（改了 CALL 或波段的行会作为另一个 QSO 加上）。上传后 24 小时内可以在 My Log Uploads 自行删除再上传；超过后请通过 pota.app 的 Request Support 申请删除。", "res.fix.open": "打开 My Log Uploads",
  "cfg.ops.h": "操作员", "cfg.ops.p": "用俱乐部呼号运用时，可在开始记录画面和运用中画面选择。",
+ "b.hunterNoProfile": "! pota.app 上找不到 {call} 的资料（未在 pota.app 注册的呼号等）。P2P 核对仅使用已保存的数据。",
  "api.notRecording": "未在记录。",
   "api.spotsFail": "无法获取 spot：{err}", "api.fileNotFound": "找不到文件。请重新选择。",
   "api.logRead": "无法读取日志：{err}", "api.updCheckFail": "检查更新失败：{err}", "api.updFail": "更新失败：{err}",

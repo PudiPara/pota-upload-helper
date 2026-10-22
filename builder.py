@@ -106,7 +106,8 @@ def load_hunter(call, offline=False, log=print):
             prof = fetch_json("profile/%s" % base_call(call))
             have += prof.get("recent_activity", {}).get("hunter_qsos", [])
         except Exception as e:
-            log(tr("b.hunterFail", err=e))
+            nf = getattr(e, "code", None) == 404             # no pota.app profile for this call (not registered there)
+            log(tr("b.hunterNoProfile", call=base_call(call)) if nf else tr("b.hunterFail", err=e))
     uniq = {}
     for h in have:
         k = (h.get("date"), base_call(h.get("callsign")), h.get("band"), h.get("reference"))
