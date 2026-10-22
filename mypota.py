@@ -12,7 +12,7 @@ import csv
 import io
 import time
 
-from potacommon import data_path, read_json, utc_stamp, write_json
+from potacommon import data_path, read_json, their_parks_of, utc_stamp, write_json
 
 FILE = "mypota.json"
 HUNTER_COLS = {"Reference", "First QSO Date", "QSOs"}
@@ -85,9 +85,8 @@ def _hunts(app_records=()):
             seen(h["reference"].upper(), "".join(c for c in h["date"] if c.isdigit())[:14].ljust(14, "0"), "log")
     for r in app_records:
         if r.get("P2P_DECISION") in ("yes", "manual", "log"):
-            for ref in (r.get("POTA_REF") or r.get("SIG_INFO") or "").upper().replace(" ", "").split(","):
-                if ref:
-                    seen(ref, (r.get("QSO_DATE") or "") + (r.get("TIME_ON") or "").ljust(6, "0"), "app")
+            for ref in their_parks_of(r):
+                seen(ref, (r.get("QSO_DATE") or "") + (r.get("TIME_ON") or "").ljust(6, "0"), "app")
     return first
 
 

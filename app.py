@@ -31,7 +31,7 @@ from builder import build, find_activation_qsos, list_activations
 from i18n import t
 from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, base_call, data_path, data_version, fetch_json, grid_center,
                         iso_date,
-                        iso_minutes, load_settings, lock_instance, mode_of, my_call, read_adif, rec_minutes, resource,
+                        iso_minutes, load_settings, lock_instance, mode_of, my_call, my_parks_of, read_adif, rec_minutes, resource,
                         save_settings, split_parks, LOG_NAME, setup_log)
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
@@ -80,10 +80,10 @@ def qso_event(rec, uid=None, hunted=None):
             "ts": ts,                                                     # sort key, to the second
             "new": mypota.new_parks(list(dict.fromkeys(theirs)), hunted, ts),
             "mode": mode_of(rec), "decision": rec.get("P2P_DECISION") or "", "parks": decided_parks(rec)[1],
-            "candidate": split_parks(rec.get("P2P_CANDIDATE")), "my": split_parks(rec.get("MY_SIG_INFO")),
+            "candidate": split_parks(rec.get("P2P_CANDIDATE")), "my": my_parks_of(rec),
             "note": rec.get("P2P_NOTE") or "",
             # to their parks (the decided ones, else the spot's candidate) from mine
-            "km": distance_km(split_parks(rec.get("MY_SIG_INFO")), decided_parks(rec)[1] or split_parks(rec.get("P2P_CANDIDATE")))}
+            "km": distance_km(my_parks_of(rec), decided_parks(rec)[1] or split_parks(rec.get("P2P_CANDIDATE")))}
 
 
 class Api:
@@ -240,8 +240,11 @@ class Api:
             gone = qsolog.delete(ext_id, rec.get("CALL"), rec.get("QSO_DATE"), rec.get("TIME_ON"))
             ev = {"action": "delete", "call": rec.get("CALL"), "uids": gone}
         else:
-            if self._recording() and not rec.get("MY_SIG_INFO"):
-                rec["MY_SIG"], rec["MY_SIG_INFO"] = "POTA", ",".join(self._logger.parks)
+            if self._recording() and not my_parks_of(rec):
+                if (rec.get("MY_SIG") or "POTA").upper() == "POTA":
+                    rec["MY_SIG"], rec["MY_SIG_INFO"] = "POTA", ",".join(self._logger.parks)
+                else:                                   # MY_SIG_INFO holds another program's reference (WWFF)
+                    rec["MY_POTA_REF"] = ",".join(self._logger.parks)
                 if self._locs:
                     rec["MY_POTA_LOCS"] = dict(self._locs)        # parks spanning prefectures/states -> where I was
             info = tag_candidate(rec)
@@ -286,7 +289,7 @@ class Api:
         shared with an earlier session keeps its count), or since the session started."""
         if not self._recording():
             return False
-        if set(split_parks(rec.get("MY_SIG_INFO"))) & set(self._logger.parks):
+        if set(my_parks_of(rec)) & set(self._logger.parks):
             return True
         t = rec_minutes(rec)
         return t is None or t >= session_since(self._logger.session["start"])
@@ -320,7 +323,7 @@ class Api:
         mine = set(split_parks(parks))
         out = {}
         for r in qsolog.records([iso_date(start_iso)]):
-            if mine & set(split_parks(r.get("MY_SIG_INFO"))):
+            if mine & set(my_parks_of(r)):
                 out[qsolog.make_uid(r)] = dict(self._event(r), at=0)
         for r in qsolog.between(session_since(start_iso)):
             out.setdefault(qsolog.make_uid(r), dict(self._event(r), at=0))
