@@ -1,6 +1,7 @@
 """Shared helpers used by every module (stdlib only, Python 3.8+): pota.app fetch, data folder,
 settings and JSON files, ADIF, callsigns, parks, bands and modes, time."""
 import datetime as dt
+import email.utils
 import json
 import os
 import re
@@ -8,6 +9,7 @@ import ssl
 import subprocess
 import sys
 import threading
+import time
 import unicodedata
 import urllib.request
 
@@ -15,7 +17,7 @@ API = "https://api.pota.app"
 PARK_RE = re.compile(r"\b([A-Z0-9]{1,4}-\d{4,5})\b")
 APP_NAME = "Potaroo"
 OLD_NAME = "POTA Upload Helper"      # the name until 2.0.0: its data folder is moved over on first start
-VERSION = "2.0.48"
+VERSION = "2.0.50"
 
 
 def _moved(new, old):
@@ -187,6 +189,26 @@ def my_call():
     return ""
 
 
+CLOCK_WARN = 60          # seconds: P2P needs both logs within 15 min, and the other side's clock may be off too
+_skew = None
+
+
+def _note_clock(date):
+    """Keep how far this computer's clock is from pota.app's (the response's Date header, 1 s resolution).
+    ponytail: only the urllib path sees headers; with the curl fallback the clock is not checked."""
+    global _skew
+    try:
+        _skew = time.time() - email.utils.parsedate_to_datetime(date).timestamp()
+    except (TypeError, ValueError):
+        pass
+
+
+def clock_skew():
+    """Seconds this computer's clock is ahead of pota.app (behind < 0), only when off by CLOCK_WARN or
+    more; None when it is close enough or nothing was fetched yet."""
+    return round(_skew) if _skew is not None and abs(_skew) >= CLOCK_WARN else None
+
+
 def fetch_json(path, timeout=20):
     """GET api.pota.app/<path>. Falls back to the system curl when Python's
     SSL certificates are not set up (common with python.org installs on macOS)."""
@@ -194,6 +216,7 @@ def fetch_json(path, timeout=20):
     try:
         req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(req, timeout=timeout) as r:
+            _note_clock(r.headers.get("Date"))
             return json.loads(r.read().decode("utf-8"))
     except (ssl.SSLError, urllib.error.URLError) as e:
         if isinstance(e, urllib.error.HTTPError):

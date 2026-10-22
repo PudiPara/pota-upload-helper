@@ -101,6 +101,7 @@
             <div class="park-loc" id="parkLoc" hidden></div>
             <p class="park-apart" id="parkApart" hidden></p>
             <p class="park-spread" id="parkSpread" hidden></p>
+            <p class="park-spread" id="parkLinear" hidden></p>
             <p class="error" id="liveError" hidden></p>
             <div class="start-actions"><button class="btn btn-primary" id="startLive" data-i18n="live.start">記録を始める</button></div>
           </div>
@@ -159,6 +160,7 @@
           <div class="stat"><span data-i18n="live.stat.last">最後の交信</span><strong id="statLast">–</strong><small id="statAgo"></small></div>
         </div>
 
+        <p class="park-apart clock-warn" id="clockWarn" role="alert" hidden></p>
         <div class="seg live-tabs" id="liveTabs" role="tablist">
           <button role="tab" data-tab="list" class="is-on" data-i18n="live.tab.list">一覧</button>
           <button role="tab" data-tab="map" data-i18n="live.tab.map">地図</button>

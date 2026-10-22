@@ -212,6 +212,9 @@
     const spread = $("#parkSpread");
     spread.hidden = !(r && r.spread_km != null) || !!r.none || !!(r.apart && r.apart.length);   // already known they can't
     if (!spread.hidden) spread.textContent = t("live.note.spread", { d: fmtDist(r.spread_km) });
+    const linear = (r && r.linear) || [];
+    $("#parkLinear").hidden = !linear.length;
+    $("#parkLinear").textContent = t("live.note.linear", { park: linear.join(", ") });
     // they can't be one activation: no prefecture/state in common, or pota.app says they don't overlap
     st.noOverlap = !!(r && (r.none || (r.apart && r.apart.length)));
     $("#startLive").disabled = st.noOverlap; $("#startLive").classList.toggle("is-blocked", st.noOverlap);
@@ -310,6 +313,10 @@
     if (BAR && !r.running) { api.set_bar(false); return; }             // finished in the main window
     if (BAR && r.look && applyLook(r.look)) { st.barW = 0; fitBar(); }  // 設定 → 表示 changed in the main window
     if (r.status) $("#liveStatus").textContent = r.status;
+    if (!BAR) {
+      $("#clockWarn").hidden = r.clock == null;
+      if (r.clock != null) $("#clockWarn").textContent = t(r.clock > 0 ? "live.warn.clockAhead" : "live.warn.clockBehind", { m: Math.max(1, Math.round(Math.abs(r.clock) / 60)) });
+    }
     if (!BAR && "bar" in r && Date.now() - (st.barSetAt || 0) > 3000) showBarOn(r.bar);   // not an answer older than our own switch
     updateReceiver(r.receiver);
     const freshS = new Set(), freshQ = new Set();
@@ -1132,10 +1139,13 @@
       ? src("rec.src." + r.source, r.added) + (r.qsos ? `<span>${esc(t("rec.qsos", { n: r.qsos }))}</span>` : "")
       : (r.added ? "" : src("rec.src.csv", false)) + (r.app ? src("rec.appDays", true, { n: r.app }) : "") +
         `<span>${esc(t("rec.acts", { done: r.activations, n: r.attempts }))}</span><span>${esc(t("rec.qsos", { n: r.qsos }))}</span>`;
+    const g = r.goals || {};          // Kilo / Repeat Offender reached, and the next one from halfway
+    const goals = (g.has || []).map((n) => `<span class="rec-goal">${esc(n)}</span>`).join("") +
+      (g.next ? `<span>${esc(t("rec.goalLeft", { left: g.left, name: g.next }))}</span>` : "");
     return `<li class="rec">
       <span class="rec-date">${esc((rec.kind === "hunted" ? r.first : r.last) || "")}</span>
       <span class="rec-park"><span class="flag">${flagOf(r.ref.split("-")[0])}</span>${plate(r.ref)}<span class="rec-name" title="${esc(r.name || "")}">${esc(r.name || "")}</span>${statusTag(r.listed)}</span>
-      <span class="rec-meta">${meta}</span></li>`;
+      <span class="rec-meta">${goals}${meta}</span></li>`;
   }
   function renderRecord() {
     const d = rec.data;
@@ -1144,7 +1154,9 @@
     $("#recEmpty").hidden = !empty; $("#recBody").hidden = empty;
     if (empty) return;
     const sum = (k, rows) => esc(t(k, { n: rows.length, added: rows.filter((r) => r.added).length }));
-    $("#recSum").innerHTML = `<span>${sum("rec.sum.hunted", d.hunted)}</span><span>${sum("rec.sum.activated", d.activated)}</span>`;
+    const u = (d.unique || {})[rec.kind];      // the next Unique Reference level for the list shown
+    $("#recSum").innerHTML = `<span>${sum("rec.sum.hunted", d.hunted)}</span><span>${sum("rec.sum.activated", d.activated)}</span>` +
+      (u && u.next ? `<span class="rec-next">${esc(t("rec.next", { n: u.next, left: u.next - u.n }))}</span>` : "");
     const q = rec.q.trim().toUpperCase();
     const rows = d[rec.kind].filter((r) => (!rec.added || r.added) && (!q || r.ref.includes(q) || (r.name || "").toUpperCase().includes(q)));
     $("#recList").innerHTML = rows.map(recRow).join("");
