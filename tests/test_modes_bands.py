@@ -122,5 +122,33 @@ class CountKey(unittest.TestCase):
         self.assertNotEqual(k(MY_POTA_LOCS={"JP-0016": "JP-KN"}), k(MY_POTA_LOCS={"JP-0016": "JP-SZ"}))
 
 
+
+class HunterLog(unittest.TestCase):
+    def test_nearest_entry_within_15_minutes(self):
+        e = lambda m, p, band="40m": (m, band, p, {"callsign": "JA1ABC/P"})  # noqa: E731
+        rover = [e(100, "JP-0001"), e(110, "JP-0002")]                   # the same station from two parks
+        self.assertEqual([p for p, _ in builder.hunter_match(rover, 101, "40m")], ["JP-0001"])
+        self.assertEqual([p for p, _ in builder.hunter_match(rover, 109, "40m")], ["JP-0002"])
+        twofer = [e(100, "JP-0001"), e(100, "JP-0002")]
+        self.assertEqual(sorted(p for p, _ in builder.hunter_match(twofer, 112, "40m")), ["JP-0001", "JP-0002"])
+        self.assertEqual(builder.hunter_match(twofer, 116, "40m"), [])
+        self.assertEqual(builder.hunter_match([e(100, "JP-0001", "")], 100, "20m")[0][0], "JP-0001")   # no band: any
+
+    def test_call_notes(self):
+        data = tempfile.mkdtemp()
+        saved, potacommon.DATA_DIR = potacommon.DATA_DIR, data
+        try:
+            import json
+            json.dump([{"date": "2026-10-20T01:05:00", "callsign": "JA1ABC/P", "band": "40M", "reference": "JP-0001"}],
+                      open(os.path.join(data, "hunter.json"), "w"))
+            recs = [rec(TIME_ON="011500", MY_SIG_INFO="JP-1206", STATION_CALLSIGN="JL1FVA/1")]
+            notes = builder.build(None, ["20261020"], None, "JL1FVA", tempfile.mkdtemp(), offline=True, recs=recs,
+                                  confirmed_only=True, log=lambda *a: None)["notes"]
+        finally:
+            potacommon.DATA_DIR = saved
+        self.assertTrue(any("JL1FVA/1" in n for n in notes))                # the logger's call is not the one chosen
+        self.assertTrue(any("JA1ABC/P" in n for n in notes))                # their upload writes the call otherwise
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -26,7 +26,7 @@ ORDER = ["STATION_CALLSIGN", "OPERATOR", "CALL", "QSO_DATE", "TIME_ON", "BAND", 
          "MY_STATE", "MY_GRIDSQUARE", "GRIDSQUARE", "COMMENT"]
 KEEP = ["CALL", "QSO_DATE", "TIME_ON", "BAND", "FREQ", "MODE", "SUBMODE", "RST_SENT", "RST_RCVD",
         "MY_GRIDSQUARE", "GRIDSQUARE"]
-HUNTER_WINDOW = 5      # minutes: hunter log time vs your log time
+HUNTER_WINDOW = 15     # minutes: hunter log time vs your log time (pota.app's P2P match: "within 15 minutes")
 
 
 def band_norm(b):
@@ -35,6 +35,15 @@ def band_norm(b):
 
 def hhmm(rec):
     return (rec.get("TIME_ON") or "")[:4]
+
+
+def hunter_match(entries, t, band):
+    """The hunter-log entries (their uploads) for one of my QSOs at minute t on band: within HUNTER_WINDOW, the
+    nearest in time only (with all parks logged at that moment - their 2fer), so a rover worked twice within
+    the window is not given both parks. An entry without a band matches any. -> [(park, entry)]"""
+    near = [(abs(m - t), p, x) for m, hb, p, x in entries if abs(m - t) <= HUNTER_WINDOW and (not hb or hb == band)]
+    best = min((d for d, _, _ in near), default=None)
+    return [(p, x) for d, p, x in near if d == best]
 
 
 def records(adif_path=None, recs=None):
@@ -167,14 +176,21 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
     report = defaultdict(lambda: {"qsos": set(), "count": set(), "p2p": [], "rows": [], "calls": set()})
     notes = []
     used_hunter = set()
+    differ = set()                 # the logger's own callsigns when they are not the one chosen here
 
     for r, t, mp_list in activ:
         b = base_call(r["CALL"])
         for key, kw in problems(r, call):
             notes.append(tr(key, date=r["QSO_DATE"], time=hhmm(r), call=r["CALL"], **kw))
         band = band_norm(r.get("BAND"))
-        h = [(p, x) for m, hb, p, x in hunter.get(b, []) if abs(m - t) <= HUNTER_WINDOW and (not hb or hb == band)]
+        h = hunter_match(hunter.get(b, []), t, band)
         h_parks = sorted({p for p, _ in h})
+        exact = {x.get("callsign", "").upper() for _, x in h} - {r["CALL"]}
+        if exact:                                  # pota.app matches a P2P on the call as written, not the base call
+            notes.append(tr("b.note.callExact", date=r["QSO_DATE"], time=hhmm(r), call=r["CALL"], theirs=",".join(sorted(exact))))
+        for k in ("STATION_CALLSIGN", "OPERATOR"):
+            if (r.get(k) or call).upper() != call:
+                differ.add(r[k].upper())
         for _, x in h:
             used_hunter.add(id(x))
         decided, d_parks = decided_parks(r)
@@ -224,6 +240,8 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
                     o.update({"SIG": "POTA", "SIG_INFO": tp, "POTA_REF": tp})
                 files[key].append(o)
 
+    if differ:
+        notes.insert(0, tr("b.note.callDiffers", call=call, logger=", ".join(sorted(differ))))
     days = {k[1] for k in files}
     for lst in hunter.values():
         for m, hb, p, x in lst:
