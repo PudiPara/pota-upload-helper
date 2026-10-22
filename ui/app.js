@@ -267,6 +267,8 @@
     const { parks, start } = live;
     st.spots.clear(); st.qsos.clear(); st.lastAt = 0; st.start = utcMs(start); st.cheered = null; st.parks = parks; st.seq = 0;
     st.locs = live.locs || {}; st.day = utcDay(); st.shifts = live.shifts || {};
+    // the bar opens with the session: a fresh start inside a shift plays its rise; a reopened bar does not
+    st.shiftOn = BAR && Date.now() - utcMs(start) < 60e3 ? [] : activeShifts();
     st.operator = live.operator || ""; $("#dashOpBox").hidden = !st.operator; $("#dashOp").innerHTML = opOptions(st.operator);   // club station only
     $("#liveIdle").hidden = true; $("#liveRun").hidden = false; $("#liveDot").hidden = false;
     $("#signParks").innerHTML = parks.map((p) =>
@@ -301,6 +303,7 @@
     if (utcDay() !== st.day) newDay();            // 0000Z: a new activation starts, the session goes on
     else if (s % 15 === 0) renderCount();         // the minutes left before 0000Z
     if (!BAR && s % 15 === 0) renderEvent();
+    if (BAR) skyTick();
   }
   // Poll every second on the second, in both windows: a QSO (and its celebration) shows in the main window
   // and the bar at the same moment (separate 2.5 s timers put the bar up to 2.5 s behind)
@@ -370,14 +373,55 @@
     renderQsos();
   }
   // POTA event periods (Python sends their UTC dates) and the Early / Late Shift hours of these parks, beside 運用中
+  const SHIFT_NAMES = { early: "Early Shift", late: "Late Shift" };
+  // the shifts on now: st.shifts = {early: [UTC hour it starts, hours long], late: [...]} from Python
+  const activeShifts = () => {
+    const h = new Date(Date.now()).getUTCHours();
+    return Object.keys(SHIFT_NAMES).filter((k) => { const w = (st.shifts || {})[k]; return w && (h - w[0] + 24) % 24 < w[1]; });
+  };
   function renderEvent() {
-    const now = Date.now(), h = new Date(now).getUTCHours();
+    const now = Date.now();
     const names = (st.events || []).filter((e) => Date.parse(e.start) <= now && now < Date.parse(e.end)).map((e) => e.name);
-    for (const [k, name] of [["early", "Early Shift"], ["late", "Late Shift"]]) {
-      const w = (st.shifts || {})[k];
-      if (w && (h - w[0] + 24) % 24 < w[1]) names.push(name);
-    }
-    $("#dashEvent").textContent = names.join(" · "); $("#dashEvent").hidden = !names.length;
+    $("#dashEvent").textContent = names.concat(activeShifts().map((k) => SHIFT_NAMES[k])).join(" · ");
+    $("#dashEvent").hidden = !$("#dashEvent").textContent;
+  }
+  // The bar's sky: the sun (Early Shift) or the moon (Late Shift) rises when recording starts in one or one begins,
+  // and sets when it ends - the sun into a dusk, the moon into a dawn. Layers' opacity at the start, middle, end.
+  const SKY = {
+    "early-rise": { orb: "sun", up: true, night: [1, .6, 0], dawn: [0, 1, 0], day: [0, 0, 1], stars: [1, .3, 0] },
+    "early-set": { orb: "sun", up: false, day: [1, .2, 0], dusk: [0, 1, .4], night: [0, 0, .6], stars: [0, 0, .7] },
+    "late-rise": { orb: "moon", up: true, dusk: [1, .5, 0], night: [0, .7, 1], stars: [0, .6, 1] },
+    "late-set": { orb: "moon", up: false, night: [1, .8, 0], dawn: [0, .5, 1], stars: [1, .5, 0] },
+  };
+  function playSky(shift, rise) {
+    const sc = SKY[shift + (rise ? "-rise" : "-set")], box = $("#sky"), orb = $("#skyOrb"), D = 4200;
+    const w = st.shifts[shift], at = (h) => new Date(Date.UTC(2000, 0, 1, h)).toLocaleTimeString(st.lang, { hour: "2-digit", minute: "2-digit" });
+    $("#skyName").textContent = SHIFT_NAMES[shift];
+    $("#skyLine").textContent = rise ? t("sky.start", { from: at(w[0]), to: at(w[0] + w[1]) }) : t("sky.end");
+    orb.className = "sky-orb is-" + sc.orb;
+    const id = (playSky.id = (playSky.id || 0) + 1);
+    box.getAnimations({ subtree: true }).forEach((a) => a.cancel());   // the last fade-out keeps opacity 0 (fill)
+    box.hidden = false;
+    const opt = { duration: D, easing: "ease-in-out", fill: "forwards" };
+    $$("#sky .sky-l").forEach((el) => { const o = sc[el.dataset.sky] || [0, 0, 0]; el.animate(o.map((x) => ({ opacity: x })), opt); });
+    $("#sky .sky-stars").animate(sc.stars.map((x) => ({ opacity: x })), opt);
+    const low = "translate(-22px, 74px)", high = "translate(0, -18px)", past = "translate(22px, 74px)";   // behind the hills / over them
+    const path = sc.up ? [low, high] : [high, past];
+    orb.animate(path.map((tr) => ({ transform: tr })), { ...opt, easing: sc.up ? "cubic-bezier(.2, .6, .3, 1)" : "cubic-bezier(.6, 0, .8, .4)" });
+    $("#sky .sky-text").animate([{ opacity: 0, transform: "translateY(-50%) translateX(8px)" }, { opacity: 1, transform: "translateY(-50%)" }],
+                                { duration: 700, delay: 500, fill: "backwards", easing: "ease-out" });
+    setTimeout(() => {                              // hold a moment, then fade out (unless a newer sky took over)
+      if (playSky.id !== id) return;
+      box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 700, fill: "forwards" }).finished.then(() => { if (playSky.id === id) box.hidden = true; });
+    }, D + 1600);
+  }
+  $("#sky").addEventListener("click", () => { playSky.id = (playSky.id || 0) + 1; $("#sky").hidden = true; });
+  // the bar only: a shift that begins or ends while recording (checked with the clock, every second)
+  function skyTick() {
+    const now = activeShifts(), was = st.shiftOn || [];
+    st.shiftOn = now;
+    const gone = was.find((k) => !now.includes(k)), came = now.find((k) => !was.includes(k));
+    if (gone) playSky(gone, false); else if (came) playSky(came, true);
   }
   // the count, the ring and the note under it; from 30 minutes before 0000Z the note says how long is left
   function renderCount() {

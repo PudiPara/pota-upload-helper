@@ -155,6 +155,7 @@
  "live.event.tip": "Ein POTA-Event-Zeitraum oder Award-Zeitfenster (Early / Late Shift: aus dem Längengrad des Parks berechnet)", "res.rover": "{date}: {n} Parks aktiviert", "res.rover.award": "{date}: {n} Parks aktiviert — genug für den Rover-Award „{award}“", "res.fix": "Fehler nach dem Hochladen entdeckt? Eine korrigierte Datei erneut hochzuladen lässt die falschen Zeilen auf pota.app (eine Zeile mit anderem CALL oder Band kommt als weiteres QSO hinzu). Innerhalb von 24 Stunden nach dem Hochladen kannst du sie unter My Log Uploads selbst löschen und neu hochladen; danach über Request Support auf pota.app.", "res.fix.open": "My Log Uploads öffnen",
  "cfg.ops.h": "Operator", "cfg.ops.p": "Beim Betrieb unter einem Clubrufzeichen auf dem Startbildschirm und während der Aufzeichnung wählbar.",
  "b.hunterNoProfile": "! pota.app hat kein Profil für {call} (Rufzeichen nicht bei pota.app registriert?). Der P2P-Abgleich nutzt nur gespeicherte Daten.",
+ "sky.start": "von {from} bis {to}", "sky.end": "Dieses Zeitfenster ist vorbei",
  "api.notRecording": "Keine Aufzeichnung aktiv.",
   "api.spotsFail": "Spots nicht abrufbar: {err}", "api.fileNotFound": "Datei nicht gefunden. Bitte erneut wählen.",
   "api.logRead": "Log nicht lesbar: {err}", "api.updCheckFail": "Update-Prüfung fehlgeschlagen: {err}", "api.updFail": "Update fehlgeschlagen: {err}",
