@@ -74,11 +74,13 @@ _cache = (None, {})
 
 
 def _load():
-    """mypota.json, read again only when the file changed (awards look at it on every QSO)."""
+    """mypota.json, read again only when the file changed (awards look at it on every QSO). Its size is part of the
+    key: Windows' file times are coarse, two writes close together kept one time (CI caught it)."""
     global _cache
     path = data_path(FILE)
     try:
-        key = (path, os.stat(path).st_mtime_ns)
+        st = os.stat(path)
+        key = (path, st.st_mtime_ns, st.st_size)
     except OSError:
         return {}
     if _cache[0] != key:
@@ -122,6 +124,8 @@ def import_files(paths):
     for kind, parks in got.items():
         data[kind] = {"at": utc_stamp(), "parks": parks}
     write_json(data_path(FILE), data)
+    global _cache
+    _cache = (None, {})                    # read it again whatever the file's time says
     return {"ok": True, **{k: len(v["parks"]) for k, v in data.items() if k in ("hunter", "activator")}}
 
 
