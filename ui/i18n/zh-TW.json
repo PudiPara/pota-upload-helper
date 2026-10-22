@@ -155,7 +155,7 @@
  "live.event.tip": "POTA 活動期間或獎狀的時段（Early / Late Shift 依公園經度推算）", "res.rover": "{date}：{n} 個公園啟用成功", "res.rover.award": "{date}：{n} 個公園啟用成功——達到 Rover 獎狀「{award}」", "res.fix": "上傳後發現錯誤時：改正後重新上傳，錯誤的行仍會留在 pota.app（改了 CALL 或頻段的行會被當成另一個 QSO 加上）。上傳後 24 小時內可在 My Log Uploads 自行刪除再上傳；超過後請透過 pota.app 的 Request Support 申請刪除。", "res.fix.open": "開啟 My Log Uploads",
  "cfg.ops.h": "操作員", "cfg.ops.p": "用俱樂部呼號運用時，可在開始記錄畫面和運用中畫面選擇。",
  "b.hunterNoProfile": "! pota.app 上找不到 {call} 的資料（未在 pota.app 註冊的呼號等）。P2P 核對僅使用已儲存的資料。",
- "sky.start": "{from}–{to} 的時段", "sky.end": "這個時段結束了",
+ "sky.start": "當地 {from}–{to}", "sky.utc": "UTC {from}–{to}", "sky.end": "這個時段結束了",
  "api.notRecording": "未在記錄。",
   "api.spotsFail": "無法取得 spot：{err}", "api.fileNotFound": "找不到檔案。請重新選擇。",
   "api.logRead": "無法讀取日誌：{err}", "api.updCheckFail": "檢查更新失敗：{err}", "api.updFail": "更新失敗：{err}",
