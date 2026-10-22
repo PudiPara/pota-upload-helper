@@ -405,6 +405,15 @@ def park_location_codes(ref):
     return [x["code"] for x in _locations(desc)]
 
 
+LINEAR = (" Trail", " River")    # pota.app's names for a park that is the trail / river itself: "... State Trail", "... Wild and Scenic River"
+
+
+def linear_parks(refs):
+    """The parks that are a trail or a river themselves (Rules: operate on public land within 100 ft / 30.5 m
+    of it) - by the shipped list's name; a park newer than the list is not known."""
+    return [r for r in refs if (shipped_parks().get(r) or ("",))[0].rstrip().endswith(LINEAR)]
+
+
 def park_status(ref):
     """"active" | "retired" (pota.app retired it) | "no" (not in the shipped list: a mistyped or
     long-gone number, or a park newer than the list) - by the shipped list only, no request."""
