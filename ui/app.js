@@ -409,6 +409,7 @@
     // two lines: the park's local time by its 15° band (what a shift is: 02-08 / 18-02, whatever the computer's clock
     // is set to; real time zones and summer time may differ, as the docs say) and UTC
     $("#skyLine").textContent = rise ? t("sky.start", { from: hh(local), to: hh(local + w[1]) }) : t("sky.end");
+    $("#skyLine").hidden = rise && w[0] === local;          // the band is UTC itself (around 0°): the UTC line only
     $("#skyUtc").textContent = rise ? t("sky.utc", { from: hh(w[0]), to: hh(w[0] + w[1]) }) : "";
     $("#skyUtc").hidden = !rise;
     orb.className = "sky-orb is-" + sc.orb;
