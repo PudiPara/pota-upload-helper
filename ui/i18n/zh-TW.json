@@ -151,7 +151,7 @@
   "api.portNum": "連接埠必須是數字。", "api.portRange": "連接埠範圍為 1–65535。",
   "api.mcFormat": "群播位址應形如 224.0.0.1。", "api.fwdFormat": "轉送位址應為「位址:連接埠」，如 127.0.0.1:2335。",
   "api.listenerName": "接收口", "api.badPark": "公園編號格式不對。請依 {park} 輸入。", "api.noCall": "請先在 設定 → 呼號 中新增你的呼號。",
-  "api.firstSpot": "正在取得第一批 spot", "api.qsoNotFound": "找不到該 QSO。", "live.operator": "操作員", "live.operator.ph": "僅限俱樂部台（留空 = 本人）", "live.operator.change": "換人時改寫後按 Enter", "live.operator.now": "操作員已改為 {op}，之後的 QSO 都會帶上", "api.badOperator": "操作員呼號不正確。", "b.note.club": "這是俱樂部台的日誌（{call}，操作員 {ops}）。請從俱樂部的 pota.app 帳號上傳，不要上傳到個人帳號；各操作員會依 OPERATOR 自動計入",
+  "api.firstSpot": "正在取得第一批 spot", "api.qsoNotFound": "找不到該 QSO。", "live.operator": "操作員", "live.operator.ph": "無（本人）", "live.operator.change": "換人時重新選擇", "live.operator.now": "操作員已改為 {op}，之後的 QSO 都會帶上", "api.badOperator": "操作員呼號不正確。", "b.note.club": "這是俱樂部台的日誌（{call}，操作員 {ops}）。請從俱樂部的 pota.app 帳號上傳，不要上傳到個人帳號；各操作員會依 OPERATOR 自動計入",
  "live.event.tip": "POTA 活動期間或獎狀的時段（Early / Late Shift 依公園經度推算）", "res.rover": "{date}：{n} 個公園啟用成功", "res.rover.award": "{date}：{n} 個公園啟用成功——達到 Rover 獎狀「{award}」", "res.fix": "上傳後發現錯誤時：改正後重新上傳，錯誤的行仍會留在 pota.app（改了 CALL 或頻段的行會被當成另一個 QSO 加上）。上傳後 24 小時內可在 My Log Uploads 自行刪除再上傳；超過後請透過 pota.app 的 Request Support 申請刪除。", "res.fix.open": "開啟 My Log Uploads",
  "cfg.ops.h": "操作員", "cfg.ops.p": "用俱樂部呼號運用時，可在開始記錄畫面和運用中畫面選擇。",
  "api.notRecording": "未在記錄。",

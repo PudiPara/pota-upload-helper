@@ -85,10 +85,9 @@
               <label class="start-label" for="liveCall" data-i18n="live.call">コールサイン</label>
               <select id="liveCall" class="call-select" data-i18n-title="live.call"></select>
             </div>
-            <datalist id="opList"></datalist>
-            <div class="start-field">
+            <div class="start-field" id="liveOpField" hidden>
               <label class="start-label" for="liveOp" data-i18n="live.operator">オペレーター</label>
-              <input id="liveOp" class="op-input" list="opList" placeholder="クラブ局のときだけ" data-i18n-ph="live.operator.ph" spellcheck="false" autocomplete="off">
+              <select id="liveOp" class="call-select op-select"></select>
             </div>
             <div class="start-field">
               <label class="start-label start-label-top" for="parks" data-i18n="live.parksLabel">公園</label>
@@ -143,7 +142,7 @@
               <span class="dash-status" id="liveStatus"></span>
             </div>
             <div class="dash-parks" id="signParks"></div>
-            <label class="dash-op" id="dashOpBox" hidden><span data-i18n="live.operator">オペレーター</span><input id="dashOp" list="opList" spellcheck="false" autocomplete="off" data-i18n-title="live.operator.change"></label>
+            <label class="dash-op" id="dashOpBox" hidden><span data-i18n="live.operator">オペレーター</span><select id="dashOp" class="call-select" data-i18n-title="live.operator.change"></select></label>
             <div class="dash-foot">
               <div class="clock" id="elapsed">00:00:00</div>
               <div class="dash-actions">

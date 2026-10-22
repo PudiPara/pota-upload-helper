@@ -252,12 +252,11 @@
   // a club station hands over without stopping: QSOs from now on carry the new OPERATOR
   $("#dashOp").addEventListener("change", async (e) => {
     const r = await api.set_operator(e.target.value);
-    if (!r.ok) { toast(r.error); e.target.value = st.operator; return; }
-    st.operator = r.operator; e.target.value = r.operator; st.operators = { ...(st.operators || {}), [st.call]: r.operator }; showOperator();
+    if (!r.ok) { toast(r.error); e.target.innerHTML = opOptions(st.operator); return; }
+    st.operator = r.operator; e.target.value = r.operator; st.operators = { ...(st.operators || {}), [st.call]: r.operator }; showOperator(); e.target.innerHTML = opOptions(r.operator);
     if (r.operator) toast(t("live.operator.now", { op: r.operator }));
     else $("#dashOpBox").hidden = true;
   });
-  $("#dashOp").addEventListener("keydown", (e) => { if (e.key === "Enter") e.target.blur(); });
 
   const refHtml = (p) => `<span class="ref">${refInner(p)}</span>`;
   // live: {parks, start, locs, operator, shifts} from start_live, or get_state's running session
@@ -265,7 +264,7 @@
     const { parks, start } = live;
     st.spots.clear(); st.qsos.clear(); st.lastAt = 0; st.start = utcMs(start); st.cheered = null; st.parks = parks; st.seq = 0;
     st.locs = live.locs || {}; st.day = utcDay(); st.shifts = live.shifts || {};
-    st.operator = live.operator || ""; $("#dashOpBox").hidden = !st.operator; $("#dashOp").value = st.operator;   // club station only
+    st.operator = live.operator || ""; $("#dashOpBox").hidden = !st.operator; $("#dashOp").innerHTML = opOptions(st.operator);   // club station only
     $("#liveIdle").hidden = true; $("#liveRun").hidden = false; $("#liveDot").hidden = false;
     $("#signParks").innerHTML = parks.map((p) =>
       `<div class="sign-park">${plate(p)}<span class="name" data-ref="${esc(p)}"></span></div>`).join("");
@@ -1042,14 +1041,20 @@
     saveCalls(calls, calls.includes(st.call) ? st.call : calls[0]);
   });
   // the operator is remembered per call: a club call's operator must not follow into a personal call's session
-  const showOperator = () => { $("#liveOp").value = (st.operators || {})[st.call] || ""; };
+  // a select (a datalist's native popup can't be styled): なし + 設定 → オペレーター, plus the one in use if removed since
+  const opOptions = (sel) => `<option value="">${esc(t("live.operator.ph"))}</option>` +
+    [...new Set([...(st.opList || []), sel].filter(Boolean))].map((c) => `<option value="${esc(c)}"${c === sel ? " selected" : ""}>${esc(c)}</option>`).join("");
+  function showOperator() {
+    const sel = (st.operators || {})[st.call] || "";
+    $("#liveOp").innerHTML = opOptions(sel); $("#liveOpField").hidden = !sel && !(st.opList || []).length;
+  }
   $("#liveCall").addEventListener("change", (e) => saveCalls(st.calls, e.target.value));
   // 設定 → クラブ局のオペレーター: offered in the operator boxes (still free to type)
   function renderOps() {
     $("#ops").innerHTML = (st.opList || []).map((c) => `
       <li class="call-row"><span class="call-name">${esc(c)}</span>
         <button class="link" data-del="${esc(c)}">${esc(t("cfg.calls.remove"))}</button></li>`).join("");
-    $("#opList").innerHTML = (st.opList || []).map((c) => `<option value="${esc(c)}"></option>`).join("");
+    showOperator(); if (st.operator) $("#dashOp").innerHTML = opOptions(st.operator);
   }
   async function saveOps(list) { st.opList = list; renderOps(); await api.save({ op_list: list }); }
   $("#opsAdd").addEventListener("submit", (e) => {
