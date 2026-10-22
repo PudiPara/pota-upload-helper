@@ -105,6 +105,20 @@ class AsciiOut(unittest.TestCase):
         self.assertEqual(potacommon.adif_value("GRIDSQUARE", "PM95XQ12"), "PM95XQ12")
         self.assertEqual(potacommon.adif_value("GRIDSQUARE", "PM9"), "")
 
+    def test_ssb_written_without_its_sideband(self):          # #34: pota.app would keep "LSB" as the mode
+        data, out = tempfile.mkdtemp(), tempfile.mkdtemp()
+        saved, potacommon.DATA_DIR = potacommon.DATA_DIR, data
+        try:
+            recs = [rec(MODE="LSB", MY_SIG_INFO="JP-1206"), rec(CALL="JA1DEF", MODE="MFSK", SUBMODE="FT4", MY_SIG_INFO="JP-1206")]
+            res = builder.build(None, ["20261020"], None, "JL1FVA", out, offline=True, recs=recs, confirmed_only=True,
+                                log=lambda *a: None)
+        finally:
+            potacommon.DATA_DIR = saved
+        body = open(os.path.join(res["out_dir"], res["files"][0]), encoding="utf-8").read()
+        self.assertIn("<MODE:3>SSB <RST", body.replace("<MODE:3>SSB <MY_SIG", "<MODE:3>SSB <RST"))
+        self.assertNotIn("<SUBMODE:3>LSB", body)
+        self.assertIn("<SUBMODE:3>FT4", body)                    # a data submode stays: it is the mode pota.app keeps
+
     def test_build_upper_cases_modes(self):
         r = builder.records(recs=[rec(CALL="ja1abc", MODE="mfsk", SUBMODE="ft4x")])[0]
         self.assertEqual((r["CALL"], r["MODE"], r["SUBMODE"]), ("JA1ABC", "MFSK", "FT4X"))

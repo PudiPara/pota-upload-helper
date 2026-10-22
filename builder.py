@@ -245,6 +245,8 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
                                 "mode": mode_of(r), "parks": list(theirs), "source": src if theirs else ""})
             for tp in (theirs or [None]):
                 o = {k: r.get(k) for k in KEEP}
+                if o.get("MODE") == "SSB":
+                    o.pop("SUBMODE", None)       # pota.app keeps the SUBMODE ("LSB") as the mode: SSB is one mode (#34)
                 o.update({"STATION_CALLSIGN": call, "OPERATOR": r.get("OPERATOR") or call,
                           "MY_SIG": "POTA", "MY_SIG_INFO": mp, "MY_POTA_REF": mp})
                 if loc:
