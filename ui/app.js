@@ -417,10 +417,10 @@
       `<button class="link wx-open">${esc(t("wx.details"))}</button><button class="link wx-src wx-src-line" data-url="https://open-meteo.com/">Open-Meteo</button>`;
     line.classList.toggle("is-alert", alerts.length > 0);
     if (lmap.tab === "weather") renderWxTab();
-    const fresh = w.new || [], notices = fresh.filter((k) => NOTICES[k]);
+    const fresh = w.new || [], notices = fresh.filter((k) => noticeOf(k, w));
     if (notify && !BAR) {                  // the rest: one toast (the notices below have their own screen)
-      const words = fresh.filter((k) => !k.startsWith("jma:") && !NOTICES[k]).map(alertText);
-      const named = official.filter((x) => fresh.includes("jma:" + x.code) && !NOTICES["jma:" + x.code]).map(jmaName);
+      const words = fresh.filter((k) => !k.startsWith("jma:") && !noticeOf(k, w)).map(alertText);
+      const named = official.filter((x) => fresh.includes("jma:" + x.code) && !noticeOf("jma:" + x.code, w)).map(jmaName);
       if (named.length) words.unshift(t("jma.new", { names: named.join("・") }) + (w.jma_place ? t("jma.at", { place: w.jma_place }) : ""));
       if (words.length) toast(words.join(" "));
     }
@@ -445,19 +445,28 @@
     wind: ["wind", 2, "wx.notice.windTitle", "wx.notice.wind", "wx.notice.windShort"],
   };
   // the JMA's colours by 警戒レベル相当: 2 yellow, 3 red, 4 purple, 5 black (pulsing toward a deeper shade)
+  // every other JMA warning of 警報 or graver (大雨警報, 土砂災害危険警報 ...) has a notice too, in its level's colour;
+  // 注意報 other than thunder and wind stay plates and a toast
+  function noticeOf(key, w) {
+    if (NOTICES[key]) return NOTICES[key];
+    const a = (w.alerts || {})[key];
+    if (!key.startsWith("jma:") || !a || a.level < 3) return null;
+    return a.level >= 4 ? ["warn", a.level, null, "wx.notice.jmaDanger", "wx.notice.jmaDangerShort"]
+      : ["warn", 3, null, "wx.notice.jmaWarn", "wx.notice.jmaWarnShort"];
+  }
   const PULSE = { 2: ["#F2E700", "#FFB300"], 3: ["#FF2800", "#B81D00"], 4: ["#AA00AA", "#6E006E"], 5: ["#0C000C", "#3A2A3A"] };
   const notice = { queue: [] };
   // the new ones, gravest first, one at a time: closing one shows the next
   function showNotices(keys, w) {
     notice.queue = keys.map((k) => [k, w]).concat(notice.queue.filter(([k]) => !keys.includes(k)))
-      .sort((a, b) => NOTICES[b[0]][1] - NOTICES[a[0]][1]);
+      .sort((a, b) => noticeOf(b[0], b[1])[1] - noticeOf(a[0], a[1])[1]);
     nextNotice();
   }
   function nextNotice() {
     const box = $("#storm"), item = notice.queue.shift();
     if (!item) { box.hidden = true; document.body.classList.remove("has-storm"); return; }
-    const [key, w] = item, [icon, level, title, body, short] = NOTICES[key], a = w.alerts[key] || {};
-    const words = { when: whenText(a.in), g: fmtWind(a.g || 0) };
+    const [key, w] = item, [icon, level, title, body, short] = noticeOf(key, w), a = w.alerts[key] || {};
+    const words = { when: whenText(a.in), g: fmtWind(a.g || 0), name: key.startsWith("jma:") ? t("jma." + key.slice(4)) : "" };
     box.dataset.icon = icon; box.className = "storm lv" + level;
     // the JMA's: where it is in force too, so the operator knows the warning is for this place
     $("#stormName").textContent = title ? t(title) : t("jma." + key.slice(4)) + (w.jma_place ? t("jma.at", { place: w.jma_place }) : "");
@@ -553,7 +562,8 @@
     const jmaSrc = `<button class="link wx-src" data-url="https://www.jma.go.jp/bosai/forecast/">${esc(t("jma.src"))}</button>`;
     const hm = (iso) => (iso || "").slice(11, 16);
     let html = "";
-    if (w.jma) html += `<section class="wx-sec"><h3>${esc(t("wx.tab.jmaWarn"))}${w.jma_place ? `<small>${esc(w.jma_place)}</small>` : ""}</h3><div class="wx-chips">${w.jma.length
+    // say where: the JMA issues them for each municipality (not the prefecture or the region)
+    if (w.jma) html += `<section class="wx-sec"><h3>${esc(w.jma_place ? t("wx.tab.jmaWarnAt", { place: w.jma_place }) : t("wx.tab.jmaWarn"))}<small>${esc(t("wx.tab.jmaBy"))}</small></h3><div class="wx-chips">${w.jma.length
       ? w.jma.map((x) => `<span class="jma jma-l${x.level}">${esc(t("jma." + x.code))}</span>`).join("") : `<span class="muted">${esc(t("wx.tab.none"))}</span>`}</div></section>`;
     const fc = w.jma_forecast;
     if (fc && fc.area) {

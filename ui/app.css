@@ -699,7 +699,10 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .storm-bolt { width: .85em; height: .85em; fill: currentColor; flex: none; }
 .storm-wind { width: 1.05em; height: 1.05em; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; flex: none;
   margin: -.04em 0 0; }   /* its strokes sit low in the box: lifted to the words' middle */
-.storm[data-icon="bolt"] .storm-wind, .storm[data-icon="wind"] .storm-bolt { display: none; }
+.storm-warn { width: 1em; height: 1em; flex: none; margin-top: -.06em; --warn-ink: #FFFFFF; }
+.storm.lv2 .storm-warn { --warn-ink: #161616; }
+.storm-bolt, .storm-wind, .storm-warn { display: none; }      /* the notice's own mark only */
+.storm[data-icon="bolt"] .storm-bolt, .storm[data-icon="wind"] .storm-wind, .storm[data-icon="warn"] .storm-warn { display: block; }
 /* the JMA's colours by 警戒レベル相当: 2 注意報 yellow (the base above), 3 警報 red, 4 危険警報 purple, 5 特別警報 black;
    on red / purple / black the words are white and the plate white with the colour */
 .storm.lv2 { background: #F2E700; }
