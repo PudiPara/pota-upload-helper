@@ -122,7 +122,7 @@
 
       <div id="liveRun" hidden>
         <div class="bar" id="bar" hidden>
-          <div class="bar-tile pywebview-drag-region"><div class="bar-ring" id="barRing"><strong id="barCount">0</strong><span id="barGoal">/10</span></div></div>
+          <div class="bar-tile pywebview-drag-region"><div class="bar-ring" id="barRing"><strong id="barCount">0</strong><span id="barGoal">/10</span></div><span class="bar-tile-clock" id="barTileClock">00:00:00</span></div>
           <div class="bar-body">
             <div class="bar-top pywebview-drag-region"><i class="bar-live"></i><span class="bar-parks" id="barParks"></span><small class="bar-per" id="barPer"></small><span class="bar-clock" id="barElapsed">00:00:00</span></div>
             <ol class="qsos qsos-bar" id="barQsos"></ol>
@@ -237,6 +237,7 @@
     <!-- ======================= build ======================= -->
     <section class="view" id="view-build" hidden>
       <h1 class="view-title" data-i18n="build.title">アップロード用ファイルを作る</h1>
+      <div id="buildHours"></div>
 
       <ol class="steps">
         <li class="step">
@@ -392,6 +393,12 @@
           <h2 data-i18n="cfg.window.h">ウインドウ</h2>
           <label class="switch"><input type="checkbox" id="onTop"><span class="switch-ui"></span><span data-i18n="cfg.window.ontop"></span></label>
           <label class="switch"><input type="checkbox" id="barOnTop"><span class="switch-ui"></span><span data-i18n="cfg.window.barTop"></span></label>
+          <div class="look-row"><span data-i18n="cfg.bar.h">バーの形</span>
+            <div class="seg seg-shape" id="barStyle" role="radiogroup">
+              <button role="radio" data-bar=""><i class="shape shape-wide" aria-hidden="true"></i><span data-i18n="cfg.bar.wide">標準</span></button>
+              <button role="radio" data-bar="compact"><i class="shape shape-compact" aria-hidden="true"></i><span data-i18n="cfg.bar.compact">コンパクト</span></button>
+              <button role="radio" data-bar="square"><i class="shape shape-square" aria-hidden="true"></i><span data-i18n="cfg.bar.square">スクエア</span></button>
+            </div></div>
           <p class="cfg-help cfg-help-after" data-i18n="cfg.window.p"></p>
         </section>
         <section class="cfg-block" data-tab="record">

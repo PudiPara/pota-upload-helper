@@ -256,6 +256,7 @@
  "row.prev": "前回は {parks} から",
  "rec.six": "6 Pack {n} / 6 公園（6m・このアプリの記録）",
  "guide.open": "使い方ガイド", "guide.close": "閉じる", "guide.prev": "戻る", "guide.next": "次へ", "guide.done": "はじめる", "guide.1.h": "Potaroo へようこそ", "guide.1.p": "公園での運用（アクティベーション）を手伝うアプリです。\n交信の記録はいつものロガーのまま。Potaroo はロガーから届いた交信を受け取り、P2P の確認と pota.app にアップロードするファイル作りを受け持ちます。\nこのガイドは左下の「使い方ガイド」からいつでも開けます。", "guide.2.h": "コールサインを登録", "guide.2.p": "{config} →「{general}」で、コールサインと所在国を入れます。クラブ局ならオペレーターも登録できます。", "guide.2.go": "「{general}」を開く", "guide.3.h": "ロガーとつなぐ", "guide.3.p": "{config} →「{loggers}」で受信口を用意し、ロガー（WSJT-X・N1MM Logger+・Turbo HAMLOG など）の UDP 送信先をこのアプリにします。受け取れると緑になります。", "guide.3.go": "「{loggers}」を開く", "guide.4.h": "公園を入れて記録を始める", "guide.4.p": "「{live}」で公園番号（例: {park}。2fer は {park},{park2}）を入れて「{start}」。ロガーの上に小さなバーが出て、届いた交信と 10 QSO までの数を表示します。", "guide.4.go": "「{live}」を開く", "guide.5.h": "P2P を確認する", "guide.5.p": "相手が公園からスポットされていると「P2P の可能性」と出ます。はい / いいえ で答えてください（自動では決めません）。スポットがない相手は公園番号を手で入れられます。", "guide.6.h": "終わったらファイルを作る", "guide.6.p": "「{finish}」で、その日の公園ごとのアップロード用ファイルを作ります。pota.app の Upload Log から送ってください（03:00〜11:00 UTC は避けてください）。あとから作り直すときは「{build}」から。", "guide.6.go": "「{build}」を開く", "guide.7.h": "実績も見られます", "guide.7.p": "pota.app の CSV（ハント・アクティベートした公園）を取り込むと、未ハントの公園の New 表示やアワードの進み具合が出ます。これで準備完了です。", "guide.7.go": "「{record}」を開く",
+ "cfg.bar.h": "バーの形", "cfg.bar.wide": "標準", "cfg.bar.compact": "コンパクト", "cfg.bar.square": "スクエア",
  "api.notRecording": "記録していません。",
  "api.spotsFail": "スポットを取得できませんでした: {err}",
  "api.fileNotFound": "ファイルが見つかりません。もう一度選んでください。",

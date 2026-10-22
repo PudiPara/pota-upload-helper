@@ -41,10 +41,11 @@ from spots import (SESSION_MARGIN, SpotLogger, clear_records, common_locations, 
                    distance_km, park_info, parks_middle, park_status, linear_parks, shift_hours, shipped_parks, summarize, tag_candidate)
 from window import BarMode, set_zoom
 
-SETTINGS_KEYS = ("call", "calls", "op_list", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "guide_seen", "p2p_auto", "lookup", "on_top", "font_scale", "theme", "dist_unit")   # "live" is set by start_live/finish_live only
+SETTINGS_KEYS = ("call", "calls", "op_list", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "guide_seen", "p2p_auto", "lookup", "on_top", "font_scale", "theme", "bar_style", "dist_unit")   # "live" is set by start_live/finish_live only
 DATE_RE = re.compile(r"\d{8}")
 LOOK_SCALES = (1, 1.15, 1.3)            # 設定 → 表示 → 文字の大きさ
 LOOK_THEMES = ("", "light", "dark")     # 設定 → 表示 → 配色 ("" = the OS)
+LOOK_BARS = ("", "compact", "square")   # 設定 → ウインドウ → バーの形 ("" = the standard wide one)
 SPOT_INTERVAL = 60       # seconds between pota.app spot polls while recording
 
 
@@ -231,6 +232,8 @@ class Api:
             keep.pop("font_scale")
         if "font_scale" in keep and self._bar:
             self._bar.set_zoom(keep["font_scale"])            # both windows, now
+        if "bar_style" in keep and keep["bar_style"] not in LOOK_BARS:
+            keep.pop("bar_style")
         if "theme" in keep and keep["theme"] not in LOOK_THEMES:
             keep.pop("theme")
         if "dist_unit" in keep and keep["dist_unit"] not in ("km", "mi"):
@@ -434,9 +437,9 @@ class Api:
                     "clock": clock_skew(), "weather": self._weather}
 
     def _look(self, s=None):
-        """設定 → 表示 for both windows: {font_scale, theme}."""
+        """設定 → 表示 for both windows: {font_scale, theme, bar_style}."""
         s = s or load_settings()
-        return {"font_scale": s.get("font_scale", 1), "theme": s.get("theme", "")}
+        return {"font_scale": s.get("font_scale", 1), "theme": s.get("theme", ""), "bar_style": s.get("bar_style", "")}
 
     def session_qsos(self, start_iso, parks=""):
         """The live list when a session starts or the window reopens: today's QSOs at any of these
@@ -507,7 +510,7 @@ class Api:
         """The bar measured its content: make the window that size (no line wraps, nothing to spare;
         taller with a bigger text size)."""
         try:
-            width, height = max(360, min(2000, int(width))), max(80, min(300, int(height)))
+            width, height = max(200, min(2000, int(width))), max(60, min(400, int(height)))
         except (TypeError, ValueError):
             return False
         if self._bar:
@@ -829,9 +832,8 @@ def main():
     # the shipped park list (97k lines) is read beside the window's start-up, not before it
     threading.Thread(target=lambda: setattr(i18n, "examples", example_parks(load_settings().get("country") or "")), daemon=True).start()
     api = Api()
-    from window import BAR_W
     win = webview.create_window(APP_NAME, resource("ui", "index.html"), js_api=api,
-                                width=1180, height=800, min_size=(BAR_W, 160), on_top=bool(load_settings().get("on_top")))
+                                width=1180, height=800, min_size=(600, 160), on_top=bool(load_settings().get("on_top")))
     api._window = win
     api._bar = BarMode(win, resource("ui", "index.html"), api, APP_NAME + " - " + t("bar.title"),
                        keep_on_top=bool(load_settings().get("on_top")), bar_on_top=load_settings().get("bar_on_top", True) is not False)

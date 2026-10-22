@@ -621,9 +621,9 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .bar-ring span { font-size: 11px; font-weight: 700; color: #BFD4C5; margin-top: 1px; }
 .bar-ring.is-done strong { color: #F2C46B; }
 .bar-body { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 10px 40px 8px 16px; gap: 4px; }
-.bar-top { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2); min-width: 0; cursor: move; }
+.bar-top { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2); min-width: 0; overflow: hidden; cursor: move; }
 .bar-live { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #3FB97A; box-shadow: 0 0 0 0 rgba(63, 185, 122, .6); animation: pulse 2s infinite; }
-.bar-parks { display: flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden; white-space: nowrap; }
+.bar-parks { flex: none; display: flex; align-items: center; gap: 4px; white-space: nowrap; }   /* whole: fitBar shrinks the line */
 .bar-parks .ref { font-weight: 700; color: var(--ink); letter-spacing: .03em; }
 .bar-parks .ref b { font-weight: 500; color: var(--ink-2); }
 .bar-clock { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 600; letter-spacing: .03em; }
@@ -634,11 +634,16 @@ body.is-bar .view { max-width: none; padding: 0; height: 100vh; }
 .qsos-bar .qso { padding: 0; border: 0; background: none; grid-template-columns: auto auto 1fr; grid-template-areas: "call band time" "p2p p2p p2p"; gap: 2px 10px; align-items: center; }
 .qsos-bar .qso::before { display: none; }
 .qsos-bar .qso-call { grid-area: call; font-size: 22px; font-weight: 800; letter-spacing: .02em; line-height: 1.2; }
-.qsos-bar .qso-band { grid-area: band; text-align: left; }
+.qsos-bar .qso-band { grid-area: band; text-align: left; white-space: nowrap; }
 .qsos-bar .qso-time { grid-area: time; color: var(--ink-3); }
-.qsos-bar .qso-p2p { grid-area: p2p; flex-wrap: nowrap; white-space: nowrap; }
-.bar.is-measure { width: max-content; }            /* fitBar: the width the content needs on one line */
-.bar.is-measure .bar-empty { display: none; }
+.qsos-bar .qso-p2p { grid-area: p2p; flex-wrap: wrap; row-gap: 2px; white-space: nowrap; min-width: 0; min-height: 0; contain: inline-size; }
+.qsos-bar .qso-p2p > *, .qsos-bar .qso-p2p .plates { flex: none; flex-wrap: nowrap; }
+/* fitBar, only when 85 % type still does not fit: what the row says twice goes - the notes (kept in the main window's
+   list), "P2P の可能性" (the plates say it) and New (a new park's plate has its amber frame) */
+.qsos-bar .qso-p2p.is-tight .ask-note, .qsos-bar .qso-p2p.is-tight .ask-text, .qsos-bar .qso-p2p.is-tight .new-tag { display: none; }
+body.bar-square .qsos-bar .qso-p2p .plates { flex: 0 1 auto; flex-wrap: wrap; row-gap: 2px; }   /* a 3fer wraps in the narrow card */   /* whole items; up to two lines, then fitBar shrinks them */
+/* a question's buttons: the bar asks over itself (askNext); one skipped there is answered in the main window */
+.qsos-bar .qso.is-ask .qso-p2p .chip, .qsos-bar .qso.is-ask .qso-p2p .link { display: none; }
 .qsos-bar .qso.is-new { animation: bar-in .45s ease-out; }
 @keyframes bar-in { from { opacity: 0; transform: translateY(8px); } }
 .bar-empty { color: var(--ink-2); font-size: 12.5px; line-height: 1.5; padding-top: 4px; }
@@ -791,7 +796,8 @@ body.is-bar #award span { font-size: 11px; }
 /* the bar's P2P question over the whole bar (askNext in app.js); blinks when the next QSO comes first */
 .ask { position: fixed; inset: 0; z-index: 19; display: grid; place-content: center; gap: 8px; padding: 6px 16px;
   background: #7A4E0C; color: #F4F7F1; text-align: center; }
-.ask-q { display: flex; flex-wrap: nowrap; white-space: nowrap; align-items: center; justify-content: center; gap: 8px; font-weight: 700; font-size: 13.5px; }
+.ask-q { display: flex; flex-wrap: nowrap; white-space: nowrap; align-items: center; justify-content: safe center; gap: 8px; font-weight: 700; font-size: 13.5px;
+  width: 100%; overflow: hidden; }   /* the bar's width: fitBar shrinks the type */
 .ask-q strong { font-size: 20px; line-height: 1; }
 .ask-q .plates { flex-wrap: nowrap; }
 .ask-btns { display: flex; gap: 10px; justify-content: center; }
@@ -812,6 +818,74 @@ body.is-bar .cheer strong { grid-row: 1 / span 2; font-size: 40px; line-height: 
 body.is-bar .cheer span { font-size: 14px; }
 body.is-bar .cheer-hunt .plates { margin: 0; gap: 6px; }
 body.is-bar .cheer-hunt .plate { font-size: 15px; padding: 2px 9px 3px; }
+
+/* ---------- the bar's shapes (設定 → ウインドウ → バーの形; app.js BAR_SIZES) ---------- */
+.seg-shape button { display: inline-flex; align-items: center; gap: 7px; }
+.shape { display: block; flex: none; border: 1.5px solid currentColor; border-radius: 3px; position: relative; opacity: .8; }
+.shape::before { content: ""; position: absolute; background: currentColor; opacity: .55; }
+.shape-wide { width: 26px; height: 10px; }
+.shape-wide::before { left: 0; top: 0; bottom: 0; width: 7px; }
+.shape-compact { width: 24px; height: 7px; }
+.shape-compact::before { left: 0; top: 0; bottom: 0; width: 5px; }
+.shape-square { width: 14px; height: 14px; }
+.shape-square::before { left: 0; right: 0; top: 0; height: 5px; }
+/* compact: 360 x 88 - a narrower card, a smaller ring; the P2P line wraps to two lines like the standard one */
+body.bar-compact .bar-tile { width: 72px; }
+body.bar-compact .bar-ring { width: 54px; height: 54px; }
+body.bar-compact .bar-ring strong { font-size: 20px; }
+body.bar-compact .bar-ring span { font-size: 11px; }
+body.bar-compact .bar-body { padding: 6px 34px 6px 12px; gap: 2px; }
+body.bar-compact .bar-top { font-size: 11.5px; }
+body.bar-compact .bar-close { top: 3px; right: 4px; }
+body.bar-compact .qsos-bar .qso { gap: 0 10px; }
+body.bar-compact .qsos-bar .qso-call { font-size: 17px; }
+body.bar-compact .qsos-bar .qso-p2p { min-height: 0; }
+body.bar-compact .bar-empty { font-size: 11.5px; line-height: 1.35; padding-top: 1px; }
+body.bar-compact .ask { gap: 5px; padding: 4px 12px; }
+body.bar-compact .ask-q strong { font-size: 17px; }
+body.bar-compact .ask .chip { font-size: 12.5px; padding: 2px 14px; }
+body.bar-compact .ask-help { display: none; }   /* one skipped here is answered in the main window (as in the other shapes) */
+body.bar-compact .cheer strong { font-size: 32px; }
+body.bar-compact #award .medal { width: 36px; height: 36px; }
+body.bar-compact #award .medal::after { font-size: 17px; }
+body.bar-compact .storm { gap: 3px; padding: 4px 12px; }
+body.bar-compact .storm::before, body.bar-compact .storm::after { height: 5px; }
+body.bar-compact .storm strong { font-size: 15px; }
+body.bar-compact .storm p { font-size: 11.5px; line-height: 1.3; }
+body.bar-compact .storm-hint { font-size: 11px; }
+body.bar-compact .sky-text strong { font-size: 24px; }
+body.bar-compact .sky-text span { font-size: 12px; }
+body.bar-compact .wxa-temp { font-size: 42px; }
+/* square: 220 x 220 - the ring on top, the latest QSO under it; the overlays in one column */
+body.bar-square .bar { flex-direction: column; }
+.bar-tile-clock { display: none; }
+body.bar-square .bar-tile { width: auto; height: 76px; grid-auto-flow: column; gap: 14px; }   /* a widget: the count and the time on the tile */
+body.bar-square .bar-tile-clock { display: block; color: #F4F7F1; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .03em; }
+body.bar-square .bar-top .bar-clock { display: none; }
+body.bar-square .bar-top { flex-wrap: wrap; row-gap: 2px; }
+body.bar-square .bar-parks { flex-wrap: wrap; white-space: normal; }
+body.bar-square .bar-body { padding: 6px 12px; min-height: 0; }   /* the QSO box gets what is left (fitBar shrinks into it) */
+body.bar-square .bar-close { top: 4px; right: 4px; color: #BFD4C5; }
+body.bar-square .bar-close:hover { background: rgba(255, 255, 255, .12); color: #FFFFFF; }
+body.bar-square .qsos-bar .qso { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "call call" "band time" "p2p p2p"; }
+body.bar-square .qsos-bar .qso-call { font-size: 20px; }
+body.bar-square .ask { padding: 8px 10px; }
+body.bar-square .ask-q { flex-wrap: wrap; white-space: normal; justify-content: center; row-gap: 4px; }
+body.bar-square .ask-btns { flex-wrap: wrap; gap: 6px; }
+body.bar-square .ask .chip { padding: 4px 14px; }
+body.bar-square .cheer { grid-template-columns: auto; justify-items: center; text-align: center; gap: 6px; }
+body.bar-square .cheer strong { grid-row: auto; font-size: 34px; top: 0; }
+body.bar-square .cheer > span:nth-child(2):last-child { grid-row: auto; }
+body.bar-square .cheer-hunt .plates { flex-wrap: wrap; justify-content: center; }
+body.bar-square #award { grid-auto-flow: row; justify-items: center; text-align: center; }
+body.bar-square #award .award-text { justify-items: center; text-align: center; }
+body.bar-square #award strong { white-space: pre-line; }
+body.bar-square .storm strong { font-size: 15px; white-space: normal; }
+body.bar-square .sky-orb { left: 50%; top: 30%; }
+body.bar-square .sky-text { left: 8%; right: 8%; top: auto; bottom: 14%; transform: none; justify-items: center; text-align: center; }
+body.bar-square .sky-text strong { font-size: 24px; }
+body.bar-square .wxa-text { flex-direction: column; align-items: flex-start; gap: 6px; }
+body.bar-square .wxa-info span { white-space: normal; }
 
 .toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
