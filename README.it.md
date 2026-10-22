@@ -53,7 +53,7 @@ Il parco dell’altra stazione è deciso in quest’ordine:
 3. **Spot registrati durante l’attivazione** (solo generando da un file ADIF; spot da 30 minuti prima a 10 minuti dopo il QSO)
 4. SIG_INFO / POTA_REF dal logger
 
-Si usa solo l’API pubblica (api.pota.app), senza login. Conservare il log è compito del logger: questa app si limita a giudicare e a scrivere i file di upload, e non modifica mai il log del logger.
+Legge solo dati che pota.app rende pubblici (api.pota.app), senza login (e senza supporto ufficiale di POTA). Conservare il log è compito del logger: questa app si limita a giudicare e a scrivere i file di upload, e non modifica mai il log del logger.
 
 ## Download
 

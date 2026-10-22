@@ -53,7 +53,7 @@ Park drugiej stacji ustalany jest w tej kolejności:
 3. **Spoty zapisane podczas aktywacji** (tylko przy tworzeniu z pliku ADIF; spoty od 30 minut przed do 10 minut po QSO)
 4. SIG_INFO / POTA_REF z programu do logowania
 
-Aplikacja korzysta tylko z publicznego API (api.pota.app), logowanie nie jest potrzebne. Przechowywanie logu to zadanie programu do logowania. Ta aplikacja zajmuje się tylko oceną i tworzeniem plików do wysłania i nigdy nie zmienia logu w programie do logowania.
+Aplikacja odczytuje tylko dane, które pota.app udostępnia publicznie (api.pota.app), bez logowania (i bez oficjalnego wsparcia POTA). Przechowywanie logu to zadanie programu do logowania. Ta aplikacja zajmuje się tylko oceną i tworzeniem plików do wysłania i nigdy nie zmienia logu w programie do logowania.
 
 ## Pobieranie
 

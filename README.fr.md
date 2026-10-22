@@ -53,7 +53,7 @@ Le parc de la station en face est déterminé dans cet ordre :
 3. **Les spots enregistrés pendant l’activation** (seulement depuis un fichier ADIF ; spots de 30 minutes avant à 10 minutes après le QSO)
 4. SIG_INFO / POTA_REF du logger
 
-Seule l’API publique (api.pota.app) est utilisée, sans connexion. Tenir le log, c’est le travail du logger : cette application se charge uniquement du jugement et de la création des fichiers d’envoi, et ne modifie jamais le log du logger.
+Elle ne lit que des données que pota.app rend publiques (api.pota.app), sans connexion (et sans soutien officiel de POTA). Tenir le log, c’est le travail du logger : cette application se charge uniquement du jugement et de la création des fichiers d’envoi, et ne modifie jamais le log du logger.
 
 ## Téléchargement
 

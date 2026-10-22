@@ -820,7 +820,9 @@
   $("#pickOut").addEventListener("click", async () => { const p = await api.pick_out(); if (p) { st.out = p; $("#outPath").textContent = p; } });
 
   const SRC_CLASS = { hunter: "src-ok", confirmed: "src-ok", manual: "src-ok", spot: "src-spot", log: "src-log", logspot: "src-log" };
-  // POTA asks that logs are not uploaded 03-11 UTC (log processing); shown in the user's local time
+  // POTA asks that logs are not uploaded 03-11 UTC: uploads then often end in "Unknown Failure" (database
+  // maintenance, log rotation, autoscaling). Not on docs.pota.app or the upload page; POTA sent it by mail / SNS,
+  // e.g. POTA JAPAN EVENT INFORMATION (@PotaEvent) on X, 2025-07-05, relaying POTA. Shown in the user's local time.
   function uploadHoursHtml() {
     const now = new Date(), at = (h) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), h));
     const hm = (d) => d.toLocaleTimeString(st.lang, { hour: "2-digit", minute: "2-digit" });
