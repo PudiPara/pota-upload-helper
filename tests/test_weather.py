@@ -24,6 +24,7 @@ class WeatherTest(unittest.TestCase):
         w = weather.summarize(answer(rain=(90, 0, 10, 30, 20)))    # 15:00 is behind us: from the hour we are in
         self.assertEqual((w["group"], w["kind"], w["temp"], w["rain"], w["sun"]), ("clear", "mainlyClear", 17.9, 30, {"kind": "sunset", "at": "16:58"}))
         self.assertEqual(w["alerts"], {})
+        self.assertEqual([h["t"] for h in w["hours"]][:2], ["16:00", "17:00"])         # the 天気 tab's hours, from this one
 
     def test_alerts(self):
         # the hours from 16:00 (the hour we are in = 0): 17:00 is 1, 18:00 is 2

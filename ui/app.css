@@ -350,21 +350,48 @@ h1, h2, h3 { margin: 0; letter-spacing: 0; }
 /* 運用中 → 一覧 / 地図 */
 .live-tabs { margin-top: 16px; }
 /* the weather at the parks (Open-Meteo, renderWeather in app.js): one line under the numbers, amber with an alert */
-.wx { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-top: 10px; padding: 8px 12px; border: 1px solid var(--line);
-  border-radius: var(--r-md); background: var(--surface); font-size: 12.5px; color: var(--ink-2); }
+.wx { display: flex; flex-wrap: nowrap; align-items: center; gap: 10px; margin-top: 10px; padding: 8px 12px; border: 1px solid var(--line);
+  border-radius: var(--r-md); background: var(--surface); font-size: 12.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; }
+.wx-now { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.wx-more { color: var(--ink-3); font-size: 11.5px; }
+.wx-open { margin-left: auto; flex: none; font-size: 12px; }
+.wx .wx-src-line { margin-left: 0; flex: none; }
+/* 天気 tab */
+.wx-tab { margin-top: 10px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }   /* the table scrolls inside, not the page */
+.wx-tab[hidden] { display: none; }
+.wx-sec { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); padding: 12px 14px; }
+.wx-sec h3 { margin: 0 0 10px; font-size: 13.5px; display: flex; align-items: baseline; gap: 10px; }
+.wx-sec h3 small { font-size: 11.5px; font-weight: 500; color: var(--ink-3); }
+.wx-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.wx-days { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.wx-day { display: grid; gap: 3px; font-size: 12.5px; }
+.wx-day b { font-size: 12px; color: var(--ink-3); }
+.wx-day-w { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.wx-day small { color: var(--ink-3); font-size: 11.5px; }
+.wx-pops { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 10px; font-size: 12.5px; color: var(--ink-2); }
+.wx-pop { font-weight: 700; color: var(--ink); }
+.wx-pop small { font-weight: 500; color: var(--ink-3); margin-right: 4px; }
+.wx-temps { margin-top: 6px; font-size: 12.5px; color: var(--ink-2); }
+.wx-foot { margin-top: 8px; display: flex; justify-content: flex-end; }
+.wx-foot .wx-src { margin-left: 0; }
+.wx-table-wrap { overflow-x: auto; }
+.wx-table { border-collapse: collapse; font-size: 12.5px; text-align: center; font-variant-numeric: tabular-nums; }
+.wx-table th { position: sticky; left: 0; background: var(--surface); text-align: left; font-weight: 600; color: var(--ink-3); font-size: 11.5px;
+  padding: 4px 10px 4px 0; white-space: nowrap; }
+.wx-table td { min-width: 52px; padding: 4px 6px; border-left: 1px solid var(--line); }
+.wx-table small { font-size: 10.5px; color: var(--ink-3); margin-left: 1px; }
+.wx-ic { width: 26px; height: 26px; vertical-align: middle; }
+.wx-arrow { display: inline-block; color: #2F7BD0; font-weight: 900; }
 .wx[hidden] { display: none; }
 .wx.is-alert { border-color: var(--amber); background: var(--amber-bg); }
 .wx-alert { color: var(--amber-ink); font-weight: 700; }
 .wx-src { margin-left: auto; font-size: 11.5px; color: var(--ink-3); }
-.wx-src + .wx-src { margin-left: 0; }
 /* the JMA's warnings in the JMA's colours by 警戒レベル相当: 2 注意報 yellow, 3 警報 red, 4 危険警報 purple, 5 特別警報 black */
 .jma { padding: 1px 8px 2px; border-radius: 4px; font-size: 11.5px; font-weight: 800; line-height: 1.5; }
 .jma-l2 { background: #F2E700; color: #161616; }
 .jma-l3 { background: #FF2800; color: #FFFFFF; }
 .jma-l4 { background: #AA00AA; color: #FFFFFF; }
 .jma-l5 { background: #0C000C; color: #FFFFFF; }
-.bar-wx { color: var(--amber-ink); font-weight: 700; font-size: 11.5px; white-space: nowrap; min-width: 0; flex-shrink: 100; overflow: hidden; text-overflow: ellipsis; }   /* gives way before the parks do */
-.bar.is-measure .bar-wx { display: none; }          /* a weather alert never widens the bar: it takes the room there is */
 .live-tabs + .live-map, .live-tabs ~ .live-grid { margin-top: 10px; }
 .live-map { height: max(360px, calc(100vh - 470px)); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; z-index: 0; background: var(--surface); }
 .live-map .leaflet-container { font: inherit; }
@@ -719,9 +746,9 @@ body.is-bar .storm .storm-ok { display: none; }
 .wxa-text { position: absolute; left: 6%; right: 4%; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 14px;
   text-shadow: 0 1px 3px rgba(0, 0, 0, .45), 0 0 14px rgba(0, 0, 0, .35); }
 .wxa-temp { font-size: 54px; font-weight: 300; line-height: 1; letter-spacing: -.02em; }
-.wxa-info { display: grid; gap: 1px; min-width: 0; }
+.wxa-info { display: grid; gap: 1px; min-width: 0; overflow: hidden; }
 .wxa-info b { font-size: 16px; font-weight: 700; }
-.wxa-info span { font-size: 12.5px; font-weight: 600; white-space: nowrap; opacity: .92; }
+.wxa-info span { font-size: 12.5px; font-weight: 600; white-space: nowrap; opacity: .92; overflow: hidden; text-overflow: ellipsis; }
 .wxa-info .wxa-alert { color: #FFD27A; opacity: 1; font-weight: 700; }
 
 /* ---------- 10 QSO reached ---------- */

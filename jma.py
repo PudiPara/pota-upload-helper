@@ -13,6 +13,7 @@ AREA_URL = "https://www.jma.go.jp/bosai/common/const/area.json"
 # since the new system of late May 2026 (危険警報): data/r8/<office>.json, one latest report per kind (VPWW55 大雨, 58 暴風 ...);
 # the old data/warning/<office>.json stopped on 2026-05-28
 WARN_URL = "https://www.jma.go.jp/bosai/warning/data/r8/%s.json"
+FORECAST_URL = "https://www.jma.go.jp/bosai/forecast/data/forecast/%s.json"   # 府県天気予報: 05 / 11 / 17 JST
 GSI_URL = "https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?"
 AREA_MAX_AGE = 30 * 86400          # the area table rarely changes: fetched again after a month
 GONE = {"解除", "発表警報・注意報はなし"}
@@ -34,11 +35,12 @@ THUNDER = "14"                      # 雷注意報
 def _area_table():
     path = data_path("jma-area.json")
     have = read_json(path, None)
-    if not have or time.time() - have.get("at", 0) > AREA_MAX_AGE:
+    if not have or "names" not in have or time.time() - have.get("at", 0) > AREA_MAX_AGE:
         a = fetch_json(AREA_URL, timeout=20)
         have = {"at": time.time(), "class20s": {k: v.get("parent") for k, v in a["class20s"].items()},
                 "parents": {k: v.get("parent") for key in ("class15s", "class10s") for k, v in a[key].items()},
-                "offices": list(a["offices"])}
+                "offices": list(a["offices"]), "class10s": list(a["class10s"]),
+                "names": {k: v.get("name") for k, v in a["class20s"].items()}}
         write_json(path, have)
     return have
 
@@ -72,6 +74,69 @@ def resolve(muni, table):
         seen.add(office)
         office = table["parents"].get(office)
     return (office, codes) if office in table["offices"] else None
+
+
+def class10(table, code):
+    """The class10 area (一次細分区域, what the forecast is written for) a class20 area belongs to."""
+    seen = set()
+    while code and code not in table["class10s"] and code not in seen:
+        seen.add(code)
+        code = table["class20s"].get(code) or table["parents"].get(code)
+    return code if code in table["class10s"] else None
+
+
+def forecast(lat, lon):
+    """The JMA's forecast for the area of a point in Japan, or None: {"office", "at", "area", "days": [{"date", "weather",
+    "wind", "wave"}], "pops": [{"at", "p"}], "temps": {"place", "list": [{"at", "t"}]}}. Raises on a network error."""
+    where = areas(lat, lon)
+    if not where:
+        return None
+    area = class10(_area_table(), where[1][0])
+    data = fetch_json(FORECAST_URL % where[0], timeout=15)
+    return read_forecast(data, area)
+
+
+def read_forecast(data, area):
+    """The JMA's forecast file -> the part for one class10 area (see forecast)."""
+    if not isinstance(data, list) or not data:
+        return None
+    ts = data[0].get("timeSeries") or []
+    def pick(series):
+        items = series.get("areas") or []
+        i = next((n for n, a in enumerate(items) if (a.get("area") or {}).get("code") == area), None)
+        return i, (items[i] if i is not None else None)
+    out = {"office": data[0].get("publishingOffice"), "at": data[0].get("reportDatetime"), "area": None, "days": [], "pops": [], "temps": None}
+    if ts:
+        i, a = pick(ts[0])
+        if a:
+            out["area"] = a["area"].get("name")
+            for n, when in enumerate(ts[0].get("timeDefines") or []):
+                get = lambda key: (a.get(key) or [None] * 9)[n] if n < len(a.get(key) or []) else None   # noqa: E731
+                out["days"].append({"date": when[:10], "weather": (get("weathers") or "").replace("\u3000", " "),
+                                    "wind": (get("winds") or "").replace("\u3000", " "), "wave": (get("waves") or "").replace("\u3000", " ")})
+    if len(ts) > 1:
+        _, a = pick(ts[1])
+        if a:
+            out["pops"] = [{"at": t, "p": p} for t, p in zip(ts[1].get("timeDefines") or [], a.get("pops") or []) if p != ""]
+    if len(ts) > 2:
+        # the temperatures are for a city of each area, listed in the order of the areas
+        # ponytail: matched by position; the JMA names no link between an area and its city
+        i, _ = pick(ts[0]) if ts else (None, None)
+        cities = ts[2].get("areas") or []
+        c = cities[i] if i is not None and i < len(cities) else (cities[0] if cities else None)
+        if c:
+            out["temps"] = {"place": (c.get("area") or {}).get("name"),
+                            "list": [{"at": t, "t": v} for t, v in zip(ts[2].get("timeDefines") or [], c.get("temps") or []) if v != ""]}
+    return out
+
+
+def place(lat, lon):
+    """The municipality's name at a point in Japan as the JMA calls it ("稲城市"; the parts of a split city joined), or None."""
+    where = areas(lat, lon)
+    if not where:
+        return None
+    names = _area_table()["names"]
+    return "・".join(dict.fromkeys(names.get(c) or c for c in where[1]))
 
 
 def warnings(lat, lon):

@@ -398,35 +398,35 @@
     // Japan: the JMA's warnings (Python: jma.py) are alerts "jma:<code>"; the rest are the forecast's (Open-Meteo)
     const om = alerts.filter((k) => !k.startsWith("jma:")), official = (w && w.jma) || [];
     const jmaName = (x) => t("jma." + x.code);
-    const shorts = official.map(jmaName).concat(om.map((k) => t("wx.short." + k)));
+    // the bar's weather: one short line - the gravest of the JMA's (how many more, where), else the forecast's words
+    const barLine = official.length ? jmaName(official[0]) + (official.length > 1 ? " " + t("wx.more", { n: official.length - 1 }) : "") +
+      (w && w.jma_place ? t("jma.at", { place: w.jma_place }) : "") : om.map((k) => t("wx.short." + k)).join(" · ");
     const alertText = (k) => { const a = w.alerts[k] || {};
       return t("wx.alert." + k, { when: whenText(a.in), p: a.p, g: fmtWind(a.g || 0) }); };
-    line.hidden = !w; $("#barWx").hidden = !alerts.length;
+    line.hidden = !w;
+    st.weather = w;
     if (!w) return;
+    // one line, never wrapped: what it is like now, the gravest warning (and how many more), and the 天気 tab for the rest
     const parts = [`${WX_ICON[w.group] || ""} ${t("wx.k." + w.kind)}`];
     if (w.temp != null) parts.push(fmtTemp(w.temp));
-    if (w.wind != null) parts.push(t("wx.wind", { v: fmtWind(w.wind), g: fmtWind(w.gust != null ? w.gust : w.wind) }));
-    if (w.rain != null) parts.push(t("wx.pop", { p: w.rain }));
-    if (w.sun) parts.push(t("wx." + w.sun.kind, { at: w.sun.at }));
-    // the JMA's in its colours (advisory yellow, warning red, emergency purple), with its credit
-    line.innerHTML = `<span>${esc(parts.join(" · "))}</span>` +
-      official.map((x) => `<span class="jma jma-l${x.level}">${esc(jmaName(x))}</span>`).join("") +
-      om.map((k) => `<span class="wx-alert">${esc(alertText(k))}</span>`).join("") +
-      (official.length ? `<button class="link wx-src" data-url="https://www.jma.go.jp/bosai/warning/">${esc(t("jma.src"))}</button>` : "") +
-      `<button class="link wx-src" data-url="https://open-meteo.com/">Weather data by Open-Meteo.com</button>`;
+    if (w.wind != null) parts.push(t("wx.windShort", { v: fmtWind(w.wind) }));
+    const top = official[0];
+    line.innerHTML = `<span class="wx-now">${esc(parts.join(" · "))}</span>` +
+      (top ? `<span class="jma jma-l${top.level}" title="${esc(w.jma_place || "")}">${esc(jmaName(top))}</span>` + (official.length > 1 ? `<span class="wx-more">${esc(t("wx.more", { n: official.length - 1 }))}</span>` : "") : "") +
+      om.map((k) => `<span class="wx-alert">${esc(t("wx.short." + k))}</span>`).join("") +
+      `<button class="link wx-open">${esc(t("wx.details"))}</button><button class="link wx-src wx-src-line" data-url="https://open-meteo.com/">Open-Meteo</button>`;
     line.classList.toggle("is-alert", alerts.length > 0);
-    $("#barWx").textContent = shorts.join(" · "); $("#barWx").hidden = !shorts.length;
-    if (BAR) fitBar();
+    if (lmap.tab === "weather") renderWxTab();
     const fresh = w.new || [], notices = fresh.filter((k) => NOTICES[k]);
     if (notify && !BAR) {                  // the rest: one toast (the notices below have their own screen)
       const words = fresh.filter((k) => !k.startsWith("jma:") && !NOTICES[k]).map(alertText);
       const named = official.filter((x) => fresh.includes("jma:" + x.code) && !NOTICES["jma:" + x.code]).map(jmaName);
-      if (named.length) words.unshift(t("jma.new", { names: named.join("・") }));
+      if (named.length) words.unshift(t("jma.new", { names: named.join("・") }) + (w.jma_place ? t("jma.at", { place: w.jma_place }) : ""));
       if (words.length) toast(words.join(" "));
     }
     if (notify && notices.length) showNotices(notices, w);   // thunder and wind: their own notice, apart from the weather
     // the bar: the first look of a recording, and a new alert, play the weather over the bar
-    if (notify && BAR && (w.seq === 1 || fresh.length)) playWx(w, shorts);
+    if (notify && BAR && (w.seq === 1 || fresh.length)) playWx(w, barLine ? [barLine] : []);
   }
   // A thunderstorm on the way is dangerous at a park with an antenna up: both windows put a yellow screen over
   // everything with what to do, flashing for a few seconds, and it stays until the operator closes it.
@@ -459,7 +459,8 @@
     const [key, w] = item, [icon, level, title, body, short] = NOTICES[key], a = w.alerts[key] || {};
     const words = { when: whenText(a.in), g: fmtWind(a.g || 0) };
     box.dataset.icon = icon; box.className = "storm lv" + level;
-    $("#stormName").textContent = title ? t(title) : t("jma." + key.slice(4));
+    // the JMA's: where it is in force too, so the operator knows the warning is for this place
+    $("#stormName").textContent = title ? t(title) : t("jma." + key.slice(4)) + (w.jma_place ? t("jma.at", { place: w.jma_place }) : "");
     $("#stormBody").textContent = BAR ? t(short, words).replace(/^[^\p{L}\p{N}]+/u, "") : t(body, words);   // the bar: the short line, its mark is on the plate
     box.hidden = false; document.body.classList.add("has-storm");
     box.getAnimations().forEach((x) => x.cancel());
@@ -529,6 +530,54 @@
     }, D);
   }
   document.addEventListener("click", (e) => { const b = e.target.closest(".wx-src[data-url]"); if (b) api.open_url(b.dataset.url); });
+  document.addEventListener("click", (e) => { if (e.target.closest(".wx-open")) liveTab("weather"); });
+  // small drawn weather marks for the table (no emoji): sun / moon, cloud, rain, snow, lightning, mist
+  function wxIcon(group, day) {
+    const sun = day ? `<circle cx="12" cy="12" r="4.5" fill="#F5A623"/><g stroke="#F5A623" stroke-width="1.8" stroke-linecap="round">${
+      [0, 45, 90, 135, 180, 225, 270, 315].map((a) => `<line x1="12" y1="3" x2="12" y2="5" transform="rotate(${a} 12 12)"/>`).join("")}</g>`
+      : `<path d="M15.5 4.5a7.5 7.5 0 1 0 4 12.5 6 6 0 0 1-4-12.5z" fill="#C9B458"/>`;
+    const cloud = (c, dy = 0) => `<path transform="translate(0 ${dy})" d="M7 18h10.5a3.5 3.5 0 0 0 .4-7A5 5 0 0 0 8.3 10.6 3.8 3.8 0 0 0 7 18z" fill="${c}"/>`;
+    const drops = (c) => `<g stroke="${c}" stroke-width="1.6" stroke-linecap="round"><line x1="9" y1="19" x2="8" y2="22"/><line x1="13" y1="19" x2="12" y2="22"/><line x1="17" y1="19" x2="16" y2="22"/></g>`;
+    const body = { clear: sun, cloudy: `<g transform="translate(-3 -3) scale(.8)">${sun}</g>${cloud("#AEB7C2", 2)}`, overcast: cloud("#8E99A6"),
+      fog: `<g stroke="#9AA4AF" stroke-width="2" stroke-linecap="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="6" y1="13" x2="18" y2="13"/><line x1="4" y1="17" x2="20" y2="17"/></g>`,
+      drizzle: cloud("#8E99A6", -3) + drops("#5B9BD5"), rain: cloud("#7D8996", -3) + drops("#2F7BD0"), showers: cloud("#7D8996", -3) + drops("#2F7BD0"),
+      snow: cloud("#9AA5B1", -3) + `<g fill="#7FB3E6"><circle cx="9" cy="20" r="1.3"/><circle cx="13" cy="21.5" r="1.3"/><circle cx="17" cy="20" r="1.3"/></g>`,
+      thunder: cloud("#5E6875", -3) + `<path d="M12.5 15 9.5 20h2.5l-1 3.5 4-5.5h-2.5l1-3z" fill="#F2C500"/>` }[group] || cloud("#AEB7C2");
+    return `<svg class="wx-ic" viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
+  }
+  // 天気 tab: the JMA's warnings and forecast for a park in Japan (its words, its credit), and Open-Meteo's hours
+  // (park time) for any park; both looked at by Python every 15 minutes while recording
+  function renderWxTab() {
+    const w = st.weather, box = $("#liveWx");
+    if (!w) { box.innerHTML = `<p class="muted wx-wait">${esc(t("wx.tab.wait"))}</p>`; return; }
+    const jmaSrc = `<button class="link wx-src" data-url="https://www.jma.go.jp/bosai/forecast/">${esc(t("jma.src"))}</button>`;
+    const hm = (iso) => (iso || "").slice(11, 16);
+    let html = "";
+    if (w.jma) html += `<section class="wx-sec"><h3>${esc(t("wx.tab.jmaWarn"))}${w.jma_place ? `<small>${esc(w.jma_place)}</small>` : ""}</h3><div class="wx-chips">${w.jma.length
+      ? w.jma.map((x) => `<span class="jma jma-l${x.level}">${esc(t("jma." + x.code))}</span>`).join("") : `<span class="muted">${esc(t("wx.tab.none"))}</span>`}</div></section>`;
+    const fc = w.jma_forecast;
+    if (fc && fc.area) {
+      const temps = fc.temps && fc.temps.list.length === 2 ? t("wx.fc.temps", { place: fc.temps.place, lo: fc.temps.list[0].t, hi: fc.temps.list[1].t }) : "";
+      html += `<section class="wx-sec"><h3>${esc(t("wx.tab.jmaFc"))}<small>${esc(fc.area)} · ${esc(t("wx.fc.at", { at: hm(fc.at) }))}</small></h3>
+        <div class="wx-days">${fc.days.map((d, i) => `<div class="wx-day"><b>${esc(t("wx.day." + i))}</b><span class="wx-day-w">${esc(d.weather)}</span>
+          <small>${esc(t("wx.fc.wind"))} ${esc(d.wind)}${d.wave ? ` · ${esc(t("wx.fc.wave"))} ${esc(d.wave)}` : ""}</small></div>`).join("")}</div>
+        ${fc.pops.length ? `<div class="wx-pops"><span>${esc(t("wx.fc.pop"))}</span>${fc.pops.map((p) => `<span class="wx-pop"><small>${esc(hm(p.at))}</small>${esc(p.p)}%</span>`).join("")}</div>` : ""}
+        ${temps ? `<div class="wx-temps">${esc(temps)}</div>` : ""}<div class="wx-foot">${jmaSrc}</div></section>`;
+    }
+    const hours = w.hours || [];
+    if (hours.length) {
+      const row = (label, f) => `<tr><th>${esc(label)}</th>${hours.map((h) => `<td>${f(h)}</td>`).join("")}</tr>`;
+      html += `<section class="wx-sec"><h3>${esc(t("wx.tab.om"))}<small>${esc(t("wx.tab.local"))}</small></h3><div class="wx-table-wrap"><table class="wx-table">
+        ${row(t("wx.row.time"), (h) => `<b>${esc(h.t.slice(0, 2))}</b>`)}
+        ${row(t("wx.row.weather"), (h) => `<span title="${esc(t("wx.k." + h.kind))}">${wxIcon(h.group, h.day)}</span>`)}
+        ${row(t("wx.row.mm"), (h) => (h.mm != null ? `${esc(h.mm)}<small>mm</small>` : "–"))}
+        ${row(t("wx.row.pop"), (h) => (h.pop != null ? `${esc(h.pop)}<small>%</small>` : "–"))}
+        ${row(t("wx.row.temp"), (h) => (h.temp != null ? esc(fmtTemp(h.temp)) : "–"))}
+        ${row(t("wx.row.wind"), (h) => (h.wind != null ? `<span class="wx-arrow" style="transform: rotate(${Number(h.dir) || 0}deg)">↓</span><br>${esc(fmtWind(h.wind))}` : "–"))}
+      </table></div><div class="wx-foot"><button class="link wx-src" data-url="https://open-meteo.com/">Weather data by Open-Meteo.com</button></div></section>`;
+    }
+    box.innerHTML = html;
+  }
   $("#wxa").addEventListener("click", () => { playWx.id = (playWx.id || 0) + 1; $("#wxa").hidden = true; $("#wxaFx").innerHTML = ""; });
   // The bar's sky, by the local hour of the shift (POTA's shifts are 15° bands: Late 18-02, Early 02-08 local):
   // Late starts at dusk (the moon rises), its second half and Early's first are the middle of the night (stars, the
@@ -671,8 +720,9 @@
   const lmap = { tab: "list", map: null, layer: null, framed: "" };
   function liveTab(tab) {
     lmap.tab = tab; segSet("#liveTabs", "tab", tab);
-    $(".live-grid").hidden = tab !== "list"; $("#liveMap").hidden = tab !== "map";
+    $(".live-grid").hidden = tab !== "list"; $("#liveMap").hidden = tab !== "map"; $("#liveWx").hidden = tab !== "weather";
     if (tab === "map") drawLiveMap();
+    if (tab === "weather") renderWxTab();
   }
   async function drawLiveMap() {
     const Lf = window.L;                      // Leaflet (L in this file is the dictionary)
