@@ -19,7 +19,7 @@ from potacommon import (CALL_RE, DEFAULT_OUT, SUBMODES, band_name, base_call, co
                         mode_of, my_parks_of, pota_key, read_adif, read_json, rec_minutes, split_parks, their_parks_of,
                         write_adif, write_json)
 from qsolog import decided_parks
-from spots import load_sessions, load_spots, their_parks_at
+from spots import load_sessions, load_spots, park_location_codes, their_parks_at
 
 ORDER = ["STATION_CALLSIGN", "OPERATOR", "CALL", "QSO_DATE", "TIME_ON", "BAND", "FREQ", "MODE", "SUBMODE",
          "RST_SENT", "RST_RCVD", "MY_SIG", "MY_SIG_INFO", "MY_POTA_REF", "SIG", "SIG_INFO", "POTA_REF",
@@ -245,10 +245,14 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
                                 "mode": mode_of(r), "parks": list(theirs), "source": src if theirs else ""})
             for tp in (theirs or [None]):
                 o = {k: r.get(k) for k in KEEP}
+                if o.get("MODE") == "SSB":
+                    o.pop("SUBMODE", None)       # pota.app keeps the SUBMODE ("LSB") as the mode: SSB is one mode (#34)
                 o.update({"STATION_CALLSIGN": call, "OPERATOR": r.get("OPERATOR") or call,
                           "MY_SIG": "POTA", "MY_SIG_INFO": mp, "MY_POTA_REF": mp})
-                if loc:
-                    o["MY_STATE"] = loc.split("-", 1)[-1]
+                codes = park_location_codes(mp)
+                state = loc or (codes[0] if len(codes) == 1 else "")
+                if state:                       # a one-location park too ("TK"): pota.app reads the location from it
+                    o["MY_STATE"] = state.split("-", 1)[-1]
                 if tp:
                     o.update({"SIG": "POTA", "SIG_INFO": tp, "POTA_REF": tp})
                 files[key].append(o)

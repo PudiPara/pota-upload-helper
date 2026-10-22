@@ -387,6 +387,14 @@ def distance_km(mine, theirs):
     return round(great_circle_km(a, b), 1) if a and b else None
 
 
+def park_location_codes(ref):
+    """["JP-TK"] - the location codes a park lies in, from the shipped list (or pota.app's record already fetched);
+    never a request of its own. [] when unknown."""
+    hit = shipped_parks().get(ref)
+    desc = hit[1] if hit else (_fetched.get(ref) or {}).get("locationDesc")
+    return [x["code"] for x in _locations(desc)]
+
+
 def park_status(ref):
     """"active" | "retired" (pota.app retired it) | "no" (not in the shipped list: a mistyped or
     long-gone number, or a park newer than the list) - by the shipped list only, no request."""
