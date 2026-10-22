@@ -167,14 +167,18 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
     hunter = load_hunter(call, offline, log)
     spots = load_spots()
     activ = find_activation_qsos(recs, dates, my_parks)
+    # a QSO without a valid time can't be placed in a session or a file: say so instead of leaving it out quietly
+    untimed = [tr("b.note.badTime", date=r.get("QSO_DATE") or "-", time="----", call=r.get("CALL") or "-",
+                  value=r.get("TIME_ON") or "-") for r in recs
+               if (not dates or r.get("QSO_DATE") in dates) and rec_minutes(r) is None]
     if not activ:
         msg = tr("b.noActivation")
-        return {"text": msg, "files": [], "out_dir": out_dir, "summary": [], "notes": [msg]}
+        return {"text": msg, "files": [], "out_dir": out_dir, "summary": [], "notes": [msg] + untimed}
 
     os.makedirs(out_dir, exist_ok=True)
     files = defaultdict(list)
     report = defaultdict(lambda: {"qsos": set(), "count": set(), "p2p": [], "rows": [], "calls": set()})
-    notes = []
+    notes = list(untimed)
     used_hunter = set()
     differ = set()                 # the logger's own callsigns when they are not the one chosen here
 

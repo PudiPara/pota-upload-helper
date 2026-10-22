@@ -19,7 +19,7 @@ import threading
 import xml.etree.ElementTree as ET
 
 from i18n import t
-from potacommon import adif_mode, band_from_mhz, band_name, fix_mode_band, parse_adif
+from potacommon import adif_mode, band_from_mhz, band_name, fix_mode_band, parse_adif, parse_adx
 
 WSJTX_MAGIC = 0xADBCCBDA
 N1MM_BANDS = {"1.8": "160m", "3.5": "80m", "5": "60m", "7": "40m", "10": "30m", "14": "20m", "18": "17m",
@@ -102,13 +102,15 @@ def parse_packet(data):
     text = data.decode("utf-8", "replace").strip()
     if text.startswith("{"):
         return parse_qlog(text)
-    if text.startswith("<?xml") or text.lower().startswith("<contact"):
+    if text.startswith("<?xml") or text.lower().startswith(("<contact", "<adx")):
         try:
             root = ET.fromstring(text)
         except ET.ParseError:
             root = None
         if root is not None and root.tag.lower() in ("contactinfo", "contactreplace", "contactdelete"):
             return [parse_n1mm(root)]
+        if root is not None and root.tag.upper() == "ADX":       # ADIF's own XML form
+            return [("upsert", fix_mode_band(r), None) for r in parse_adx(root)]
         # XML that carries ADIF inside (RUMlog "Contact info ADIF" etc.): its text, entities decoded once
         inner = "".join(root.itertext()) if root is not None else html.unescape(text)
         return [("upsert", r, None) for r in adif_records(inner)]

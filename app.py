@@ -483,7 +483,7 @@ class Api:
         return r[0] if isinstance(r, (list, tuple)) else r
 
     def pick_adif(self):
-        path = self._pick(OPEN_DIALOG, allow_multiple=False, file_types=("ADIF (*.adi;*.adif;*.ADI;*.ADIF)", "All files (*.*)"))
+        path = self._pick(OPEN_DIALOG, allow_multiple=False, file_types=("ADIF (*.adi;*.adif;*.adx;*.ADI;*.ADIF;*.ADX)", "All files (*.*)"))
         if not path:
             return None
         save_settings({"adif": path, "source": "adif"})

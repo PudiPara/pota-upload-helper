@@ -272,9 +272,15 @@ def band_name(value):
     return v if v in BANDS else ""
 
 
+def freq_text(value):
+    """A FREQ as ADIF writes it: "14,074" (a decimal comma, as some locales type it) -> "14.074"."""
+    v = str(value if value is not None else "").strip()
+    return v.replace(",", ".") if "," in v and "." not in v else v
+
+
 def band_from_mhz(mhz):
     try:
-        mhz = float(mhz)
+        mhz = float(freq_text(mhz))
     except (TypeError, ValueError):
         return ""
     for lo, hi, b in BAND_EDGES:
@@ -304,6 +310,8 @@ def fix_mode_band(rec):
     """A received record as ADIF writes it, whatever the logger sent: MODE + SUBMODE from adif_mode; a known
     SUBMODE decides its MODE (DATA + FT4 -> MFSK + FT4, C4FM + C4FM -> DIGITALVOICE + C4FM; pota.app keeps the
     SUBMODE), BAND from FREQ (MHz) when it has none. -> rec, changed in place."""
+    if rec.get("FREQ"):
+        rec["FREQ"] = freq_text(rec["FREQ"])
     sub = (rec.get("SUBMODE") or "").upper().strip()
     if sub in SUBMODES:
         rec.update(MODE=SUBMODES[sub], SUBMODE=sub)
@@ -437,8 +445,37 @@ def parse_adif(text):
     return recs
 
 
+def parse_adx(root):
+    """Records ({FIELD: value}, those with a CALL) of an ADX document (ADIF's XML form; root = the <ADX>
+    element): each <RECORD>'s children are its fields, <APP PROGRAMID= FIELDNAME=> becomes APP_<prog>_<name>,
+    USERDEF fields are left out."""
+    recs = []
+    for rec in root.iter():
+        if rec.tag.upper() != "RECORD":
+            continue
+        d = {}
+        for f in rec:
+            tag = f.tag.upper()
+            if tag == "APP":
+                tag = "APP_%s_%s" % (f.get("PROGRAMID", ""), f.get("FIELDNAME", ""))
+            if tag != "USERDEF":
+                d[tag.upper()] = (f.text or "").strip()
+        if d.get("CALL"):
+            recs.append(d)
+    return recs
+
+
 def read_adif(path):
-    return parse_adif(open(path, encoding="utf-8", errors="ignore").read())
+    """The records of an ADI file, or of an ADX one (ADIF's XML form)."""
+    text = open(path, encoding="utf-8", errors="ignore").read()
+    head = text.lstrip()[:200].upper()
+    if head.startswith("<?XML") or head.startswith("<ADX"):
+        import xml.etree.ElementTree as ET
+        try:
+            return parse_adx(ET.fromstring(text.lstrip()))
+        except ET.ParseError:
+            pass
+    return parse_adif(text)
 
 
 GRID_RE = re.compile(r"[A-R]{2}(\d{2}([A-X]{2}(\d{2})?)?)?", re.I)      # ADIF GridSquare: 2, 4, 6 or 8 characters
@@ -484,9 +521,9 @@ def minutes(date_yyyymmdd, hhmm):
 
 
 def rec_minutes(rec):
-    """A record's QSO_DATE + TIME_ON in minutes, or None."""
+    """A record's QSO_DATE + TIME_ON in minutes, or None (no TIME_ON is no time, not 00:00)."""
     try:
-        return minutes(rec.get("QSO_DATE") or "", rec.get("TIME_ON") or "0000")
+        return minutes(rec.get("QSO_DATE") or "", rec["TIME_ON"]) if rec.get("TIME_ON") else None
     except ValueError:
         return None
 

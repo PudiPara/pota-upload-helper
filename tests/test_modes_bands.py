@@ -150,5 +150,44 @@ class HunterLog(unittest.TestCase):
         self.assertTrue(any("JA1ABC/P" in n for n in notes))                # their upload writes the call otherwise
 
 
+
+class Leftovers(unittest.TestCase):       # #35
+    def setUp(self):
+        self._saved = potacommon.DATA_DIR
+        potacommon.DATA_DIR = tempfile.mkdtemp()
+
+    def tearDown(self):
+        potacommon.DATA_DIR = self._saved
+
+    def test_no_time_is_no_time(self):
+        self.assertIsNone(potacommon.rec_minutes(rec(TIME_ON="")))
+        notes = builder.build(None, ["20261020"], None, "JL1FVA", tempfile.mkdtemp(), offline=True,
+                              recs=[rec(TIME_ON="", MY_SIG_INFO="JP-1206")], confirmed_only=True, log=lambda *a: None)["notes"]
+        self.assertTrue(any("JA1ABC" in n and "HHMM" in n for n in notes))
+
+    def test_decimal_comma(self):
+        self.assertEqual(band_from_mhz("14,074"), "20m")
+        self.assertEqual(fix_mode_band(rec(FREQ="7,074", BAND=""))["FREQ"], "7.074")
+
+    def test_adx(self):
+        x = ('<?xml version="1.0"?><ADX><HEADER><ADIF_VER>3.1.8</ADIF_VER></HEADER><RECORDS><RECORD><CALL>JA1ABC</CALL>'
+             '<QSO_DATE>20261020</QSO_DATE><TIME_ON>0102</TIME_ON><BAND>40m</BAND><MODE>USB</MODE>'
+             '<APP PROGRAMID="RUM" FIELDNAME="QSL" TYPE="S">W</APP></RECORD></RECORDS></ADX>')
+        (_, r, _), = parse_packet(x.encode())
+        self.assertEqual((r["CALL"], r["MODE"], r["SUBMODE"], r["APP_RUM_QSL"]), ("JA1ABC", "SSB", "USB", "W"))
+        path = os.path.join(tempfile.mkdtemp(), "log.adx")
+        open(path, "w", encoding="utf-8").write(x)
+        self.assertEqual(potacommon.read_adif(path)[0]["TIME_ON"], "0102")
+
+    def test_contact_over_0000z_is_one(self):
+        qsolog.upsert(rec(QSO_DATE="20261020", TIME_ON="235900", MY_SIG_INFO="JP-1206"), None, "WSJT-X")     # its start
+        qsolog.upsert(rec(QSO_DATE="20261021", TIME_ON="000100", MY_SIG_INFO="JP-1206", RST_SENT="-05"), None, "RUMlog")
+        both = qsolog.records(["20261020", "20261021"])
+        self.assertEqual([(r["QSO_DATE"], r["TIME_ON"]) for r in both], [("20261020", "235900")])   # the day it started
+        self.assertEqual(both[0]["RST_SENT"], "-05")                                               # the richer copy
+        self.assertEqual(qsolog.records(["20261021"]), [])
+        self.assertEqual(len(qsolog.twins(qsolog.make_uid(rec(QSO_DATE="20261021", TIME_ON="000100")))), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
