@@ -386,12 +386,13 @@
     $("#dashEvent").hidden = !$("#dashEvent").textContent;
   }
   // The bar's sky: the sun (Early Shift) or the moon (Late Shift) rises when recording starts in one or one begins,
-  // and sets when it ends - the sun into a dusk, the moon into a dawn. Layers' opacity at the start, middle, end.
+  // and moves on when it ends: Early Shift ends at 08 local, so the sun climbs out of sight into the day; Late Shift's
+  // moon sets into a dawn. Layers' opacity at the start, middle, end; path = the orb's way (rise / set / climb).
   const SKY = {
-    "early-rise": { orb: "sun", up: true, night: [1, .6, 0], dawn: [0, 1, 0], day: [0, 0, 1], stars: [1, .3, 0] },
-    "early-set": { orb: "sun", up: false, day: [1, .2, 0], dusk: [0, 1, .4], night: [0, 0, .6], stars: [0, 0, .7] },
-    "late-rise": { orb: "moon", up: true, dusk: [1, .5, 0], night: [0, .7, 1], stars: [0, .6, 1] },
-    "late-set": { orb: "moon", up: false, night: [1, .8, 0], dawn: [0, .5, 1], stars: [1, .5, 0] },
+    "early-rise": { orb: "sun", path: "rise", night: [1, .6, 0], dawn: [0, 1, 0], day: [0, 0, 1], stars: [1, .3, 0] },
+    "early-set": { orb: "sun", path: "climb", dawn: [1, .3, 0], day: [0, .8, 1], stars: [0, 0, 0] },
+    "late-rise": { orb: "moon", path: "rise", dusk: [1, .5, 0], night: [0, .7, 1], stars: [0, .6, 1] },
+    "late-set": { orb: "moon", path: "set", night: [1, .8, 0], dawn: [0, .5, 1], stars: [1, .5, 0] },
   };
   function playSky(shift, rise) {
     const sc = SKY[shift + (rise ? "-rise" : "-set")], box = $("#sky"), orb = $("#skyOrb"), D = 4200;
@@ -405,9 +406,11 @@
     const opt = { duration: D, easing: "ease-in-out", fill: "forwards" };
     $$("#sky .sky-l").forEach((el) => { const o = sc[el.dataset.sky] || [0, 0, 0]; el.animate(o.map((x) => ({ opacity: x })), opt); });
     $("#sky .sky-stars").animate(sc.stars.map((x) => ({ opacity: x })), opt);
-    const low = "translate(-22px, 74px)", high = "translate(0, -18px)", past = "translate(22px, 74px)";   // behind the hills / over them
-    const path = sc.up ? [low, high] : [high, past];
-    orb.animate(path.map((tr) => ({ transform: tr })), { ...opt, easing: sc.up ? "cubic-bezier(.2, .6, .3, 1)" : "cubic-bezier(.6, 0, .8, .4)" });
+    const low = "translate(-22px, 74px)", high = "translate(0, -18px)", past = "translate(22px, 74px)", top = "translate(26px, -84px)";   // behind the hills / over them / above the bar
+    const PATHS = { rise: [[low, high], "cubic-bezier(.2, .6, .3, 1)"], set: [[high, past], "cubic-bezier(.6, 0, .8, .4)"],
+                    climb: [[high, top], "cubic-bezier(.5, 0, .7, .6)"] };
+    const [path, easing] = PATHS[sc.path];
+    orb.animate(path.map((tr) => ({ transform: tr })), { ...opt, easing });
     $("#sky .sky-text").animate([{ opacity: 0, transform: "translateY(-50%) translateX(8px)" }, { opacity: 1, transform: "translateY(-50%)" }],
                                 { duration: 700, delay: 500, fill: "backwards", easing: "ease-out" });
     setTimeout(() => {                              // hold a moment, then fade out (unless a newer sky took over)
