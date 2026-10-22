@@ -8,13 +8,14 @@ import ssl
 import subprocess
 import sys
 import threading
+import unicodedata
 import urllib.request
 
 API = "https://api.pota.app"
 PARK_RE = re.compile(r"\b([A-Z0-9]{1,4}-\d{4,5})\b")
 APP_NAME = "Potaroo"
 OLD_NAME = "POTA Upload Helper"      # the name until 2.0.0: its data folder is moved over on first start
-VERSION = "2.0.44"
+VERSION = "2.0.45"
 
 
 def _moved(new, old):
@@ -192,16 +193,94 @@ def fetch_json(path, timeout=20):
 
 
 # ---------- bands and modes ----------
-BAND_EDGES = [(1.8, 2.0, "160m"), (3.5, 4.0, "80m"), (5.0, 5.5, "60m"), (7.0, 7.3, "40m"), (10.1, 10.15, "30m"),
-              (14.0, 14.35, "20m"), (18.068, 18.168, "17m"), (21.0, 21.45, "15m"), (24.89, 24.99, "12m"),
-              (28.0, 29.7, "10m"), (50.0, 54.0, "6m"), (144.0, 148.0, "2m"), (222.0, 225.0, "1.25m"),
-              (420.0, 450.0, "70cm"), (902.0, 928.0, "33cm"), (1240.0, 1300.0, "23cm")]
-PHONE_MODES = {"SSB", "USB", "LSB", "FM", "AM", "PHONE", "DV", "DMR", "C4FM", "DSTAR"}
+BAND_EDGES = [(.1357, .1378, "2190m"), (.472, .479, "630m"), (.501, .504, "560m"), (1.8, 2.0, "160m"),
+              (3.5, 4.0, "80m"), (5.06, 5.45, "60m"), (7.0, 7.3, "40m"), (10.1, 10.15, "30m"), (14.0, 14.35, "20m"),
+              (18.068, 18.168, "17m"), (21.0, 21.45, "15m"), (24.89, 24.99, "12m"), (28.0, 29.7, "10m"),
+              (40, 45, "8m"), (50.0, 54.0, "6m"), (54.000001, 69.9, "5m"), (70, 71, "4m"), (144.0, 148.0, "2m"),
+              (222.0, 225.0, "1.25m"), (420.0, 450.0, "70cm"), (902.0, 928.0, "33cm"), (1240.0, 1300.0, "23cm"),
+              (2300, 2450, "13cm"), (3300, 3500, "9cm"), (5650, 5925, "6cm"), (10000, 10500, "3cm"),
+              (24000, 24250, "1.25cm"), (47000, 47200, "6mm"), (75500, 81000, "4mm"), (119980, 123000, "2.5mm"),
+              (134000, 149000, "2mm"), (241000, 250000, "1mm"), (300000, 7500000, "submm")]   # ADIF 3.1.8 Band
+BANDS = {b for _, _, b in BAND_EDGES}
+PHONE_MODES = {"SSB", "USB", "LSB", "FM", "AM", "PHONE", "DV", "DIGITALVOICE", "DMR", "C4FM", "DSTAR", "D-STAR",
+               "FREEDV", "M17"}
+ADIF_MODES = {   # ADIF 3.1.8 Mode enumeration: MODE -> its SUBMODEs
+    "AM": "",
+    "ARDOP": "",
+    "ATV": "",
+    "CHIP": "CHIP64,CHIP128",
+    "CLO": "",
+    "CONTESTI": "",
+    "CW": "PCW",
+    "DIGITALVOICE": "C4FM,DMR,DSTAR,FREEDV,M17",
+    "DOMINO": "DOM-M,DOM4,DOM5,DOM8,DOM11,DOM16,DOM22,DOM44,DOM88,DOMINOEX,DOMINOF",
+    "DYNAMIC": "FREEDATA,VARA HF,VARA SATELLITE,VARA FM 1200,VARA FM 9600",
+    "FAX": "",
+    "FM": "",
+    "FSK441": "",
+    "FSK": "SCAMP_FAST,SCAMP_SLOW,SCAMP_VSLOW",
+    "FT8": "",
+    "HELL": "FMHELL,FSKH105,FSKH245,FSKHELL,HELL80,HELLX5,HELLX9,HFSK,PSKHELL,SLOWHELL",
+    "ISCAT": "ISCAT-A,ISCAT-B",
+    "JT4": "JT4A,JT4B,JT4C,JT4D,JT4E,JT4F,JT4G",
+    "JT6M": "",
+    "JT9": ("JT9-1,JT9-2,JT9-5,JT9-10,JT9-30,JT9A,JT9B,JT9C,JT9D,JT9E,JT9E FAST,JT9F,JT9F FAST,JT9G,"
+           "JT9G FAST,JT9H,JT9H FAST"),
+    "JT44": "",
+    "JT65": "JT65A,JT65B,JT65B2,JT65C,JT65C2",
+    "MFSK": ("FSQCALL,FST4,FST4W,FT2,FT4,JS8,JTMS,JTTY,MFSK4,MFSK8,MFSK11,MFSK16,MFSK22,MFSK31,MFSK32,MFSK64,"
+            "MFSK64L,MFSK128,MFSK128L,Q65"),
+    "MSK144": "",
+    "MTONE": "SCAMP_OO,SCAMP_OO_SLW",
+    "MT63": "",
+    "OFDM": "RIBBIT_PIX,RIBBIT_SMS",
+    "OLIVIA": "OLIVIA 4/125,OLIVIA 4/250,OLIVIA 8/250,OLIVIA 8/500,OLIVIA 16/500,OLIVIA 16/1000,OLIVIA 32/1000",
+    "OPERA": "OPERA-BEACON,OPERA-QSO",
+    "PAC": "PAC2,PAC3,PAC4",
+    "PAX": "PAX2",
+    "PKT": "",
+    "PSK": ("8PSK125,8PSK125F,8PSK125FL,8PSK250,8PSK250F,8PSK250FL,8PSK500,8PSK500F,8PSK1000,8PSK1000F,"
+           "8PSK1200F,FSK31,PSK10,PSK31,PSK63,PSK63F,PSK63RC4,PSK63RC5,PSK63RC10,PSK63RC20,PSK63RC32,PSK125,"
+           "PSK125C12,PSK125R,PSK125RC10,PSK125RC12,PSK125RC16,PSK125RC4,PSK125RC5,PSK250,PSK250C6,PSK250R,"
+           "PSK250RC2,PSK250RC3,PSK250RC5,PSK250RC6,PSK250RC7,PSK500,PSK500C2,PSK500C4,PSK500R,PSK500RC2,"
+           "PSK500RC3,PSK500RC4,PSK800C2,PSK800RC2,PSK1000,PSK1000C2,PSK1000R,PSK1000RC2,PSKAM10,PSKAM31,"
+           "PSKAM50,PSKFEC31,QPSK31,QPSK63,QPSK125,QPSK250,QPSK500,SIM31"),
+    "PSK2K": "",
+    "Q15": "",
+    "QRA64": "QRA64A,QRA64B,QRA64C,QRA64D,QRA64E",
+    "ROS": "ROS-EME,ROS-HF,ROS-MF",
+    "RTTY": "ASCI",
+    "RTTYM": "",
+    "SSB": "LSB,USB",
+    "SSTV": "",
+    "T10": "",
+    "THOR": "THOR-M,THOR4,THOR5,THOR8,THOR11,THOR16,THOR22,THOR25X4,THOR50X1,THOR50X2,THOR100",
+    "THRB": "THRBX,THRBX1,THRBX2,THRBX4,THROB1,THROB2,THROB4",
+    "TOR": "AMTORFEC,GTOR,NAVTEX,SITORB",
+    "V4": "",
+    "VOI": "",
+    "WINMOR": "",
+    "WSPR": "",
+}
+SUBMODES = {sub: mode for mode, subs in ADIF_MODES.items() for sub in subs.split(",") if sub}
+MODE_ALIASES = {"D-STAR": "DSTAR", "DV": "DIGITALVOICE"}   # loggers' words for ADIF ones (VarAC: HF, FM or SAT - not guessed)
+
+
+def band_name(value):
+    """A BAND value as ADIF spells it ("20M" -> "20m"), or "" when it is not an ADIF band ("11m", "70m")."""
+    v = (value or "").strip().lower()
+    return v if v in BANDS else ""
+
+
+def freq_text(value):
+    """A FREQ as ADIF writes it: "14,074" (a decimal comma, as some locales type it) -> "14.074"."""
+    v = str(value if value is not None else "").strip()
+    return v.replace(",", ".") if "," in v and "." not in v else v
 
 
 def band_from_mhz(mhz):
     try:
-        mhz = float(mhz)
+        mhz = float(freq_text(mhz))
     except (TypeError, ValueError):
         return ""
     for lo, hi, b in BAND_EDGES:
@@ -218,13 +297,36 @@ def band_from_khz(khz):
 
 
 def adif_mode(mode):
-    """A logger's mode word -> ADIF MODE (+SUBMODE): USB/LSB are SSB submodes, FT4 an MFSK one."""
+    """A logger's mode word -> ADIF MODE (+SUBMODE): USB -> SSB + USB, FT4 -> MFSK + FT4, D-STAR -> DIGITALVOICE +
+    DSTAR (a submode is never written as the MODE; ADIF 3.1.8 Mode / Submode). Other words stay as they are."""
     m = (mode or "").upper().strip()
-    if m in ("USB", "LSB"):
-        return {"MODE": "SSB", "SUBMODE": m}
-    if m == "FT4":
-        return {"MODE": "MFSK", "SUBMODE": "FT4"}
+    m = MODE_ALIASES.get(m, m)
+    if m in SUBMODES:
+        return {"MODE": SUBMODES[m], "SUBMODE": m}
     return {"MODE": m} if m else {}
+
+
+def fix_mode_band(rec):
+    """A received record as ADIF writes it, whatever the logger sent: MODE + SUBMODE from adif_mode; a known
+    SUBMODE decides its MODE (DATA + FT4 -> MFSK + FT4, C4FM + C4FM -> DIGITALVOICE + C4FM; pota.app keeps the
+    SUBMODE), BAND from FREQ (MHz) when it has none. -> rec, changed in place."""
+    if rec.get("FREQ"):
+        rec["FREQ"] = freq_text(rec["FREQ"])
+        if not re.fullmatch(r"\d+(\.\d*)?|\.\d+", rec["FREQ"]):
+            rec.pop("FREQ")                      # not a number ("14.074.000"): FREQ is optional for POTA, BAND is not
+    sub = (rec.get("SUBMODE") or "").upper().strip()
+    if sub in SUBMODES:
+        rec.update(MODE=SUBMODES[sub], SUBMODE=sub)
+    elif rec.get("MODE") and not sub:
+        rec.update(adif_mode(rec["MODE"]))
+    if not rec.get("BAND") and rec.get("FREQ"):
+        rec["BAND"] = band_from_mhz(rec["FREQ"])
+    return rec
+
+
+def mode_known(rec):
+    """Is the record's MODE one pota.app accepts (an ADIF mode)? Empty counts as not known."""
+    return (rec.get("MODE") or "").upper() in ADIF_MODES
 
 
 def mode_of(rec):
@@ -238,6 +340,15 @@ def mode_of(rec):
 def pota_key(rec):
     """What pota.app keeps once per park file: CALL + BAND + MODE + their park (SIG_INFO)."""
     return ((rec.get("CALL") or "").upper(), (rec.get("BAND") or "").lower(), mode_of(rec), rec.get("SIG_INFO") or "")
+
+
+def count_key(rec, park):
+    """What makes this QSO one of the 10 an activation needs at `park`: "date|location|CALL|band|mode". pota.app
+    counts an activation per park, location and UTC day, and drops a QSO with the same CALL (as written), band
+    and mode there as a duplicate (Rules; the account-wide check is the same for one callsign)."""
+    loc = (rec.get("MY_POTA_LOCS") or {}).get(park, "")
+    return "|".join([rec.get("QSO_DATE") or "", loc, (rec.get("CALL") or "").upper(), (rec.get("BAND") or "").lower(),
+                     mode_of(rec)])
 
 
 def mode_group(mode):
@@ -301,22 +412,87 @@ def my_parks_of(rec):
 
 
 # ---------- ADIF ----------
-FIELD_RE = re.compile(r"<(\w+):(\d+)(?::\w)?>", re.I)
+TAG_RE = re.compile(r"<([^:<>{},\s]+)(?::(\d+)(?::[^<>]*)?)?>")      # <NAME:LEN:TYPE>, <EOR>, <EOH>
+NEXT_RE = re.compile(r"\s*(?:<|$)")
+
+
+def parse_adif(text):
+    """ADI records ({FIELD: value}, those with a CALL) from text. Each value is exactly its length long, so a
+    tag or <eor> written inside a COMMENT stays in the COMMENT; the header (up to <EOH>) is skipped. A value
+    whose length is wrong (counted in bytes, or Shift_JIS read as UTF-8) runs into the next field: then it
+    is cut where the next tag starts, so the fields after it are still read."""
+    m = re.search(r"<eoh>", text, re.I)
+    pos, recs, d = (m.end() if m else 0), [], {}
+    while True:
+        m = TAG_RE.search(text, pos)
+        if not m:
+            break
+        pos = m.end()
+        name = m.group(1).upper()
+        if m.group(2) is None:                           # <EOR> (or a stray <...> between fields)
+            if name == "EOR":
+                if d.get("CALL"):
+                    recs.append(d)
+                d = {}
+            continue
+        v = text[pos:pos + int(m.group(2))]
+        if not NEXT_RE.match(text, pos + len(v)):        # not followed by a tag: the length was wrong
+            nxt = TAG_RE.search(text, pos)               # the value ends where the next tag starts
+            if nxt and nxt.start() < pos + len(v):
+                v = text[pos:nxt.start()]
+        d[name] = v
+        pos += len(v)
+    if d.get("CALL"):
+        recs.append(d)
+    return recs
+
+
+def parse_adx(root):
+    """Records ({FIELD: value}, those with a CALL) of an ADX document (ADIF's XML form; root = the <ADX>
+    element): each <RECORD>'s children are its fields, <APP PROGRAMID= FIELDNAME=> becomes APP_<prog>_<name>,
+    USERDEF fields are left out."""
+    recs = []
+    for rec in root.iter():
+        if rec.tag.upper() != "RECORD":
+            continue
+        d = {}
+        for f in rec:
+            tag = f.tag.upper()
+            if tag == "APP":
+                tag = "APP_%s_%s" % (f.get("PROGRAMID", ""), f.get("FIELDNAME", ""))
+            if tag != "USERDEF":
+                d[tag.upper()] = (f.text or "").strip()
+        if d.get("CALL"):
+            recs.append(d)
+    return recs
 
 
 def read_adif(path):
-    text = open(path, encoding="utf-8", errors="ignore").read()
-    m = re.search(r"<eoh>", text, re.I)
-    body = text[m.end():] if m else text
-    recs = []
-    for chunk in re.split(r"<eor>", body, flags=re.I):
-        d = {}
-        for f in FIELD_RE.finditer(chunk):
-            n = int(f.group(2))
-            d[f.group(1).upper()] = chunk[f.end():f.end() + n]
-        if "CALL" in d:
-            recs.append(d)
-    return recs
+    """The records of an ADI file, or of an ADX one (ADIF's XML form)."""
+    text = open(path, encoding="utf-8-sig", errors="ignore").read()      # -sig: .NET loggers write a BOM
+    head = text.lstrip()[:200].upper()
+    if head.startswith("<?XML") or head.startswith("<ADX"):
+        import xml.etree.ElementTree as ET
+        try:
+            return parse_adx(ET.fromstring(text.lstrip()))
+        except ET.ParseError:
+            pass
+    return parse_adif(text)
+
+
+GRID_RE = re.compile(r"[A-R]{2}(\d{2}([A-X]{2}(\d{2})?)?)?", re.I)      # ADIF GridSquare: 2, 4, 6 or 8 characters
+
+
+def adif_value(name, value):
+    """A value as an ADI file may hold it: ASCII 32-126 only ("IntlString ... cannot be used in ADI files"),
+    full-width forms made plain first (NFKC: "５９" -> "59"); "" when anything else is left (a Japanese name,
+    a line break) or a grid square is not one."""
+    v = unicodedata.normalize("NFKC", "" if value is None else str(value)).strip()
+    if not all(32 <= ord(c) <= 126 for c in v):
+        return ""
+    if name in ("GRIDSQUARE", "MY_GRIDSQUARE") and not GRID_RE.fullmatch(v):
+        return ""
+    return v
 
 
 def adif_field(name, value):
@@ -325,10 +501,12 @@ def adif_field(name, value):
 
 
 def write_adif(path, recs, order, program="Potaroo"):
-    lines = ["Generated by %s\n<ADIF_VER:5>3.1.4 <PROGRAMID:%d>%s <EOH>\n" % (program, len(program), program)]
+    stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d %H%M%S")
+    lines = ["Generated by %s\n<ADIF_VER:5>3.1.8 <PROGRAMID:%d>%s <PROGRAMVERSION:%d>%s <CREATED_TIMESTAMP:15>%s <EOH>\n"
+             % (program, len(program), program, len(VERSION), VERSION, stamp)]
     for r in recs:
-        parts = [adif_field(k, r[k]) for k in order if r.get(k) not in (None, "")]
-        parts += [adif_field(k, v) for k, v in r.items() if k not in order and v not in (None, "")]
+        vals = [(k, adif_value(k, r.get(k))) for k in order] + [(k, adif_value(k, v)) for k, v in r.items() if k not in order]
+        parts = [adif_field(k, v) for k, v in vals if v]
         lines.append(" ".join(parts) + " <EOR>\n")
     with open(path, "w", encoding="utf-8") as fh:
         fh.writelines(lines)
@@ -345,9 +523,10 @@ def minutes(date_yyyymmdd, hhmm):
 
 
 def rec_minutes(rec):
-    """A record's QSO_DATE + TIME_ON in minutes, or None."""
+    """A record's QSO_DATE + TIME_ON in minutes, or None (no TIME_ON is no time, not 00:00)."""
     try:
-        return minutes(rec.get("QSO_DATE") or "", rec.get("TIME_ON") or "0000")
+        date = rec.get("QSO_DATE") or ""
+        return minutes(date, rec["TIME_ON"]) if rec.get("TIME_ON") and re.fullmatch(r"\d{8}", date) else None
     except ValueError:
         return None
 

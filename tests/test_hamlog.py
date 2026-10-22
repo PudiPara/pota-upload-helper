@@ -21,6 +21,13 @@ class ParseRecord(unittest.TestCase):
         r = hamlog.parse_record(RAW.replace("10:47J", "08:30J"))
         self.assertEqual((r["QSO_DATE"], r["TIME_ON"]), ("20261020", "233000"))   # JST morning = UTC previous day
 
+    def test_frequency_column(self):
+        f = lambda v: hamlog.parse_record(RAW.replace("\r\n7\r\n", "\r\n%s\r\n" % v))  # noqa: E731
+        self.assertEqual((f("10")["BAND"], f("18")["BAND"], f("24")["BAND"]), ("30m", "17m", "12m"))   # the band's name
+        self.assertEqual((f("1200")["BAND"], f("430")["BAND"], f("10G")["BAND"]), ("23cm", "70cm", "3cm"))
+        self.assertEqual(f("145/435")["BAND"], "2m")                                                     # the first one
+        self.assertEqual((f("7.015")["FREQ"], "FREQ" in f("10")), ("7.015000", False))
+
     def test_ssb_and_empty(self):
         self.assertEqual(hamlog.parse_record(RAW.replace("\r\nCW\r\n", "\r\nLSB\r\n"))["MODE"], "SSB")
         self.assertIsNone(hamlog.parse_record("1\r\n\r\n\r\n"))

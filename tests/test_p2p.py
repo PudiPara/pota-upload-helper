@@ -88,7 +88,7 @@ class P2PDecisionTest(unittest.TestCase):
         res = builder.build(None, None, "JP-1281", "JL1FVA", out, offline=True, recs=recs, confirmed_only=True)
         self.assertEqual(res["files"], ["JL1FVA@JP-1281-20261020.adi"])
         by = {}
-        for r in read_adif(os.path.join(out, res["files"][0])):
+        for r in read_adif(os.path.join(res["out_dir"], res["files"][0])):
             by.setdefault(r["CALL"], []).append(r.get("SIG_INFO"))
         self.assertEqual(by["JS6UHQ/6"], [None])                       # spots alone never make a P2P
         self.assertEqual(by["JA1AAA"], ["JP-0001"])

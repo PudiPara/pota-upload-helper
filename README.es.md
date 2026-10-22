@@ -53,7 +53,7 @@ El parque de la otra estación se decide en este orden:
 3. **Spots registrados en el aire** (solo al generar desde un archivo ADIF; spots desde 30 minutos antes hasta 10 minutos después del QSO)
 4. SIG_INFO / POTA_REF del programa de log
 
-Solo se usa la API pública (api.pota.app) y no hace falta iniciar sesión. Guardar el log es trabajo de tu programa de log: esta app solo decide y escribe los archivos de subida, y nunca modifica el log de tu programa.
+Solo lee datos que pota.app hace públicos (api.pota.app), sin iniciar sesión (y sin soporte oficial de POTA). Guardar el log es trabajo de tu programa de log: esta app solo decide y escribe los archivos de subida, y nunca modifica el log de tu programa.
 
 ## Descarga
 

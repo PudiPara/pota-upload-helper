@@ -13,6 +13,9 @@ import re
 
 from potacommon import adif_mode, band_from_mhz
 
+# what Japanese logs write in the frequency column for a band whose name is not inside it (MHz -> ADIF band)
+BAND_NAMES_MHZ = {10: "30m", 18: "17m", 24: "12m", 1200: "23cm", 5600: "6cm"}
+
 CMD_COUNT, CMD_RECORD = 116, 119
 WM_COPYDATA = 0x004A
 FIELDS = ("call", "date", "time", "his", "my", "freq", "mode", "code", "grid", "qsl", "name", "qth", "rmk1", "rmk2")
@@ -36,13 +39,14 @@ def parse_record(text, jst_offset=9):
     if tm.group(3).upper() != "U":
         when -= dt.timedelta(hours=jst_offset)                # HAMLOG keeps JST unless the time ends in U
     rec = {"CALL": f["call"].upper(), "QSO_DATE": when.strftime("%Y%m%d"), "TIME_ON": when.strftime("%H%M%S")}
-    try:
-        mhz = float(re.sub(r"[^0-9.]", "", f["freq"]) or "x")
-        rec["BAND"] = band_from_mhz(mhz)
-        if "." in f["freq"]:
+    fm = re.match(r"\s*(\d+(?:[.,]\d+)?)\s*([GgKk]?)", f["freq"])    # "7.041", "1200", "10G", "145/435" (first only)
+    if fm:
+        num = float(fm.group(1).replace(",", "."))
+        mhz = num * 1000 if fm.group(2) in "Gg" and fm.group(2) else num / 1000 if fm.group(2) else num
+        # the field often holds the band's name in MHz ("10", "18", "1200"), not a frequency inside the band
+        rec["BAND"] = band_from_mhz(mhz) or BAND_NAMES_MHZ.get(round(mhz), "")
+        if re.fullmatch(r"\d+[.,]\d+", fm.group(1)) and not fm.group(2) and band_from_mhz(mhz):
             rec["FREQ"] = "%.6f" % mhz
-    except ValueError:
-        pass
     rec.update(adif_mode(f["mode"]))
     for k, a in (("his", "RST_SENT"), ("my", "RST_RCVD"), ("name", "NAME"), ("qth", "QTH"), ("grid", "GRIDSQUARE")):
         if f[k]:

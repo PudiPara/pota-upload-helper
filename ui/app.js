@@ -245,13 +245,14 @@
     showError(err, ""); $("#doneCard").hidden = true;
     const r = await api.start_live(parks.join(","), st.call, st.loc || "");
     if (!r.ok) return showError(err, r.error);
-    enterRunning(r.parks, r.start);
+    enterRunning(r.parks, r.start, r.locs);
   }
   $("#startLive").addEventListener("click", startLive);
 
   const refHtml = (p) => `<span class="ref">${refInner(p)}</span>`;
-  async function enterRunning(parks, start) {
+  async function enterRunning(parks, start, locs) {
     st.spots.clear(); st.qsos.clear(); st.lastAt = 0; st.start = utcMs(start); st.cheered = null; st.parks = parks; st.seq = 0;
+    st.locs = locs || {}; st.day = utcDay();
     $("#liveIdle").hidden = true; $("#liveRun").hidden = false; $("#liveDot").hidden = false;
     $("#signParks").innerHTML = parks.map((p) =>
       `<div class="sign-park">${plate(p)}<span class="name" data-ref="${esc(p)}"></span></div>`).join("");
@@ -282,6 +283,8 @@
     const tm = `${p(Math.floor(s / 3600))}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}`;
     $("#elapsed").textContent = tm; $("#barElapsed").textContent = tm;
     if (!BAR && s % 15 === 0) renderStats();      // "N 分前" and the last hour move on with the clock
+    if (utcDay() !== st.day) newDay();            // 0000Z: a new activation starts, the session goes on
+    else if (s % 15 === 0) renderCount();         // the minutes left before 0000Z
   }
   // Poll every second on the second, in both windows: a QSO (and its celebration) shows in the main window
   // and the bar at the same moment (separate 2.5 s timers put the bar up to 2.5 s behind)
@@ -328,6 +331,44 @@
     if (BAR) { askNext(); fitBar(); }
   }
   function workedCalls() { return new Set([...st.qsos.values()].map((q) => baseCall(q.call))); }
+  // An activation is one park at one location on one UTC day: the 10-QSO count is today's distinct count keys
+  // (Python's count_key: date|location|CALL|band|mode) at the session's location, the smallest over its parks.
+  const utcDay = (ms = Date.now()) => new Date(ms).toISOString().slice(0, 10).replace(/-/g, "");
+  function dayCount(day) {
+    const list = [...st.qsos.values()], parks = st.parks || [];
+    const per = parks.map((p) => {
+      const head = `${day}|${st.locs[p] || ""}|`;
+      return [p, new Set(list.map((q) => (q.ck || {})[p] || (q.ck || {})["*"]).filter((k) => k && k.startsWith(head))).size];
+    });
+    return { per, n: per.length ? Math.min(...per.map((x) => x[1])) : 0 };
+  }
+  function newDay() {
+    const prev = st.day; st.day = utcDay();
+    const { n } = dayCount(prev);
+    st.cheered = 0;                               // the next 10 is a new activation: celebrate it
+    if (!BAR) toast(t("live.newDay", { n, state: t(n >= 10 ? "live.newDay.ok" : "live.newDay.short") }));
+    renderQsos();
+  }
+  // the count, the ring and the note under it; from 30 minutes before 0000Z the note says how long is left
+  function renderCount() {
+    const { per, n } = dayCount(st.day);
+    const differ = per.length > 1 && new Set(per.map((x) => x[1])).size > 1;
+    const breakdown = differ ? per.map(([p, c]) => `${p.split("-")[1]}: ${c}`).join(" · ") : "";
+    const now = Date.now(), d = new Date(now), left = Math.ceil((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1) - now) / 60000);
+    const soon = left <= 30;
+    $("#qsoCount").textContent = n; $("#barCount").textContent = n;
+    $("#barPer").textContent = soon ? t("live.dayEnd.bar", { m: left }) : breakdown;
+    $("#barPer").classList.toggle("is-alert", soon && n < 10);
+    // the goal grows by 10 once reached: /10, then /20, /30 ...; the ring shows the current ten
+    const goal = Math.max(10, Math.ceil(n / 10) * 10), pct = ((n - (goal - 10)) / 10) * 100;
+    $("#qsoGoal").textContent = "/" + goal + " QSO"; $("#barGoal").textContent = "/" + goal;
+    for (const id of ["#dashRing", "#barRing"]) { $(id).style.setProperty("--p", pct); $(id).classList.toggle("is-done", n >= 10); }
+    const note = soon ? t(n >= 10 ? "live.dayEnd.done" : "live.dayEnd.left", { m: left, n: 10 - n })
+      : n >= 10 ? t("live.qsoNote.done", { n }) : t("live.qsoNote.left", { n: 10 - n });
+    $("#qsoNote").textContent = (breakdown && !soon ? breakdown + " — " : "") + note;
+    $("#qsoNote").classList.toggle("is-alert", soon && n < 10);
+    return n;
+  }
   function spotRow(e, worked, fresh, page) {
     return `
       <li class="spot${e.twofer ? " is-twofer" : ""}${worked ? " is-worked" : ""}${fresh ? " is-new" : ""}${page && e.ago >= 30 ? " is-stale" : ""}">
@@ -428,26 +469,18 @@
   function renderQsos(fresh) {
     const key = (q) => q.ts || q.date + q.time;           // to the second when the logger sent seconds
     const list = [...st.qsos.values()].sort((a, b) => key(b).localeCompare(key(a)) || (b.seq || 0) - (a.seq || 0));   // newest first
-    $("#qsos").innerHTML = list.map((q) => qsoRow(q, fresh)).join("");
+    // a line between UTC days (a session across 0000Z keeps yesterday's QSOs below it)
+    const day = (q) => (q.date || "").replace(/^(\d{4})(\d\d)(\d\d)$/, "$1-$2-$3");
+    $("#qsos").innerHTML = list.map((q, i) => (i && day(q) !== day(list[i - 1]) ? `<li class="qso-day">${esc(day(q))} UTC</li>` : "")
+      + qsoRow(q, fresh)).join("");
     $("#barQsos").innerHTML = list.slice(0, 1).map((q) => qsoRow(q, fresh)).join("");   // the bar: the latest QSO
     $("#qsosEmpty").hidden = list.length > 0; $("#qsos").hidden = list.length === 0;
     $("#barEmpty").hidden = list.length > 0; $("#barQsos").hidden = list.length === 0;
-    const uniq = new Set(list.map((q) => `${baseCall(q.call)}|${q.band}|${q.mode}`)).size;
     // Count per park for the day: a 2fer whose parks differ (one shared with an earlier session)
     // shows the smaller count as the number and the breakdown beside it.
-    const parks = st.parks || [];
-    const per = parks.map((p) => [p, list.filter((q) => !q.my || !q.my.length || q.my.includes(p)).length]);
-    const n = per.length ? Math.min(...per.map((x) => x[1])) : list.length;
-    const differ = per.length > 1 && new Set(per.map((x) => x[1])).size > 1;
-    const breakdown = differ ? per.map(([p, c]) => `${p.split("-")[1]}: ${c}`).join(" · ") : "";
+    const n = renderCount();
     const p2p = list.filter((q) => q.decision && q.decision !== "no" && q.parks.length).length;
     const pending = list.filter((q) => !q.decision && q.candidate.length).length;
-    $("#qsoCount").textContent = n; $("#barCount").textContent = n; $("#barPer").textContent = breakdown;
-    // the goal grows by 10 once reached: /10, then /20, /30 ...; the ring shows the current ten
-    const goal = Math.max(10, Math.ceil(n / 10) * 10), pct = ((n - (goal - 10)) / 10) * 100;
-    $("#qsoGoal").textContent = "/" + goal + " QSO"; $("#barGoal").textContent = "/" + goal;
-    for (const id of ["#dashRing", "#barRing"]) { $(id).style.setProperty("--p", pct); $(id).classList.toggle("is-done", n >= 10); }
-    $("#qsoNote").textContent = (breakdown ? breakdown + " — " : "") + (n >= 10 ? t("live.qsoNote.done", { n: uniq }) : t("live.qsoNote.left", { n: 10 - n }));
     $("#statP2p").textContent = p2p; $("#statPending").textContent = pending;
     $("#statPendingBox").classList.toggle("is-alert", pending > 0);
     renderStats();
@@ -715,7 +748,7 @@
         <input type="checkbox" value="${esc(a.date)}">
         <span class="act-date">${fmtDate(a.date)}<small>UTC</small></span>
         <span class="act-parks">${a.parks.map((p) => `<span class="act-park">${plate(p)}<small>${a.per && a.per[p] != null ? a.per[p] : ""}</small><small class="act-pota">${a.pota && a.pota[p] != null && a.pota[p] !== a.per[p] ? esc(t("res.unique", { n: a.pota[p] })) : ""}</small></span>`).join("")}</span>
-        <span class="act-n${a.qsos < 10 ? " is-short" : ""}">${a.qsos} QSO</span>
+        <span class="act-n${Math.min(...Object.values(a.per || {}), a.qsos) < 10 ? " is-short" : ""}">${a.qsos} QSO</span>
         <button type="button" class="link act-view" data-date="${esc(a.date)}">${esc(t("build.view"))}</button>
         ${st.source === "app" ? `<button type="button" class="link act-del" data-date="${esc(a.date)}">${esc(t("build.delete"))}</button>` : ""}
       </label>`).join("");
@@ -787,7 +820,9 @@
   $("#pickOut").addEventListener("click", async () => { const p = await api.pick_out(); if (p) { st.out = p; $("#outPath").textContent = p; } });
 
   const SRC_CLASS = { hunter: "src-ok", confirmed: "src-ok", manual: "src-ok", spot: "src-spot", log: "src-log", logspot: "src-log" };
-  // POTA asks that logs are not uploaded 03-11 UTC (log processing); shown in the user's local time
+  // POTA asks that logs are not uploaded 03-11 UTC: uploads then often end in "Unknown Failure" (database
+  // maintenance, log rotation, autoscaling). Not on docs.pota.app or the upload page; POTA sent it by mail / SNS,
+  // e.g. POTA JAPAN EVENT INFORMATION (@PotaEvent) on X, 2025-07-05, relaying POTA. Shown in the user's local time.
   function uploadHoursHtml() {
     const now = new Date(), at = (h) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), h));
     const hm = (d) => d.toLocaleTimeString(st.lang, { hour: "2-digit", minute: "2-digit" });
@@ -807,7 +842,7 @@
         <div class="file-head">
           ${plate(f.park)}
           <div><div class="file-date">${fmtDate(f.date)}</div><div class="file-name">${esc(f.file)}</div></div>
-          <div class="file-q${f.qsos < 10 ? " is-short" : ""}"><strong>${f.qsos}</strong><span>${esc(t(f.qsos < 10 ? "res.qsoShort" : "res.qso"))}</span>
+          <div class="file-q${(f.counted ?? f.qsos) < 10 ? " is-short" : ""}"><strong>${f.qsos}</strong><span>${esc(t((f.counted ?? f.qsos) < 10 ? "res.qsoShort" : "res.qso"))}</span>
             ${f.unique && f.unique < f.qsos ? `<small>${esc(t("res.unique", { n: f.unique }))}</small>` : ""}
             ${f.records && f.records !== f.qsos ? `<small>${esc(t("res.lines", { n: f.records }))}</small>` : ""}</div>
         </div>
@@ -1235,10 +1270,10 @@
     setSource(st.source);
     if (BAR) {                                      // the bar window: the running activation only
       document.body.classList.add("is-bar"); $("#bar").hidden = false;
-      if (s.live) { await enterRunning(s.live.parks, s.live.start); await document.fonts.ready; fitBar(); } else api.set_bar(false);
+      if (s.live) { await enterRunning(s.live.parks, s.live.start, s.live.locs); await document.fonts.ready; fitBar(); } else api.set_bar(false);
       return;
     }
-    if (s.live) enterRunning(s.live.parks, s.live.start);
+    if (s.live) enterRunning(s.live.parks, s.live.start, s.live.locs);
     if (st.termsAccepted !== TERMS_VERSION) showTerms(true);
     setTimeout(promptUpdate, 1500);                 // the first thing after the window is up
   }

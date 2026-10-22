@@ -53,7 +53,7 @@ The other station's park is decided in this order:
 3. **Spots recorded while on the air** (only when building from an ADIF file; spots from 30 minutes before to 10 minutes after the QSO)
 4. SIG_INFO / POTA_REF from the logger
 
-Only the public API (api.pota.app) is used, and no login is needed. Keeping the log is your logger's job: this app only makes the decisions and writes the upload files, and never changes your logger's log.
+It only reads data pota.app makes public (api.pota.app), with no login (and no official support from POTA). Keeping the log is your logger's job: this app only makes the decisions and writes the upload files, and never changes your logger's log.
 
 ## Download
 

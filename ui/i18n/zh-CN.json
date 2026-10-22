@@ -28,7 +28,7 @@
   "cfg.mypota.h": "我的 POTA 记录", "cfg.mypota.p": "登录 pota.app，在个人统计中下载猎人和激活者的公园列表（CSV），在这里导入。尚未猎过的公园会标上“New”，输入公园编号时会显示这是第几次激活。导入后，记录会根据本应用的日志和 pota.app 的猎人日志自动增加。hunter_parks.csv 和 activator_parks.csv 可以一起选择；按内容识别，文件改名也没关系。", "cfg.mypota.pick": "导入 CSV", "cfg.mypota.kind.hunter": "猎人", "cfg.mypota.kind.activator": "激活者", "cfg.mypota.count": "{n} 个公园 · {at} 导入", "cfg.mypota.missing": "尚未导入", "cfg.mypota.done": "已导入 POTA 记录", "api.mypotaBad": "{file} 不是 pota.app 的公园列表（CSV）", "spots.newOnly": "只看未猎", "spots.hideQrt": "隐藏 QRT", "tag.new": "New", "park.first": "首次激活", "park.nth": "第 {n} 次激活（成功 {done} 次，{qsos} 个 QSO）", "hunted.sub": "猎到新公园",
   "cfg.p2p.h": "P2P",
   "cfg.p2p.auto": "当 spot 显示对方电台的公园时，不再确认，直接记为 P2P",
-  "cfg.p2p.p": "关闭时每个 QSO 都会询问“是／否”。无论哪种，生成文件时若已知对方的上传记录（猎人日志），以其为准。",
+  "cfg.p2p.p": "关闭时每个 QSO 都会询问“是／否”。无论哪种，生成文件时若已知对方的上传记录（猎人日志），以其为准。POTA 指南建议在通联中互相交换并记录公园编号；请在确实听到对方公园编号的前提下开启此项。",
   "region.as": "亚洲",
   "region.eu": "欧洲",
   "region.na": "北美洲",
@@ -48,7 +48,7 @@
   "live.warn.apart": "根据 pota.app 的公园信息，{a} 与 {b} 并不重叠，因此不能作为 2fer 记录。", "live.note.spread": "所输入公园的代表点相距 {d}（每个公园在这里只用一个点表示）。只有同时位于所有公园之内，才能记为 2fer 或 3fer。",
   "live.toBar": "运行栏", "live.finish": "结束在本公园的运行", "live.finishArmed": "保留 {n} 条未确认并结束",
   "live.working": "正在生成…",
-  "live.qsoNote.done": "激活成功（{n} 个电台·波段·模式组合）", "live.qsoNote.left": "再 {n} 个 QSO 即可激活",
+  "live.qsoNote.done": "激活成功（{n} 个电台·波段·模式组合）", "live.qsoNote.left": "再 {n} 个 QSO 即可激活", "live.dayEnd.left": "距 UTC 日期变更还有 {m} 分钟；再 {n} 个 QSO 即可完成今天的激活", "live.dayEnd.done": "距 UTC 日期变更还有 {m} 分钟（今天的激活已完成）", "live.dayEnd.bar": "距 0000Z {m} 分钟", "live.newDay": "UTC 日期已变更。前一天 {n} 个 QSO（{state}）。现在开始新的激活，可以再次与同一电台通联", "live.newDay.ok": "已完成", "live.newDay.short": "未完成",
   "live.stat.pending": "待确认", "live.stat.rate": "速率", "live.stat.perHour": "/小时", "live.stat.last": "最近通联", "live.stat.ago": "{n} 分钟前", "live.stat.now": "刚刚",
   "live.tab.list": "列表", "live.tab.map": "地图", "live.qsos": "通联", "live.spots": "正在公园发射的电台", "live.seg.world": "全球",
   "live.qsosEmpty1": "等待日志软件发来的 QSO。", "live.qsosEmpty2": "如果收不到，请检查“连接日志软件”。",
@@ -103,7 +103,7 @@
   "ed.delete": "删除",
   "api.badTime": "时间须为 HHMM 或 HHMMSS",
   "api.badBand": "波段须形如 20m",
-  "api.badMode": "请输入模式",
+  "api.badMode": "请输入 ADIF 模式（FT8、FT4、SSB、CW 等）",
   "build.delete": "删除",
   "build.deleteArmed": "再按一次即删除",
   "build.deleted": "已删除 {n} 条 QSO",
@@ -146,7 +146,7 @@
   "b.note.hunterWins": "{date} {time} {call}：猎人日志为 {hunter}；日志/spot 中的 {extra} 未采用",
   "b.note.hunterOverridesNo": "{date} {time} {call}：运行时标为“不是 P2P”，但对方猎人日志有 {hunter}，故记为 P2P",
   "b.note.twofer": "{date} {time} {call}：{parks} 在相近时间分别被 spot，按 2fer 处理（也可能是在移动中运行）",
-  "b.note.missing": "{date} {time} {call} {band} {park}：在 pota.app 猎人日志中，但在你的日志中找不到（呼号或时间不同？）",
+  "b.note.missing": "{date} {time} {call} {band} {park}：在 pota.app 猎人日志中，但在你的日志中找不到（呼号或时间不同？）", "b.note.callExact": "{date} {time} {call}：对方上传的记录写作 {theirs}；呼号写法不完全一致时，pota.app 可能不算作 P2P", "b.note.callDiffers": "日志软件中的呼号（{logger}）与此处选择的 {call} 不同。文件使用 {call}；写法与对方记录不同时不算 P2P", "b.note.badMode": "{date} {time} {call}：模式“{mode}”不是 ADIF 模式，pota.app 不会接受此文件。请在“查看内容”或日志软件中修改", "b.note.noBand": "{date} {time} {call}：无法确定波段（没有 BAND 和 FREQ，或不在 ADIF 波段范围内）；pota.app 不会接受此文件", "b.note.self": "{date} {time} {call}：与自己的通联无效；pota.app 不会接受此文件", "b.note.badCall": "{date} {time} {call}：呼号中含有不允许的字符（只能使用 A–Z、0–9 和 /）", "b.note.future": "{date} {time} {call}：日期在未来；请检查电脑时钟（pota.app 不会接受此文件）", "b.note.badTime": "{date} {time} {call}：时间“{value}”无效（应为 UTC 的 HHMM 或 HHMMSS）；pota.app 不会接受此文件", "b.note.badDate": "{date} {time} {call}：日期“{value}”无效（应为 UTC 的 YYYYMMDD）；此 QSO 未写入文件", "b.note.repeater": "{date} {time} {call}：经由中继台的通联在 POTA 中不计数", "b.note.parkUnread": "{date} {time} {call}：无法读取公园编号“{value}”（需要连字符，例如 {park}）",
   "b.line.file": "{date}  {park}  {n} QSO（{stations} 个电台）{short}  → {file}", "b.short": "  ※不足 10 QSO", "b.notes": "请确认：",
   "api.portNum": "端口必须是数字。", "api.portRange": "端口范围为 1–65535。",
   "api.mcFormat": "组播地址应形如 224.0.0.1。", "api.fwdFormat": "转发地址应为“地址:端口”，如 127.0.0.1:2335。",
@@ -158,5 +158,5 @@
   "updater.fromSource": "从源码运行，无法自动更新。", "updater.unsupportedOs": "此操作系统不支持自动更新。",
   "updater.noApp": "更新文件中没有应用。", "updater.noExe": "更新文件中没有可执行文件。",
   "terms.title": "使用条款与免责声明", "terms.accept": "同意并使用", "terms.link": "使用条款与免责声明",
-  "terms.body": "<p>本应用是个人业余开发的软件，按“原样”提供，不作任何保证，以 MIT 许可证发布。</p><ul><li><strong>对于使用本应用造成的任何损失，作者概不负责</strong>，包括向 pota.app 上传了错误内容、QSO 重复或缺失、日志或文件丢失、对日志软件或网络设置的影响等。上传前请务必自行检查文件内容。</li><li>P2P 与 2fer 的判断是基于 pota.app 的 spot 和猎人日志的推测，不保证正确。</li><li>本应用与 Parks on the Air®（POTA）及 pota.app 无关，仅使用其公开 API。POTA 的规则和上传要求，请始终以 pota.app 的说明为准。</li><li>收到的 QSO、spot 记录和设置只保存在本机，不会发送到外部。应用会访问 api.pota.app 获取 spot，访问 GitHub 检查更新。</li><li>继续使用即视为同意以上内容。</li></ul>"
+  "terms.body": "<p>本应用是个人业余开发的软件，按“原样”提供，不作任何保证，以 MIT 许可证发布。</p><ul><li><strong>对于使用本应用造成的任何损失，作者概不负责</strong>，包括向 pota.app 上传了错误内容、QSO 重复或缺失、日志或文件丢失、对日志软件或网络设置的影响等。上传前请务必自行检查文件内容。</li><li>P2P 与 2fer 的判断是基于 pota.app 的 spot 和猎人日志的推测，不保证正确。</li><li>本应用与 Parks on the Air®（POTA）及 pota.app 无关。它读取 pota.app 公开的数据，但未获得 POTA 的官方支持。POTA 的规则和上传要求，请始终以 pota.app 的说明为准。</li><li>收到的 QSO、spot 记录和设置只保存在本机，不会发送到外部。应用会访问 api.pota.app 获取 spot、公园和猎人日志，访问 GitHub 检查更新，访问 OpenStreetMap 显示地图。</li><li>继续使用即视为同意以上内容。</li></ul>"
 }

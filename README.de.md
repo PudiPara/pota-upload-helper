@@ -53,7 +53,7 @@ Der Park der Gegenstation wird in dieser Reihenfolge bestimmt:
 3. **Während des Betriebs aufgezeichnete Spots** (nur beim Erstellen aus einer ADIF-Datei; Spots von 30 Minuten vor bis 10 Minuten nach dem QSO)
 4. SIG_INFO / POTA_REF aus dem Logger
 
-Es wird nur die öffentliche API (api.pota.app) genutzt, ein Login ist nicht nötig. Das Log zu führen ist Sache des Loggers: Diese App übernimmt nur die Beurteilung und das Erstellen der Upload-Dateien und verändert das Log des Loggers nie.
+Gelesen werden nur Daten, die pota.app öffentlich macht (api.pota.app), ohne Login (und ohne offizielle Unterstützung durch POTA). Das Log zu führen ist Sache des Loggers: Diese App übernimmt nur die Beurteilung und das Erstellen der Upload-Dateien und verändert das Log des Loggers nie.
 
 ## Download
 

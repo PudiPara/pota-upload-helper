@@ -31,7 +31,7 @@
   "cfg.mypota.h": "POTA の実績", "cfg.mypota.p": "pota.app にログインし、自分の実績ページからハンターとアクティベーターの公園一覧（CSV）をダウンロードして、ここで読み込みます。まだハントしていない公園に「New」を付け、公園番号を入れたときに何回目のアクティベートかを表示します。読み込んだあとは、このアプリの記録と pota.app のハンターログで自動的に増えていきます。hunter_parks.csv と activator_parks.csv は 2 つまとめて選べます。ファイル名が変わっていても中身で見分けます。", "cfg.mypota.pick": "CSV を読み込む", "cfg.mypota.kind.hunter": "ハンター", "cfg.mypota.kind.activator": "アクティベーター", "cfg.mypota.count": "{n} 公園・{at} 読み込み", "cfg.mypota.missing": "未読み込み", "cfg.mypota.done": "POTA の実績を読み込みました", "api.mypotaBad": "{file} は pota.app の公園一覧（CSV）ではありません", "spots.newOnly": "未ハントのみ", "spots.hideQrt": "QRT を隠す", "tag.new": "New", "park.first": "初アクティベート", "park.nth": "{n} 回目のアクティベート（成立 {done} 回・{qsos} QSO）", "hunted.sub": "新しい公園をハント",
   "cfg.p2p.h": "P2P",
   "cfg.p2p.auto": "スポットで相手の公園が分かるときは、確認せずに P2P として記録する",
-  "cfg.p2p.p": "オフのときは QSO ごとに「はい／いいえ」を聞きます。どちらでも、相手のアップロード（ハンターログ）が分かればファイル作成時にそちらを優先します。",
+  "cfg.p2p.p": "オフのときは QSO ごとに「はい／いいえ」を聞きます。どちらでも、相手のアップロード（ハンターログ）が分かればファイル作成時にそちらを優先します。POTA のガイドでは、P2P は交信の中で互いの公園番号を交換して記録することが勧められています。オンにするのは、相手の公園番号を聞き取れている前提で使ってください。",
   "region.as": "アジア",
   "region.eu": "ヨーロッパ",
   "region.na": "北アメリカ",
@@ -57,7 +57,7 @@
  "live.finishArmed": "未確認 {n} 件のまま終了",
  "live.working": "作成しています…",
  "live.qsoNote.done": "アクティベーション成立（{n} 局・バンド・モード）",
- "live.qsoNote.left": "あと {n} QSO でアクティベーション成立",
+ "live.qsoNote.left": "あと {n} QSO でアクティベーション成立", "live.dayEnd.left": "UTC の日付が変わるまで {m} 分。あと {n} QSO で今日の分が成立", "live.dayEnd.done": "UTC の日付が変わるまで {m} 分（今日の分は成立）", "live.dayEnd.bar": "0000Z まで {m} 分", "live.newDay": "UTC の日付が変わりました。前日は {n} QSO（{state}）。ここから新しいアクティベーションで、同じ局とももう一度交信できます", "live.newDay.ok": "成立", "live.newDay.short": "未成立",
  "live.stat.pending": "確認待ち", "live.stat.rate": "ペース", "live.stat.perHour": "/時", "live.stat.last": "最後の交信", "live.stat.ago": "{n} 分前", "live.stat.now": "たった今",
  "live.tab.list": "一覧", "live.tab.map": "地図", "live.qsos": "交信",
  "live.spots": "公園から出ている局",
@@ -154,7 +154,7 @@
  "ed.delete": "削除",
  "api.badTime": "時刻は HHMM か HHMMSS で入力してください",
  "api.badBand": "バンドは 20m のように入力してください",
- "api.badMode": "モードを入力してください",
+ "api.badMode": "ADIF のモードを入力してください（FT8、FT4、SSB、CW など）",
  "build.delete": "削除",
  "build.deleteArmed": "もう一度押すと削除",
  "build.deleted": "{n} 件の QSO を削除しました",
@@ -229,7 +229,7 @@
  "b.note.hunterWins": "{date} {time} {call}: ハンターログでは {hunter}。ログ/スポットにあった {extra} は使っていません",
  "b.note.hunterOverridesNo": "{date} {time} {call}: 運用中は「P2P ではない」にしましたが、相手のハンターログに {hunter} があったので P2P にしています",
  "b.note.twofer": "{date} {time} {call}: {parks} が別々のスポットで近い時刻に出ていたので 2fer として扱いました（移動運用の可能性もあり）",
- "b.note.missing": "{date} {time} {call} {band} {park}: pota.app のハンターログにあるが、ログに見つからない（コールや時刻の違い？）",
+ "b.note.missing": "{date} {time} {call} {band} {park}: pota.app のハンターログにあるが、ログに見つからない（コールや時刻の違い？）", "b.note.callExact": "{date} {time} {call}: 相手のアップロードでは {theirs} と書かれています。pota.app はコールの表記がそのまま一致しないと P2P にしないことがあります", "b.note.callDiffers": "ロガーのコール（{logger}）が、ここで選んだ {call} と違います。ファイルは {call} で書きました。相手の記録と表記が違うと P2P になりません", "b.note.badMode": "{date} {time} {call}: モード「{mode}」は ADIF にないので、pota.app がこのファイルを受け付けません。「中身を見る」かロガーで直してください", "b.note.noBand": "{date} {time} {call}: バンドが分かりません（BAND も FREQ もないか、ADIF のバンドの範囲外）。pota.app がこのファイルを受け付けません", "b.note.self": "{date} {time} {call}: 自局との交信は無効です。pota.app がこのファイルを受け付けません", "b.note.badCall": "{date} {time} {call}: コールサインに使えない文字があります（使えるのは A〜Z・0〜9・/ だけ）", "b.note.future": "{date} {time} {call}: 日付が未来です。パソコンの時計を確かめてください（pota.app はこのファイルを受け付けません）", "b.note.badTime": "{date} {time} {call}: 時刻「{value}」が正しくありません（UTC の HHMM か HHMMSS）。pota.app はこのファイルを受け付けません", "b.note.badDate": "{date} {time} {call}: 日付「{value}」が正しくありません（UTC の YYYYMMDD）。この QSO はファイルに入れていません", "b.note.repeater": "{date} {time} {call}: レピーター経由の交信は POTA では数えられません", "b.note.parkUnread": "{date} {time} {call}: 公園番号「{value}」を読めませんでした（{park} のようにハイフンが必要です）",
  "b.line.file": "{date}  {park}  {n} QSO（{stations} 局）{short}  → {file}",
  "b.short": "  ※10 QSO 未満",
  "b.notes": "要確認:",
@@ -256,5 +256,5 @@
  "terms.title": "利用規約と免責事項",
  "terms.accept": "同意して使う",
  "terms.link": "利用規約と免責事項",
- "terms.body": "<p>このアプリは個人が趣味で作った無保証のソフトウェアで、MIT ライセンスで配布しています。</p><ul><li><strong>このアプリの使用によって生じたいかなる損害についても、作者は責任を負いません。</strong> pota.app へ誤った内容をアップロードしたこと、QSO の重複や欠落、ログやファイルの消失、ロガーやネットワーク設定への影響などを含みます。アップロードするファイルの内容は、必ず自分で確認してください。</li><li>P2P や 2fer の判定は pota.app のスポットとハンターログに基づく推定で、正しさは保証されません。</li><li>このアプリは Parks on the Air®（POTA）および pota.app とは無関係で、公開 API を利用しているだけです。POTA の規則とアップロードの要件は、常に pota.app の案内に従ってください。</li><li>受け取った QSO、スポットの記録、設定はこのパソコンの中にだけ保存され、外部には送信しません。スポット取得のため api.pota.app に、更新確認のため GitHub にアクセスします。</li><li>使い続けることで、この内容に同意したものとみなします。</li></ul>"
+ "terms.body": "<p>このアプリは個人が趣味で作った無保証のソフトウェアで、MIT ライセンスで配布しています。</p><ul><li><strong>このアプリの使用によって生じたいかなる損害についても、作者は責任を負いません。</strong> pota.app へ誤った内容をアップロードしたこと、QSO の重複や欠落、ログやファイルの消失、ロガーやネットワーク設定への影響などを含みます。アップロードするファイルの内容は、必ず自分で確認してください。</li><li>P2P や 2fer の判定は pota.app のスポットとハンターログに基づく推定で、正しさは保証されません。</li><li>このアプリは Parks on the Air®（POTA）および pota.app とは無関係です。pota.app が公開しているデータを読み込んでいますが、POTA の公式なサポートを受けたものではありません。POTA の規則とアップロードの要件は、常に pota.app の案内に従ってください。</li><li>受け取った QSO、スポットの記録、設定はこのパソコンの中にだけ保存され、外部には送信しません。スポット・公園・ハンターログの取得のため api.pota.app に、更新確認のため GitHub に、地図の表示のため OpenStreetMap にアクセスします。</li><li>使い続けることで、この内容に同意したものとみなします。</li></ul>"
 }

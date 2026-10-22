@@ -29,9 +29,9 @@ import qsolog
 import updater
 from builder import build, find_activation_qsos, list_activations
 from i18n import t
-from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, base_call, data_path, data_version, fetch_json, grid_center,
+from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, adif_mode, band_name, base_call, data_path, data_version, fetch_json, grid_center,
                         iso_date,
-                        iso_minutes, load_settings, lock_instance, mode_of, my_call, my_parks_of, read_adif, rec_minutes, resource,
+                        iso_minutes, load_settings, lock_instance, count_key, mode_known, mode_of, my_call, my_parks_of, read_adif, rec_minutes, resource,
                         save_settings, split_parks, LOG_NAME, setup_log)
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
@@ -81,6 +81,9 @@ def qso_event(rec, uid=None, hunted=None):
             "new": mypota.new_parks(list(dict.fromkeys(theirs)), hunted, ts),
             "mode": mode_of(rec), "decision": rec.get("P2P_DECISION") or "", "parks": decided_parks(rec)[1],
             "candidate": split_parks(rec.get("P2P_CANDIDATE")), "my": my_parks_of(rec),
+            # for the 10-QSO count: one key per park ("*" when the QSO has none of its own), the UI counts the
+            # distinct keys of today at the session's location (count_key: what pota.app counts once)
+            "ck": {p: count_key(rec, p) for p in my_parks_of(rec) or ["*"]},
             "note": rec.get("P2P_NOTE") or "",
             # to their parks (the decided ones, else the spot's candidate) from mine
             "km": distance_km(my_parks_of(rec), decided_parks(rec)[1] or split_parks(rec.get("P2P_CANDIDATE")))}
@@ -282,7 +285,7 @@ class Api:
         sess = self._logger.session
         self._locs = locs
         save_settings({"live": {"id": sess["id"], "parks": parks, "call": call, "start": sess["start"], "locs": locs}})
-        return {"ok": True, "parks": parks, "start": sess["start"], "loc": loc}
+        return {"ok": True, "parks": parks, "start": sess["start"], "loc": loc, "locs": locs}
 
     def _in_session(self, rec):
         """Does this QSO belong in the running session's list: logged at one of its parks today (a park
@@ -480,7 +483,7 @@ class Api:
         return r[0] if isinstance(r, (list, tuple)) else r
 
     def pick_adif(self):
-        path = self._pick(OPEN_DIALOG, allow_multiple=False, file_types=("ADIF (*.adi;*.adif;*.ADI;*.ADIF)", "All files (*.*)"))
+        path = self._pick(OPEN_DIALOG, allow_multiple=False, file_types=("ADIF (*.adi;*.adif;*.adx;*.ADI;*.ADIF;*.ADX)", "All files (*.*)"))
         if not path:
             return None
         save_settings({"adif": path, "source": "adif"})
@@ -530,12 +533,12 @@ class Api:
                 if not re.fullmatch(r"\d{4}(\d{2})?", v):
                     return {"ok": False, "error": t("api.badTime")}
             elif k == "BAND":
-                v = v.lower()
-                if not re.fullmatch(r"\d+(\.\d+)?(m|cm|mm)", v):
+                v = band_name(v)                         # an ADIF band only ("11m" is not one)
+                if not v:
                     return {"ok": False, "error": t("api.badBand")}
             elif k == "MODE":
-                v = v.upper()
-                if not re.fullmatch(r"[A-Z0-9-]+", v):
+                v = v.upper().strip()                    # USB, FT4 ... are fine: qsolog.update writes MODE + SUBMODE
+                if not mode_known(adif_mode(v)):
                     return {"ok": False, "error": t("api.badMode")}
             elif k == "parks":
                 if v and not split_parks(v):

@@ -31,7 +31,7 @@
   "cfg.mypota.h": "Your POTA record", "cfg.mypota.p": "Sign in to pota.app, download your hunter and activator park lists (CSV) from your stats, and import them here. Parks you have not hunted yet get a “New” mark, and entering a park reference shows which activation of it this would be. After the import the record keeps growing from this app's log and your pota.app hunter log. You can pick hunter_parks.csv and activator_parks.csv together; each is recognised by its contents, so a renamed file works too.", "cfg.mypota.pick": "Import CSV", "cfg.mypota.kind.hunter": "Hunter", "cfg.mypota.kind.activator": "Activator", "cfg.mypota.count": "{n} parks · imported {at}", "cfg.mypota.missing": "Not imported yet", "cfg.mypota.done": "Your POTA record was imported", "api.mypotaBad": "{file} is not a pota.app park list (CSV)", "spots.newOnly": "Unhunted only", "spots.hideQrt": "Hide QRT", "tag.new": "New", "park.first": "First activation", "park.nth": "Activation #{n} ({done} valid, {qsos} QSOs so far)", "hunted.sub": "New park hunted",
   "cfg.p2p.h": "P2P",
   "cfg.p2p.auto": "When a spot shows the other station's park, record it as P2P without asking",
-  "cfg.p2p.p": "Off: each QSO asks yes / no. Either way the other side's upload (hunter log), when known, wins at build time.",
+  "cfg.p2p.p": "Off: each QSO asks yes / no. Either way the other side's upload (hunter log), when known, wins at build time. POTA's guide recommends exchanging and logging each other's park references during the QSO; turn this on only when you hear their park on the air.",
   "region.as": "Asia",
   "region.eu": "Europe",
   "region.na": "North America",
@@ -57,7 +57,7 @@
  "live.finishArmed": "Finish with {n} unconfirmed",
  "live.working": "Writing…",
  "live.qsoNote.done": "Activation complete ({n} station/band/mode combinations)",
- "live.qsoNote.left": "{n} more QSOs to complete the activation",
+ "live.qsoNote.left": "{n} more QSOs to complete the activation", "live.dayEnd.left": "{m} min to the UTC date change; {n} more QSOs make today's activation", "live.dayEnd.done": "{m} min to the UTC date change (today's activation is made)", "live.dayEnd.bar": "{m} min to 0000Z", "live.newDay": "The UTC date has changed. Yesterday: {n} QSOs ({state}). A new activation starts now, and you can work the same stations again", "live.newDay.ok": "made", "live.newDay.short": "not made",
  "live.stat.pending": "Unanswered", "live.stat.rate": "Rate", "live.stat.perHour": "/h", "live.stat.last": "Last QSO", "live.stat.ago": "{n} min ago", "live.stat.now": "just now",
  "live.tab.list": "List", "live.tab.map": "Map", "live.qsos": "QSOs",
  "live.spots": "On the air from parks",
@@ -154,7 +154,7 @@
  "ed.delete": "Delete",
  "api.badTime": "Time must be HHMM or HHMMSS",
  "api.badBand": "Band must look like 20m",
- "api.badMode": "Mode is required",
+ "api.badMode": "Enter an ADIF mode (FT8, FT4, SSB, CW …)",
  "build.delete": "Delete",
  "build.deleteArmed": "Press again to delete",
  "build.deleted": "Deleted {n} QSOs",
@@ -229,7 +229,7 @@
  "b.note.hunterWins": "{date} {time} {call}: hunter log says {hunter}; {extra} from log/spots not used",
  "b.note.hunterOverridesNo": "{date} {time} {call}: marked “not P2P” on the air, but their hunter log has {hunter}, so it is P2P",
  "b.note.twofer": "{date} {time} {call}: {parks} were spotted separately around the same time, treated as a 2fer (could be a rover)",
- "b.note.missing": "{date} {time} {call} {band} {park}: in the pota.app hunter log but not in your log (call or time differs?)",
+ "b.note.missing": "{date} {time} {call} {band} {park}: in the pota.app hunter log but not in your log (call or time differs?)", "b.note.callExact": "{date} {time} {call}: their upload has {theirs}; pota.app may not make it a P2P unless the call matches as written", "b.note.callDiffers": "Your logger's call ({logger}) differs from {call} chosen here. The files use {call}; a P2P needs the call written as the other side logged it", "b.note.badMode": "{date} {time} {call}: mode “{mode}” is not an ADIF mode, so pota.app will not accept this file. Fix it under “View” or in your logger", "b.note.noBand": "{date} {time} {call}: no band (no BAND or FREQ, or outside the ADIF bands); pota.app will not accept this file", "b.note.self": "{date} {time} {call}: a contact with yourself does not count; pota.app will not accept this file", "b.note.badCall": "{date} {time} {call}: the callsign has characters that are not allowed (only A–Z, 0–9 and /)", "b.note.future": "{date} {time} {call}: the date is in the future; check your computer’s clock (pota.app will not accept this file)", "b.note.badTime": "{date} {time} {call}: the time “{value}” is not valid (UTC HHMM or HHMMSS); pota.app will not accept this file", "b.note.badDate": "{date} {time} {call}: the date “{value}” is not valid (UTC YYYYMMDD); this QSO is not in the files", "b.note.repeater": "{date} {time} {call}: contacts via a repeater do not count for POTA", "b.note.parkUnread": "{date} {time} {call}: could not read the park reference “{value}” (it needs a hyphen, like {park})",
  "b.line.file": "{date}  {park}  {n} QSOs ({stations} stations){short}  → {file}",
  "b.short": "  * under 10 QSOs",
  "b.notes": "Please check:",
@@ -256,5 +256,5 @@
  "terms.title": "Terms of use and disclaimer",
  "terms.accept": "Agree and continue",
  "terms.link": "Terms and disclaimer",
- "terms.body": "<p>This app is hobby software by an individual, provided as is, without warranty, under the MIT License.</p><ul><li><strong>The author accepts no liability for any damage arising from the use of this app</strong>, including uploading wrong data to pota.app, duplicated or missing QSOs, lost logs or files, and effects on your logger or network settings. Always check the files before you upload them.</li><li>P2P and 2fer detection is an estimate based on pota.app spots and hunter logs; correctness is not guaranteed.</li><li>This app is not affiliated with Parks on the Air® (POTA) or pota.app; it only uses the public API. Follow pota.app's rules and upload requirements at all times.</li><li>Received QSOs, spot records and settings stay on this computer and are not sent anywhere. The app contacts api.pota.app for spots and GitHub to check for updates.</li><li>By continuing to use the app you agree to these terms.</li></ul>"
+ "terms.body": "<p>This app is hobby software by an individual, provided as is, without warranty, under the MIT License.</p><ul><li><strong>The author accepts no liability for any damage arising from the use of this app</strong>, including uploading wrong data to pota.app, duplicated or missing QSOs, lost logs or files, and effects on your logger or network settings. Always check the files before you upload them.</li><li>P2P and 2fer detection is an estimate based on pota.app spots and hunter logs; correctness is not guaranteed.</li><li>This app is not affiliated with Parks on the Air® (POTA) or pota.app. It reads data pota.app makes public, without any official support from POTA. Follow pota.app's rules and upload requirements at all times.</li><li>Received QSOs, spot records and settings stay on this computer and are not sent anywhere. The app contacts api.pota.app for spots, parks and your hunter log, GitHub to check for updates, and OpenStreetMap for the maps.</li><li>By continuing to use the app you agree to these terms.</li></ul>"
 }

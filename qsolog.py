@@ -4,6 +4,7 @@ One contact often arrives twice: WSJT-X reports it at its start, the logger at i
 same base call, band and mode within TWIN_WINDOW minutes; reads keep one (dedupe), and a decision or a
 delete is applied to every copy.
 """
+import datetime as dt
 import json
 import os
 import sqlite3
@@ -11,7 +12,7 @@ import threading
 import time
 from contextlib import contextmanager
 
-from potacommon import base_call, data_path, minutes, mode_of, my_parks_of, rec_minutes, split_parks, their_parks_of
+from potacommon import adif_mode, base_call, data_path, minutes, mode_of, my_parks_of, rec_minutes, split_parks, their_parks_of
 
 TWIN_WINDOW = 3          # minutes
 _lock = threading.Lock()
@@ -41,18 +42,25 @@ def make_uid(rec):
                                rec.get("TIME_ON", "")[:4], (rec.get("BAND") or "").lower(), mode_of(rec))
 
 
+def _days_around(date):
+    """The UTC day before, the day, the day after: a contact over 0000Z has its copies on two days (WSJT-X
+    reports its start, the logger its end)."""
+    d = dt.datetime.strptime(date, "%Y%m%d")
+    return [(d + dt.timedelta(days=k)).strftime("%Y%m%d") for k in (-1, 0, 1)]
+
+
 def _twins(con, date, call, time_on, band=None, mode=None):
-    """uids of the live rows of that day that are the same contact (band/mode only when given)."""
+    """uids of the live rows that are the same contact (band/mode only when given), the day around 0000Z too."""
     try:
-        tm = minutes(date, time_on or "0000")
-    except ValueError:
-        return []
+        tm, days = minutes(date, time_on), _days_around(date)
+    except (TypeError, ValueError):
+        return []                                  # no time: nothing to pair it with
     out = []
-    for uid, c2, t2, b2, m2 in con.execute("SELECT uid, call, time_on, band, mode FROM qso WHERE qso_date=? AND deleted=0",
-                                           (date,)).fetchall():
+    for uid, d2, c2, t2, b2, m2 in con.execute(
+            "SELECT uid, qso_date, call, time_on, band, mode FROM qso WHERE qso_date IN (?,?,?) AND deleted=0", days).fetchall():
         try:
-            near = abs(minutes(date, t2 or "0000") - tm) <= TWIN_WINDOW
-        except ValueError:
+            near = abs(minutes(d2, t2) - tm) <= TWIN_WINDOW
+        except (TypeError, ValueError):
             continue
         if near and base_call(c2) == base_call(call) and band in (None, b2) and mode in (None, m2):
             out.append(uid)
@@ -193,11 +201,12 @@ def update(uid, fields):
     if not row:
         return None
     rec, ext_id, source = json.loads(row[0]), row[1], row[2]
-    for k in ("CALL", "TIME_ON", "BAND", "MODE"):
+    for k in ("CALL", "TIME_ON", "BAND"):
         if k in fields:
             rec[k] = fields[k]
     if "MODE" in fields:
         rec.pop("SUBMODE", None)
+        rec.update(adif_mode(fields["MODE"]))    # "USB" -> SSB + USB, "FT4" -> MFSK + FT4
     if "parks" in fields:
         parks = split_parks(fields["parks"])
         apply_decision(rec, "manual" if parks else "no", parks)
@@ -216,12 +225,14 @@ def delete_uid(uid):
 def records(dates=None):
     """The live records (of these QSO_DATEs), oldest first, one per contact."""
     with _conn() as con:
-        if dates:
-            q = "SELECT data FROM qso WHERE deleted=0 AND qso_date IN (%s) ORDER BY qso_date, time_on" % ",".join("?" * len(dates))
-            rows = con.execute(q, list(dates)).fetchall()
+        if dates:                     # the days around too: a contact over 0000Z has a copy on the other day
+            around = sorted({x for d in dates for x in _days_around(d)})
+            q = "SELECT data FROM qso WHERE deleted=0 AND qso_date IN (%s) ORDER BY qso_date, time_on" % ",".join("?" * len(around))
+            rows = con.execute(q, around).fetchall()
         else:
             rows = con.execute("SELECT data FROM qso WHERE deleted=0 ORDER BY qso_date, time_on").fetchall()
-    return dedupe([json.loads(r[0]) for r in rows])
+    recs = dedupe([json.loads(r[0]) for r in rows])
+    return [r for r in recs if not dates or r.get("QSO_DATE") in dates]
 
 
 def history():
@@ -274,6 +285,8 @@ def dedupe(recs):
         if k in last and t - last[k][0] <= TWIN_WINDOW:
             prev = last[k][1]
             if (bool(r.get("P2P_DECISION")), len(r)) > (bool(prev.get("P2P_DECISION")), len(prev)):
+                if r.get("QSO_DATE") != prev.get("QSO_DATE"):      # over 0000Z: the day it started (ADIF, pota.app)
+                    r = dict(r, QSO_DATE=prev["QSO_DATE"], TIME_ON=prev.get("TIME_ON"))
                 kept[kept.index(prev)] = r
                 last[k] = (last[k][0], r)
             continue

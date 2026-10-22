@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TMP = tempfile.mkdtemp()
 os.environ["POTAROO_DATA"] = os.path.join(TMP, "data")
 
-from potacommon import base_call, read_adif, split_parks, write_adif  # noqa: E402
+from potacommon import base_call, data_path, read_adif, split_parks, write_adif  # noqa: E402
 import builder  # noqa: E402
 
 
@@ -21,7 +21,7 @@ def qso(call, t, band="40m", mode="FT8", **kw):
 
 class BuilderTest(unittest.TestCase):
     def setUp(self):
-        data = os.environ["POTAROO_DATA"]
+        data = data_path()          # DATA_DIR: an earlier test module may have set it
         os.makedirs(data, exist_ok=True)
         json.dump([{"date": "2026-10-20T01:05:00", "callsign": "JA1AAA/P", "band": "40M", "mode": "DATA",
                     "reference": "JP-0001"},
@@ -91,7 +91,9 @@ class BuilderTest(unittest.TestCase):
     def test_build(self):
         res = builder.build(self.adif, ["20261020"], None, "JL1FVA", self.out, offline=True)
         self.assertEqual(sorted(res["files"]), ["JL1FVA@JP-1281-20261020.adi", "JL1FVA@JP-1285-20261020.adi"])
-        recs = read_adif(os.path.join(self.out, "JL1FVA@JP-1281-20261020.adi"))
+        self.assertEqual(res["out_dir"], os.path.join(self.out, "20261020"))      # this build's files in a folder of their own
+        self.assertTrue(os.path.exists(os.path.join(self.out, "report.txt")))      # the report beside it, not in it
+        recs = read_adif(os.path.join(res["out_dir"], "JL1FVA@JP-1281-20261020.adi"))
         by = {}
         for r in recs:
             by.setdefault(r["CALL"], []).append(r.get("SIG_INFO"))
@@ -158,7 +160,7 @@ class ActivationRowsCountPerPark(unittest.TestCase):
                 q("JA1AAA", "020000", "JP-1206,JP-1946")]                       # same station again from another overlap
         d, parks, n, per, pota = list_activations(recs=recs, )[0]
         self.assertEqual((d, parks, n), ("20260108", "JP-1206,JP-1266,JP-1946", 3))
-        self.assertEqual(per, {"JP-1206": 3, "JP-1266": 2, "JP-1946": 1})
+        self.assertEqual(per, {"JP-1206": 2, "JP-1266": 2, "JP-1946": 1})        # the 10-QSO count: JA1AAA once at JP-1206 (#14)
         self.assertEqual(pota, {"JP-1206": 2, "JP-1266": 2, "JP-1946": 1})       # JA1AAA counts once for JP-1206
 
 
@@ -169,8 +171,8 @@ class ParkAcrossPrefectures(unittest.TestCase):
         q = lambda call, t, loc: {"CALL": call, "QSO_DATE": "20260109", "TIME_ON": t, "BAND": "40m", "MODE": "CW",
                                   "MY_SIG": "POTA", "MY_SIG_INFO": "JP-0016,JP-1206", "MY_POTA_LOCS": {"JP-0016": loc}}
         recs = [q("JA1AAA", "010000", "JP-TK"), q("JA1BBB", "030000", "JP-KN")]
-        files = {f["file"]: f for f in builder.build(None, None, None, "JL1FVA", out, offline=True, recs=recs,
-                                                     confirmed_only=True, log=lambda *a: None)["summary"]}
+        res = builder.build(None, None, None, "JL1FVA", out, offline=True, recs=recs, confirmed_only=True, log=lambda *a: None)
+        files, out = {f["file"]: f for f in res["summary"]}, res["out_dir"]
         self.assertEqual(sorted(files), ["JL1FVA@JP-0016-20260109-JP-KN.adi", "JL1FVA@JP-0016-20260109-JP-TK.adi",
                                          "JL1FVA@JP-1206-20260109.adi"])
         self.assertIn("<MY_STATE:2>TK", open(os.path.join(out, "JL1FVA@JP-0016-20260109-JP-TK.adi"), encoding="utf-8").read())

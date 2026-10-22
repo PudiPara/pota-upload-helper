@@ -28,7 +28,7 @@
   "cfg.mypota.h": "나의 POTA 기록", "cfg.mypota.p": "pota.app에 로그인해 내 통계에서 헌터·액티베이터 공원 목록(CSV)을 내려받아 여기서 불러옵니다. 아직 헌트하지 않은 공원에 “New”를 표시하고, 공원 번호를 넣으면 몇 번째 액티베이션인지 보여 줍니다. 불러온 뒤에는 이 앱의 기록과 pota.app 헌터 로그로 자동으로 늘어납니다. hunter_parks.csv와 activator_parks.csv를 함께 선택할 수 있습니다. 내용으로 구분하므로 파일 이름이 바뀌어도 됩니다.", "cfg.mypota.pick": "CSV 불러오기", "cfg.mypota.kind.hunter": "헌터", "cfg.mypota.kind.activator": "액티베이터", "cfg.mypota.count": "공원 {n}곳 · {at} 불러옴", "cfg.mypota.missing": "아직 불러오지 않음", "cfg.mypota.done": "POTA 기록을 불러왔습니다", "api.mypotaBad": "{file}은(는) pota.app 공원 목록(CSV)이 아닙니다", "spots.newOnly": "헌트 안 한 곳만", "spots.hideQrt": "QRT 숨기기", "tag.new": "New", "park.first": "첫 액티베이션", "park.nth": "{n}번째 액티베이션(성공 {done}회·{qsos} QSO)", "hunted.sub": "새 공원 헌트",
   "cfg.p2p.h": "P2P",
   "cfg.p2p.auto": "스팟으로 상대국의 공원을 알 수 있으면 확인 없이 P2P로 기록",
-  "cfg.p2p.p": "끄면 QSO마다 ‘예 / 아니오’를 묻습니다. 어느 쪽이든 파일 생성 시 상대국의 업로드(헌터 로그)를 알면 그쪽을 우선합니다.",
+  "cfg.p2p.p": "끄면 QSO마다 ‘예 / 아니오’를 묻습니다. 어느 쪽이든 파일 생성 시 상대국의 업로드(헌터 로그)를 알면 그쪽을 우선합니다. POTA 가이드는 교신 중에 서로의 공원 번호를 교환해 기록하도록 권합니다. 상대의 공원 번호를 실제로 들은 경우에만 켜 주세요.",
   "region.as": "아시아",
   "region.eu": "유럽",
   "region.na": "북아메리카",
@@ -48,7 +48,7 @@
   "live.warn.apart": "pota.app의 공원 정보에 따르면 {a}와(과) {b}는 겹치지 않으므로 2fer로 기록할 수 없습니다.", "live.note.spread": "입력한 공원의 대표 지점끼리는 {d} 떨어져 있습니다(여기서는 공원을 한 점으로 나타냅니다). 모든 공원 안에 동시에 있을 때만 2fer・3fer로 기록할 수 있습니다.",
   "live.toBar": "바 표시", "live.finish": "이 공원 운용 종료", "live.finishArmed": "미확인 {n}건인 채로 종료",
   "live.working": "만드는 중…",
-  "live.qsoNote.done": "액티베이션 성공 ({n}개 국·밴드·모드 조합)", "live.qsoNote.left": "액티베이션 성공까지 {n} QSO 남음",
+  "live.qsoNote.done": "액티베이션 성공 ({n}개 국·밴드·모드 조합)", "live.qsoNote.left": "액티베이션 성공까지 {n} QSO 남음", "live.dayEnd.left": "UTC 날짜가 바뀌기까지 {m}분. {n} QSO 더 하면 오늘의 액티베이션 성립", "live.dayEnd.done": "UTC 날짜가 바뀌기까지 {m}분(오늘의 액티베이션 성립)", "live.dayEnd.bar": "0000Z까지 {m}분", "live.newDay": "UTC 날짜가 바뀌었습니다. 전날 {n} QSO({state}). 지금부터 새 액티베이션이며 같은 국과 다시 교신할 수 있습니다", "live.newDay.ok": "성립", "live.newDay.short": "미성립",
   "live.stat.pending": "확인 대기", "live.stat.rate": "페이스", "live.stat.perHour": "/시간", "live.stat.last": "마지막 교신", "live.stat.ago": "{n}분 전", "live.stat.now": "방금",
   "live.tab.list": "목록", "live.tab.map": "지도", "live.qsos": "교신", "live.spots": "공원에서 운용 중인 국", "live.seg.world": "전 세계",
   "live.qsosEmpty1": "로거에서 오는 QSO를 기다리는 중입니다.", "live.qsosEmpty2": "오지 않으면 ‘로거 연결’을 확인하세요.",
@@ -103,7 +103,7 @@
   "ed.delete": "삭제",
   "api.badTime": "시각은 HHMM 또는 HHMMSS로 입력하세요",
   "api.badBand": "밴드는 20m 형식으로 입력하세요",
-  "api.badMode": "모드를 입력하세요",
+  "api.badMode": "ADIF 모드를 입력하세요(FT8, FT4, SSB, CW 등)",
   "build.delete": "삭제",
   "build.deleteArmed": "한 번 더 누르면 삭제",
   "build.deleted": "QSO {n}건을 삭제했습니다",
@@ -146,7 +146,7 @@
   "b.note.hunterWins": "{date} {time} {call}: 헌터 로그는 {hunter}. 로그/스팟의 {extra}은(는) 쓰지 않았습니다",
   "b.note.hunterOverridesNo": "{date} {time} {call}: 운용 중 ‘P2P 아님’으로 했지만 상대 헌터 로그에 {hunter}이(가) 있어 P2P로 했습니다",
   "b.note.twofer": "{date} {time} {call}: {parks}이(가) 비슷한 시각에 따로 스팟되어 2fer로 처리했습니다 (이동 운용일 수도 있음)",
-  "b.note.missing": "{date} {time} {call} {band} {park}: pota.app 헌터 로그에는 있지만 내 로그에 없습니다 (호출부호나 시각이 다른가요?)",
+  "b.note.missing": "{date} {time} {call} {band} {park}: pota.app 헌터 로그에는 있지만 내 로그에 없습니다 (호출부호나 시각이 다른가요?)", "b.note.callExact": "{date} {time} {call}: 상대 업로드에는 {theirs}(으)로 적혀 있습니다. 콜사인 표기가 그대로 일치하지 않으면 pota.app이 P2P로 인정하지 않을 수 있습니다", "b.note.callDiffers": "로거의 콜사인({logger})이 여기서 고른 {call}과 다릅니다. 파일은 {call}로 썼습니다. 상대 기록과 표기가 다르면 P2P가 되지 않습니다", "b.note.badMode": "{date} {time} {call}: 모드 “{mode}”는 ADIF 모드가 아니어서 pota.app이 이 파일을 받지 않습니다. “내용 보기”나 로거에서 고쳐 주세요", "b.note.noBand": "{date} {time} {call}: 밴드를 알 수 없습니다(BAND와 FREQ가 없거나 ADIF 밴드 범위 밖). pota.app이 이 파일을 받지 않습니다", "b.note.self": "{date} {time} {call}: 자기 자신과의 교신은 무효입니다. pota.app이 이 파일을 받지 않습니다", "b.note.badCall": "{date} {time} {call}: 콜사인에 쓸 수 없는 문자가 있습니다(A–Z, 0–9, /만 가능)", "b.note.future": "{date} {time} {call}: 날짜가 미래입니다. 컴퓨터 시계를 확인해 주세요(pota.app이 이 파일을 받지 않습니다)", "b.note.badTime": "{date} {time} {call}: 시각 “{value}”가 올바르지 않습니다(UTC HHMM 또는 HHMMSS). pota.app이 이 파일을 받지 않습니다", "b.note.badDate": "{date} {time} {call}: 날짜 “{value}”가 올바르지 않습니다(UTC YYYYMMDD). 이 QSO는 파일에 넣지 않았습니다", "b.note.repeater": "{date} {time} {call}: 중계기를 거친 교신은 POTA에서 인정되지 않습니다", "b.note.parkUnread": "{date} {time} {call}: 공원 번호 “{value}”를 읽을 수 없습니다({park}처럼 하이픈이 필요합니다)",
   "b.line.file": "{date}  {park}  {n} QSO ({stations}국){short}  → {file}", "b.short": "  ※10 QSO 미만", "b.notes": "확인 필요:",
   "api.portNum": "포트 번호는 숫자로 입력하세요.", "api.portRange": "포트 번호는 1~65535입니다.",
   "api.mcFormat": "멀티캐스트 주소는 224.0.0.1 같은 형식입니다.", "api.fwdFormat": "전달 대상은 127.0.0.1:2335처럼 ‘주소:포트’로 입력하세요.",
@@ -158,5 +158,5 @@
   "updater.fromSource": "소스에서 실행 중이라 자동 업데이트를 할 수 없습니다.", "updater.unsupportedOs": "이 OS에서는 자동 업데이트를 지원하지 않습니다.",
   "updater.noApp": "업데이트 파일에 앱이 없습니다.", "updater.noExe": "업데이트 파일에 실행 파일이 없습니다.",
   "terms.title": "이용 약관 및 면책 사항", "terms.accept": "동의하고 사용", "terms.link": "이용 약관 및 면책 사항",
-  "terms.body": "<p>이 앱은 개인이 취미로 만든 소프트웨어로, 어떠한 보증도 없이 ‘있는 그대로’ MIT 라이선스로 배포됩니다.</p><ul><li><strong>이 앱을 사용하여 발생한 어떠한 손해에 대해서도 제작자는 책임지지 않습니다.</strong> pota.app에 잘못된 내용을 업로드한 것, QSO의 중복이나 누락, 로그나 파일의 손실, 로거나 네트워크 설정에 미치는 영향 등을 포함합니다. 업로드할 파일의 내용은 반드시 직접 확인하세요.</li><li>P2P와 2fer 판정은 pota.app의 스팟과 헌터 로그에 기반한 추정이며, 정확성을 보증하지 않습니다.</li><li>이 앱은 Parks on the Air®(POTA) 및 pota.app과 무관하며 공개 API만 사용합니다. POTA 규칙과 업로드 요건은 항상 pota.app의 안내를 따르세요.</li><li>받은 QSO, 스팟 기록, 설정은 이 컴퓨터 안에만 저장되며 외부로 보내지 않습니다. 스팟을 위해 api.pota.app에, 업데이트 확인을 위해 GitHub에 접속합니다.</li><li>계속 사용하면 이 내용에 동의한 것으로 봅니다.</li></ul>"
+  "terms.body": "<p>이 앱은 개인이 취미로 만든 소프트웨어로, 어떠한 보증도 없이 ‘있는 그대로’ MIT 라이선스로 배포됩니다.</p><ul><li><strong>이 앱을 사용하여 발생한 어떠한 손해에 대해서도 제작자는 책임지지 않습니다.</strong> pota.app에 잘못된 내용을 업로드한 것, QSO의 중복이나 누락, 로그나 파일의 손실, 로거나 네트워크 설정에 미치는 영향 등을 포함합니다. 업로드할 파일의 내용은 반드시 직접 확인하세요.</li><li>P2P와 2fer 판정은 pota.app의 스팟과 헌터 로그에 기반한 추정이며, 정확성을 보증하지 않습니다.</li><li>이 앱은 Parks on the Air®(POTA) 및 pota.app과 무관합니다. pota.app이 공개한 데이터를 읽지만 POTA의 공식 지원을 받은 것은 아닙니다. POTA 규칙과 업로드 요건은 항상 pota.app의 안내를 따르세요.</li><li>받은 QSO, 스팟 기록, 설정은 이 컴퓨터 안에만 저장되며 외부로 보내지 않습니다. 스팟·공원·헌터 로그를 위해 api.pota.app에, 업데이트 확인을 위해 GitHub에, 지도 표시를 위해 OpenStreetMap에 접속합니다.</li><li>계속 사용하면 이 내용에 동의한 것으로 봅니다.</li></ul>"
 }
