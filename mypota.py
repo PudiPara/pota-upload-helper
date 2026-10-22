@@ -12,7 +12,7 @@ import csv
 import io
 import time
 
-from potacommon import data_path, read_json, their_parks_of, utc_stamp, write_json
+from potacommon import count_key, data_path, my_parks_of, read_json, their_parks_of, utc_stamp, write_json
 
 FILE = "mypota.json"
 HUNTER_COLS = {"Reference", "First QSO Date", "QSOs"}
@@ -26,6 +26,8 @@ UNIQUE_STEPS = (10, 20, 30, 40, 50, 75, *range(100, 1001, 100), *range(1500, 800
 RO_NAMES = ("Oasis", "Fox Den", "Bear Cave", "Fishing Hole", "Eagle's Nest")
 RO_STEP, RO_TOP = 20, 500
 KILO = 1000               # Kilo: 1000 QSOs from one park (activator only)
+# Rover: parks activated (10 QSOs each) in one UTC day
+ROVER = ((30, "Lion"), (25, "Leopard"), (20, "Ostrich"), (15, "Cheetah"), (10, "Rhino"), (5, "Warthog"))
 
 
 def next_unique(n):
@@ -202,5 +204,46 @@ def record(app_records=(), app_days=()):
     activated.sort(key=lambda r: (r["last"], r["ref"]), reverse=True)
     # Unique Reference: an activated park counts from 10 QSOs in all, a hunted one from its first QSO
     n = {"hunted": len(hunted), "activated": sum(1 for r in activated if r["qsos"] >= ACTIVATED_MIN)}
-    return {"hunted": hunted, "activated": activated, "imported": status(),
+    return {"hunted": hunted, "activated": activated, "imported": status(), "six": six_pack(app_records),
             "unique": {k: {"n": v, "next": next_unique(v)} for k, v in n.items()}}
+
+
+def six_pack(app_records=()):
+    """6 Pack (#47), from this app's log only (the CSVs have no bands): {"activated": parks where one UTC day had 10
+    QSOs on 6m, "hunted": parks hunted (a confirmed P2P) on 6m}; the award needs 6 of either."""
+    days, hunted = {}, set()
+    for r in app_records:
+        if (r.get("BAND") or "").lower() != "6m":
+            continue
+        for p in my_parks_of(r):
+            days.setdefault((r.get("QSO_DATE"), p), set()).add(count_key(r, p))
+        if r.get("P2P_DECISION") in ("yes", "manual", "log"):
+            hunted.update(their_parks_of(r))
+    return {"activated": sorted({p for (_, p), ks in days.items() if len(ks) >= ACTIVATED_MIN}), "hunted": sorted(hunted)}
+
+
+# ---------------------------------------------------------------- achievements reached while recording
+def awards(app_records=(), app_days=(), day=None):
+    """{key: {"kind", "name", "n", "park"}} of the achievements the record reaches now - compared before and after a
+    QSO, a new key is one just reached. Not confirmed: pota.app counts them once the log is uploaded.
+    Rover (the day's parks with 10 QSOs) needs only this app's log; Unique / Repeat Offender / Kilo need the imported
+    CSVs (without them every park would look new)."""
+    out = {}
+    if day:
+        n = len({p for d, per in app_days if d == day for p, q in per.items() if q >= ACTIVATED_MIN})
+        name = next((a for k, a in ROVER if n >= k), None)
+        if name:
+            out["rover:%s:%s" % (day, name)] = {"kind": "rover", "name": name, "n": n}
+    data = _load()
+    if not data.get("activator") and not data.get("hunter"):
+        return out
+    rec = record(app_records, app_days)
+    for kind, have in (("unique", data.get("activator")), ("uniqueHunt", data.get("hunter"))):
+        if have:
+            n = rec["unique"]["activated" if kind == "unique" else "hunted"]["n"]
+            out.update({"%s:%d" % (kind, s): {"kind": kind, "n": s} for s in UNIQUE_STEPS if s <= n})
+    if data.get("activator"):
+        for r in rec["activated"]:
+            for name in r["goals"]["has"]:
+                out["goal:%s:%s" % (r["ref"], name)] = {"kind": "kilo" if name == "Kilo" else "ro", "name": name, "park": r["ref"]}
+    return out

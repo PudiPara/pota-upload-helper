@@ -143,6 +143,13 @@ class ReceivedFromALogger(unittest.TestCase):
         self.assertEqual((stored["P2P_DECISION"], stored["SIG_INFO"]), ("yes", "JP-0043"))
         self.assertEqual(r2["P2P_DECISION"], "yes")
 
+    def test_rover_calling_again_from_another_park(self):
+        qsolog.upsert(rec("JA1ROV/P", "060000", P2P_CANDIDATE="JP-0101"), None, "x")
+        again = rec("JA1ROV", "080000", P2P_CANDIDATE="JP-0202")
+        self.assertEqual(qsolog.earlier_parks(again), ["JP-0101"])
+        self.assertEqual(qsolog.earlier_parks(rec("JA1ROV", "080000", P2P_CANDIDATE="JP-0101")), [])   # same park
+        self.assertEqual(qsolog.earlier_parks(rec("JA1ROV", "060100", P2P_CANDIDATE="JP-0202")), [])   # its own copy
+
     def test_twins_and_delete_name_every_copy(self):
         u1 = qsolog.upsert(rec("JA1TWN", "072000"), None, "WSJT-X")
         u2 = qsolog.upsert(rec("JA1TWN", "072100", RST_SENT="-05"), "t-1", "logger")

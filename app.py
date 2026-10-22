@@ -98,6 +98,7 @@ class Api:
     _weather = None                    # weather.summarize() at the parks while recording, + seq and new (alerts to notify)
     _wx_stop = threading.Event()       # set = stop looking (each recording gets its own)
     _wx_seq = 0                        # every look's number, counting on over recordings
+    _award_base = None                 # the achievement keys reached when recording started (mypota.awards)
     def __init__(self):
         self._window = None
         self._bar = None               # BarMode, once the window exists
@@ -129,6 +130,7 @@ class Api:
         self._locs = live.get("locs") or {}
         self._operator = live.get("operator") or ""
         self._start_weather(live["parks"])
+        self._start_awards()
 
     def _start_weather(self, parks):
         """Look at the weather at the parks now and every weather.EVERY while this recording lasts."""
@@ -313,11 +315,43 @@ class Api:
             accept = info["parks"] if info["auto"] and load_settings().get("p2p_auto") else None   # 設定 → P2P
             uid = qsolog.received(rec, ext_id, listener, accept)
             # twins: copies the list already shows (WSJT-X's start time, the logger's end time) - one row each contact
-            ev = dict(self._event(rec, uid), twins=qsolog.twins(uid), live=self._in_session(rec))
+            ev = dict(self._event(rec, uid), twins=qsolog.twins(uid), live=self._in_session(rec), prev=qsolog.earlier_parks(rec))
         ev.update({"source": listener, "at": time.time()})
         with self._lock:
             self._qso_events.append(ev)
             self._qso_events = self._qso_events[-500:]
+        if action != "delete" and self._recording():
+            self._check_awards()
+
+    # ---- achievements reached while recording (mypota.awards): what is new since the recording started
+    def _award_keys(self):
+        recs = qsolog.records()
+        days = [(d, per) for d, _, _, per, _ in list_activations(recs=recs)]
+        return mypota.awards(recs, days, time.strftime("%Y%m%d", time.gmtime()))
+
+    def _start_awards(self):
+        """What the record reaches when recording starts (on a thread: the log may be long); later QSOs compare to it."""
+        self._award_base = None
+        def base():
+            try:
+                self._award_base = set(self._award_keys())
+            except Exception as e:
+                logging.warning("awards: %s", e)
+        threading.Thread(target=base, daemon=True).start()
+
+    def _check_awards(self):
+        if self._award_base is None:
+            return
+        try:
+            now = self._award_keys()
+        except Exception as e:
+            logging.warning("awards: %s", e)
+            return
+        new = [dict(v, key=k) for k, v in now.items() if k not in self._award_base]
+        self._award_base |= set(now)
+        if new:                                    # the windows celebrate it (not confirmed until the log is uploaded)
+            with self._lock:
+                self._qso_events.append({"action": "award", "awards": new, "at": time.time()})
 
     # ================================================================ the activation (運用中)
     def start_live(self, parks, call, loc="", operator=""):
@@ -349,6 +383,7 @@ class Api:
         sess = self._logger.session
         self._locs, self._operator = locs, operator
         self._start_weather(parks)
+        self._start_awards()
         save_settings({"live": {"id": sess["id"], "parks": parks, "call": call, "start": sess["start"], "locs": locs,
                                 "operator": operator}})
         return {"ok": True, "parks": parks, "start": sess["start"], "loc": loc, "locs": locs, "operator": operator,
