@@ -17,7 +17,7 @@ API = "https://api.pota.app"
 PARK_RE = re.compile(r"\b([A-Z0-9]{1,4}-\d{4,5})\b")
 APP_NAME = "Potaroo"
 OLD_NAME = "POTA Upload Helper"      # the name until 2.0.0: its data folder is moved over on first start
-VERSION = "2.0.60"
+VERSION = "2.0.61"
 
 
 def _moved(new, old):
@@ -193,12 +193,14 @@ CLOCK_WARN = 60          # seconds: P2P needs both logs within 15 min, and the o
 _skew = None
 
 
-def _note_clock(date):
-    """Keep how far this computer's clock is from pota.app's (the response's Date header, 1 s resolution).
+def _note_clock(date, age=None):
+    """Keep how far this computer's clock is from pota.app's (the response's Date header, 1 s resolution). A cached
+    answer (CloudFront: "X-Cache: Hit", e.g. profile/ up to 5 min) carries the Date it was made and how long it has
+    been kept (Age): the server's now is Date + Age.
     ponytail: only the urllib path sees headers; with the curl fallback the clock is not checked."""
     global _skew
     try:
-        _skew = time.time() - email.utils.parsedate_to_datetime(date).timestamp()
+        _skew = time.time() - email.utils.parsedate_to_datetime(date).timestamp() - float(age or 0)
     except (TypeError, ValueError):
         pass
 
@@ -216,7 +218,8 @@ def fetch_json(path, timeout=20):
     try:
         req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(req, timeout=timeout) as r:
-            _note_clock(r.headers.get("Date"))
+            if url.startswith(API + "/"):      # pota.app's own clock only: a CDN's cached answer (the JMA's) carries an old Date
+                _note_clock(r.headers.get("Date"), r.headers.get("Age"))
             return json.loads(r.read().decode("utf-8"))
     except (ssl.SSLError, urllib.error.URLError) as e:
         if isinstance(e, urllib.error.HTTPError):

@@ -42,6 +42,30 @@ class GoalsTest(unittest.TestCase):
         potacommon._note_clock(None)                                         # no Date header: keep the last
         self.assertIsNone(potacommon.clock_skew())
 
+    def test_clock_from_pota_app_only(self):
+        # a CDN's cached answer (the JMA's area table) carries a Date minutes old: only api.pota.app sets the clock
+        from unittest import mock
+
+        class Answer:
+            def __init__(self, date):
+                self.headers = {"Date": date}
+            def read(self):
+                return b"{}"
+            def __enter__(self):
+                return self
+            def __exit__(self, *a):
+                return False
+        old = formatdate(time.time() - 300, usegmt=True)
+        potacommon._note_clock(formatdate(time.time(), usegmt=True))
+        with mock.patch("urllib.request.urlopen", lambda req, timeout=None: Answer(old)):
+            potacommon.fetch_json("https://www.jma.go.jp/bosai/common/const/area.json")
+            self.assertIsNone(potacommon.clock_skew())
+            potacommon.fetch_json("spot/activator")                          # api.pota.app
+            self.assertAlmostEqual(potacommon.clock_skew(), 300, delta=2)
+        potacommon._note_clock(formatdate(time.time() - 813, usegmt=True), "813")   # CloudFront kept it 813 s
+        self.assertIsNone(potacommon.clock_skew())
+        potacommon._note_clock(formatdate(time.time(), usegmt=True))
+
     def test_linear_parks(self):
         # US-0197 Kern National Wild and Scenic River, US-2350 Prairie Spirit Trail State Trail, US-0001 Acadia NP
         self.assertEqual(spots.linear_parks(["US-0197", "US-2350", "US-0001", "XX-0000"]), ["US-0197", "US-2350"])
