@@ -16,16 +16,16 @@ import spots  # noqa: E402
 
 class GoalsTest(unittest.TestCase):
     def test_unique_reference_levels(self):
-        self.assertEqual([mypota.next_unique(n) for n in (0, 10, 74, 75, 950, 1000, 7999, 8000)],
-                         [10, 20, 75, 100, 1000, 1500, 8000, None])
+        self.assertEqual([mypota.next_unique(n) for n in (0, 10, 74, 75, 950, 1000, 7999, 8000, 19999, 20000)],
+                         [10, 20, 75, 100, 1000, 1500, 8000, 8500, 20000, None])   # docs.pota.app: up to 20000
 
     def test_repeat_offender(self):
         self.assertEqual(mypota.goals(9), {"has": [], "next": None, "left": None})       # under halfway: no hint
         self.assertEqual(mypota.goals(12), {"has": [], "next": "Oasis", "left": 8})
         self.assertEqual(mypota.goals(41), {"has": ["Fox Den"], "next": "Bear Cave", "left": 19})
-        self.assertEqual(mypota.goals(120)["has"], ["Oasis Tier 2"])
-        self.assertEqual(mypota.goals(100)["next"], "Oasis Tier 2")
-        self.assertEqual(mypota.goals(530), {"has": ["Eagle's Nest Tier 5"], "next": None, "left": None})
+        self.assertEqual(mypota.goals(120)["has"], ["Tier Two Oasis"])          # docs.pota.app's own wording
+        self.assertEqual(mypota.goals(100)["next"], "Tier Two Oasis")
+        self.assertEqual(mypota.goals(530), {"has": ["Tier Six Oasis"], "next": "Tier Six Fox Den", "left": 10})   # no last tier
 
     def test_kilo(self):
         self.assertEqual(mypota.goals(400, kilo=True)["next"], None)

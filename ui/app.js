@@ -15,6 +15,7 @@
   // ---------- i18n ----------
   let L = {};
   // {park}, {park2}, {cc} without a value = the example parks of the operator's country (Api.examples)
+  const rnd = (a, b) => a + Math.random() * (b - a);   // the sky, the weather, the party poppers
   const t = (k, p) => String(L[k] != null ? L[k] : k).replace(/\{(\w+)\}/g, (_, n) => (p && p[n] != null ? p[n] : st.ex[n] ?? ""));
   function pickLang(tag) {
     const codes = st.langs.map(([c]) => c);
@@ -507,7 +508,6 @@
     // one at a time in the bar: a warning notice, then the shift's sky, then the weather
     if (!$("#sky").hidden || !$("#storm").hidden) { setTimeout(() => playWx(w, alertLines), 700); return; }
     const box = $("#wxa"), fx = $("#wxaFx"), W = innerWidth, H = innerHeight, D = 5200, g = w.group;
-    const rnd = (a, b) => a + Math.random() * (b - a);
     const id = (playWx.id = (playWx.id || 0) + 1);
     box.getAnimations({ subtree: true }).forEach((x) => x.cancel());
     fx.innerHTML = ""; box.dataset.g = g; box.hidden = false;
@@ -661,7 +661,6 @@
     orb.animate(path.map((tr) => ({ transform: tr })), { ...opt, easing });
     // shooting stars in the night scenes: a streak across the upper sky at a random moment, behind the hills
     $$("#sky .sky-meteor").forEach((m) => m.remove());
-    const rnd = (a, b) => a + Math.random() * (b - a);
     for (let i = 0; i < (sc.meteors || 0); i++) {
       const m = document.createElement("i"), x = rnd(.3, .8) * innerWidth, y = rnd(.04, .3) * innerHeight, len = rnd(90, 150);
       m.className = "sky-meteor"; $("#sky").insertBefore(m, $("#sky .sky-hills"));
@@ -812,9 +811,10 @@
     const list = [...st.qsos.values()].sort((a, b) => key(b).localeCompare(key(a)) || (b.seq || 0) - (a.seq || 0));   // newest first
     // a line between UTC days (a session across 0000Z keeps yesterday's QSOs below it)
     const day = (q) => (q.date || "").replace(/^(\d{4})(\d\d)(\d\d)$/, "$1-$2-$3");
-    $("#qsos").innerHTML = list.map((q, i) => (i && day(q) !== day(list[i - 1]) ? `<li class="qso-day">${esc(day(q))} UTC</li>` : "")
+    // each window builds only the list it shows: the main window the day's list, the bar its latest QSO
+    if (!BAR) $("#qsos").innerHTML = list.map((q, i) => (i && day(q) !== day(list[i - 1]) ? `<li class="qso-day">${esc(day(q))} UTC</li>` : "")
       + qsoRow(q, fresh)).join("");
-    $("#barQsos").innerHTML = list.slice(0, 1).map((q) => qsoRow(q, fresh)).join("");   // the bar: the latest QSO
+    else $("#barQsos").innerHTML = list.slice(0, 1).map((q) => qsoRow(q, fresh)).join("");
     $("#qsosEmpty").hidden = list.length > 0; $("#qsos").hidden = list.length === 0;
     $("#barEmpty").hidden = list.length > 0; $("#barQsos").hidden = list.length === 0;
     // Count per park for the day: a 2fer whose parks differ (one shared with an earlier session)
@@ -824,7 +824,7 @@
     const pending = list.filter((q) => !q.decision && q.candidate.length).length;
     $("#statP2p").textContent = p2p; $("#statPending").textContent = pending;
     $("#statPendingBox").classList.toggle("is-alert", pending > 0);
-    renderStats();
+    if (!BAR) renderStats();
     if (st.editing) { const el = $(`[data-in="${CSS.escape(st.editing)}"]`); if (el) el.focus(); }
     // a celebration at every 10 QSOs; the ones already passed when the list (re)opens are not repeated
     const tens = Math.floor(n / 10);
@@ -848,7 +848,6 @@
         el.style.left = x0 + "px"; el.style.top = y0 + "px";
         document.body.appendChild(el);
         const tx = dir * W * (.12 + Math.random() * .48), ty = -H * (.5 + Math.random() * .4);   // the arc's top
-        const rnd = (a, b) => a + Math.random() * (b - a);
         const r = rnd(0, 360), spin = (Math.random() < .5 ? -1 : 1) * rnd(200, 900);
         const fall = -ty + H * .03, drift = rnd(-.12, .12) * W, apex = rnd(.12, .26);
         // flip: scaleY swings through 0 so a piece seems to turn over as it falls
@@ -1317,7 +1316,8 @@
     st.listeners = r.listeners; st.receiver = r.receiver || {}; renderListeners(); updateReceiver(st.receiver);
     toast(t("set.saved"));
   });
-  setInterval(async () => { if (api) updateReceiver((await api.poll_live(1e12, 1e12)).receiver); }, 4000);
+  // the listeners' state for 設定 when nothing is recording (while recording, poll() brings it every second)
+  setInterval(async () => { if (api && !BAR && !st.pollOn) updateReceiver((await api.poll_live(1e12, 1e12)).receiver); }, 4000);
 
   // ---------- updates ----------
   let upd = null;
@@ -1377,7 +1377,36 @@
     if (st.termsAccepted !== TERMS_VERSION) { st.termsAccepted = TERMS_VERSION; api.save({ terms_accepted: TERMS_VERSION }); }
     $("#terms").hidden = true;
     if (st.afterTerms) { st.afterTerms(); st.afterTerms = null; }
+    else if (!st.guideSeen && !st.call) showGuide(0);
   });
+
+  // ---------- 使い方ガイド: on the first run (after the terms, no callsign yet) and from the rail at any time ----------
+  // Steps guide.1 … guide.N (h / p); a step with a place has a button that closes the guide and opens it
+  const GUIDE = [null, ["config", "general"], ["config", "loggers"], ["live"], null, ["build"], ["record"]];
+  function showGuide(i = 0) {
+    st.guide = i;
+    $("#guideCount").textContent = `${i + 1} / ${GUIDE.length}`;
+    // the screens are named with the UI's own labels, so the guide never drifts from them
+    const names = { live: t("nav.live"), build: t("nav.build"), config: t("nav.config"), record: t("cfg.mypota.h"),
+                    general: t("cfg.tab.general"), loggers: t("set.title"), start: t("live.start"), finish: t("live.finish") };
+    $("#guideH").textContent = t(`guide.${i + 1}.h`);
+    $("#guideText").textContent = t(`guide.${i + 1}.p`, names);
+    $("#guideGo").hidden = !GUIDE[i];
+    if (GUIDE[i]) $("#guideGo").textContent = t(`guide.${i + 1}.go`, names);
+    $("#guideDots").innerHTML = GUIDE.map((_, k) => `<i class="${k === i ? "is-on" : ""}"></i>`).join("");
+    $("#guidePrev").hidden = i === 0;
+    $("#guideNext").textContent = t(i === GUIDE.length - 1 ? "guide.done" : "guide.next");
+    $("#guide").hidden = false;
+  }
+  function closeGuide() {
+    $("#guide").hidden = true;
+    if (!st.guideSeen) { st.guideSeen = true; api.save({ guide_seen: true }); }
+  }
+  $("#guideOpen").addEventListener("click", () => showGuide(0));
+  $("#guideClose").addEventListener("click", closeGuide);
+  $("#guidePrev").addEventListener("click", () => showGuide(st.guide - 1));
+  $("#guideNext").addEventListener("click", () => (st.guide < GUIDE.length - 1 ? showGuide(st.guide + 1) : closeGuide()));
+  $("#guideGo").addEventListener("click", () => { const [view, tab] = GUIDE[st.guide]; closeGuide(); show(view); if (tab) cfgTab(tab); });
 
   // ---------- settings (設定): callsigns, language, app ----------
   // The saved callsigns are a list; st.call is the one in use. Python keeps the list clean
@@ -1676,7 +1705,7 @@
     applyLook(s); segSet("#fontScale", "scale", String(LOOK.font_scale)); segSet("#themeSel", "theme", LOOK.theme);
     st.distUnit = s.dist_unit || "";
     Object.assign(st, { call: s.call || "", calls: s.calls || [], prefix: s.prefix, out: s.out, adif: s.adif, source: s.source || "app", listeners: s.listeners,
-                        langs: s.langs || [["ja", "日本語"]], events: s.events || [], termsAccepted: s.terms_accepted || "", countries: s.countries || [] });
+                        langs: s.langs || [["ja", "日本語"]], events: s.events || [], termsAccepted: s.terms_accepted || "", guideSeen: s.guide_seen, countries: s.countries || [] });
     $("#lang").innerHTML = st.langs.map(([c, name]) => `<option value="${esc(c)}">${esc(name)}</option>`).join("");
     const lang = s.lang || pickLang(navigator.language);
     if (!s.lang) api.save({ lang });
@@ -1704,6 +1733,7 @@
     }
     if (s.live) enterRunning(s.live);
     if (st.termsAccepted !== TERMS_VERSION) showTerms(true);
+    else if (!st.guideSeen && !st.call) showGuide(0);   // a first run that took the terms already (an older version)
     setTimeout(promptUpdate, 1500);                 // the first thing after the window is up
   }
   if (window.pywebview && window.pywebview.api) boot();

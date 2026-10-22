@@ -68,7 +68,7 @@
         <small id="recvSummary" data-i18n="nav.config.sub">コールサイン・受信口・言語</small>
       </button>
     </nav>
-
+    <button class="rail-guide" id="guideOpen"><span class="rail-guide-q" aria-hidden="true">?</span><span data-i18n="guide.open">使い方ガイド</span></button>
   </aside>
 
   <main class="main">
@@ -536,6 +536,19 @@
     <h2 data-i18n="terms.title">利用規約と免責事項</h2>
     <div class="modal-body" id="termsBody"></div>
     <div class="modal-actions"><button class="btn btn-primary" id="termsAccept" data-i18n="terms.accept">同意して使う</button></div>
+  </div>
+</div>
+<div class="modal" id="guide" hidden role="dialog" aria-modal="true" aria-labelledby="guideH">
+  <div class="modal-card guide-card">
+    <p class="guide-count" id="guideCount"></p>
+    <h2 id="guideH"></h2>
+    <div class="modal-body guide-body"><p id="guideText"></p><button class="btn" id="guideGo" hidden></button></div>
+    <div class="modal-actions guide-actions">
+      <button class="link" id="guideClose" data-i18n="guide.close">閉じる</button>
+      <span class="guide-dots" id="guideDots" aria-hidden="true"></span>
+      <button class="btn" id="guidePrev" data-i18n="guide.prev">戻る</button>
+      <button class="btn btn-primary" id="guideNext"></button>
+    </div>
   </div>
 </div>
 <script src="vendor/leaflet/leaflet.js"></script>

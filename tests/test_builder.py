@@ -205,7 +205,7 @@ class CandidateAfterQrt(unittest.TestCase):
         from potacommon import iso_minutes
         rows = [(iso_minutes(t), ["US-6818"], {"activator": "KD9NYE", "spotter": who, "reference": "US-6818",
                                                  "spotTime": t, "comments": c}) for t, who, c in spotlist]
-        self.spots.load_spots = lambda: {"KD9NYE": rows}
+        self.spots.load_spots = lambda dates=None: {"KD9NYE": rows}
 
     def info(self, hhmm):
         return self.spots.candidate_info({"CALL": "KD9NYE", "QSO_DATE": "20260110", "TIME_ON": hhmm + "00"})

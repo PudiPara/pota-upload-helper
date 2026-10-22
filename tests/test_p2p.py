@@ -157,6 +157,20 @@ class ReceivedFromALogger(unittest.TestCase):
         self.assertEqual(sorted(qsolog.delete("t-1")), sorted([u1, u2]))
         self.assertEqual(qsolog.twins(u2), [])
 
+    def test_spots_of_the_qso_days_only(self):
+        for day, call in (("20261019", "JA1OLD"), ("20261020", "JA1NOW"), ("20261025", "JA1FAR")):
+            with open(potacommon.data_path("spots-%s.jsonl" % day), "w", encoding="utf-8") as fh:
+                fh.write(json.dumps({"base": call, "parks": ["JP-0001"], "spotTime": day[:4] + "-" + day[4:6] + "-" + day[6:] + "T01:00:00"}) + "\n")
+        self.assertEqual(sorted(spots.load_spots(["20261020"])), ["JA1NOW", "JA1OLD"])
+        self.assertEqual(sorted(spots.load_spots()), ["JA1FAR", "JA1NOW", "JA1OLD"])
+
+    def test_delete_without_an_id_keeps_another_band(self):
+        u40 = qsolog.upsert(rec("JA1BND", "073000"), None, "HAMLOG")
+        u20 = qsolog.upsert(rec("JA1BND", "073100", BAND="20m"), None, "HAMLOG")
+        self.assertEqual(qsolog.delete(None, "JA1BND", "20261020", "073000", "40m", "FT8"), [u40])
+        self.assertEqual(qsolog.twins(u20), [])
+        self.assertIn(u20, [qsolog.make_uid(r) for r in qsolog.records() if r["CALL"] == "JA1BND"])
+
     def test_ssb_sidebands_are_one_mode(self):
         from potacommon import adif_mode, mode_of
         self.assertEqual(adif_mode("lsb"), {"MODE": "SSB", "SUBMODE": "LSB"})

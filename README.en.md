@@ -28,6 +28,10 @@ On FT8 and similar modes you cannot tell on the spot whether the other station i
 - **Distance and map**: the straight-line distance to the other station's park is shown, e.g. "~820 km" (for a 2fer, from the midpoint of the parks). The Map tab centres on your position and draws lines to the parks you worked P2P. Distances can be shown in km or miles.
 - **A celebration every 10 QSOs**: confetti marks the moment the activation becomes valid, and every 10 QSOs after that.
 - **Finishing writes the file**: "Finish this park" writes that day's upload file (`JL1FVA@JP-1266-20261020.adi`) to your output folder and takes you back to the first screen. If the other station was a 2fer, the QSO is repeated once per park; if you were a 2fer, you get one file per park. Closing the app during an activation does not end it: recording resumes the next time you start the app (you are asked before it closes).
+- **Weather and warnings**: once recording starts, the park's weather is checked every 15 minutes, and the bar and the main window tell you when thunder, strong wind or heavy rain is coming. For parks in Japan the JMA's advisories and warnings are shown for the municipality (thunder and warnings as a bold banner), and the Weather tab shows the next hours. Evacuation orders come from the municipality and are not shown.
+- **Shifts and events**: when Early Shift / Late Shift begins or ends, the bar plays a sunrise or moonrise. During POTA events such as Support Your Parks, a chip says so.
+- **Awards within reach**: a QSO that reaches Rover, Unique Parks, Repeat Offender or Kilo brings a medal and confetti (pota.app confirms it once your log is uploaded). A station calling again from another park gets "last time from …" on its row.
+- **Club stations and the clock**: a club station can register operators and switch them while on the air. A note appears when the computer's clock is a minute or more off from pota.app (P2P needs both logs within 15 minutes).
 
 | The bar | Map |
 |---|---|
@@ -41,6 +45,8 @@ On FT8 and similar modes you cannot tell on the spot whether the other station i
 - **Display**: change the text size (Standard / Larger / Largest) and the colors (Match the OS / Light / Dark). The bar follows them too.
 - **Forwarding**: received data can be passed on unchanged to another program (RUMlog → this app → OpsLog).
 - **Park data updated monthly**: the park list and positions ship with the app and are refreshed from pota.app every month (as a small update, separate from app updates).
+- **Getting started guide**: on the first start, seven steps lead from entering your callsign to making the files. Open it again any time from "Getting started" at the bottom left.
+- **6 Pack progress**: Your POTA record counts the parks activated and P2P'd on 6m (from this app's log).
 
 | Your POTA record | Upload files |
 |---|---|

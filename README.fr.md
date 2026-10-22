@@ -28,6 +28,10 @@ En FT8 et dans les modes similaires, impossible de savoir sur le moment si la st
 - **Distance et carte** : la distance à vol d’oiseau jusqu’au parc de la station en face s’affiche, par exemple « env. 820 km » (pour un 2fer, depuis le point médian entre les parcs). L’onglet « Carte » trace des lignes depuis votre position jusqu’aux parcs contactés en P2P. L’unité se choisit entre km et milles.
 - **Une fête tous les 10 QSO** : des confettis au moment où l’activation est validée, puis tous les 10 QSO.
 - **Terminer écrit le fichier** : « Terminer l’activation de ce parc » écrit le fichier d’envoi du jour (`JL1FVA@JP-1266-20261020.adi`) dans le dossier choisi et revient au premier écran. Si la station en face est en 2fer, le QSO est répété pour chaque parc ; si c’est vous qui êtes en 2fer, un fichier par parc. Fermer l’application pendant l’activation ne la termine pas : l’enregistrement reprend au prochain démarrage (une confirmation est demandée avant de fermer).
+- **Météo et vigilances** : dès le début de l'enregistrement, la météo du parc est vérifiée toutes les 15 minutes ; la barre et la fenêtre principale préviennent quand l'orage, le vent fort ou une forte pluie approche. Pour les parcs au Japon, les avis et alertes de la JMA sont affichés par commune (orage et alertes en bandeau voyant), et l'onglet Météo donne les prochaines heures. Les ordres d'évacuation relèvent des communes et ne sont pas affichés.
+- **Shifts et événements** : quand l'Early Shift / la Late Shift commence ou se termine, la barre montre un lever de soleil ou de lune. Pendant les événements POTA comme Support Your Parks, une étiquette l'indique.
+- **Diplômes à portée** : un QSO qui atteint Rover, Unique Parks, Repeat Offender ou Kilo apporte une médaille et des confettis (pota.app le confirme une fois le log envoyé). Une station qui rappelle depuis un autre parc reçoit « la dernière fois depuis … » sur sa ligne.
+- **Stations de club et horloge** : une station de club peut enregistrer ses opérateurs et en changer pendant l'activation. Un avis apparaît si l'horloge de l'ordinateur s'écarte d'une minute ou plus de pota.app (le P2P exige moins de 15 minutes d'écart entre les deux logs).
 
 | Barre | Carte |
 |---|---|
@@ -41,6 +45,8 @@ En FT8 et dans les modes similaires, impossible de savoir sur le moment si la st
 - **Affichage** : taille du texte (Normale / Grande / Très grande) et couleurs (Comme le système / Clair / Sombre) ; la barre suit aussi ces réglages.
 - **Relais** : les données reçues peuvent être retransmises telles quelles à une autre application (RUMlog → cette application → OpsLog).
 - **Données des parcs mises à jour chaque mois** : la liste des parcs et leurs positions sont intégrées à l’application et alignées chaque mois sur la dernière version de pota.app (via une petite mise à jour à part, distincte de celles de l’application).
+- **Guide de démarrage** : au premier lancement, sept étapes mènent de l'indicatif à la création des fichiers. Rouvrez-le à tout moment depuis « Guide de démarrage » en bas à gauche.
+- **Progression 6 Pack** : votre bilan POTA compte les parcs activés et contactés en P2P sur 6 m (d'après le log de l'appli).
 
 | Votre bilan POTA | Fichiers d’envoi |
 |---|---|

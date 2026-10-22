@@ -29,7 +29,7 @@ import qsolog
 import updater
 import jma
 import weather
-from builder import build, find_activation_qsos, list_activations
+from builder import activation_days, build, find_activation_qsos, list_activations
 from i18n import t
 from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, adif_mode, band_name, base_call, clock_skew, data_path, data_version, fetch_json, grid_center,
                         iso_date,
@@ -38,10 +38,10 @@ from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, adif_mode, band
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import (SESSION_MARGIN, SpotLogger, clear_records, common_locations, countries, example_parks, history_parks,
-                   distance_km, middle, park_at, park_info, park_status, linear_parks, shift_hours, shipped_parks, summarize, tag_candidate)
+                   distance_km, park_info, parks_middle, park_status, linear_parks, shift_hours, shipped_parks, summarize, tag_candidate)
 from window import BarMode, set_zoom
 
-SETTINGS_KEYS = ("call", "calls", "op_list", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "p2p_auto", "lookup", "on_top", "font_scale", "theme", "dist_unit")   # "live" is set by start_live/finish_live only
+SETTINGS_KEYS = ("call", "calls", "op_list", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "guide_seen", "p2p_auto", "lookup", "on_top", "font_scale", "theme", "dist_unit")   # "live" is set by start_live/finish_live only
 DATE_RE = re.compile(r"\d{8}")
 LOOK_SCALES = (1, 1.15, 1.3)            # 設定 → 表示 → 文字の大きさ
 LOOK_THEMES = ("", "light", "dark")     # 設定 → 表示 → 配色 ("" = the OS)
@@ -137,7 +137,7 @@ class Api:
         self._wx_stop.set()
         self._wx_stop = stop = threading.Event()
         self._weather = None
-        at = middle([p for p in map(park_at, parks) if p])
+        at = parks_middle(parks)
         if at:
             japan = any(p.startswith("JP-") for p in parks)      # the JMA's warnings too (jma.py)
             threading.Thread(target=self._weather_loop, args=(at, stop, japan), daemon=True).start()
@@ -212,7 +212,7 @@ class Api:
                 "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
                 "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
                 "country": s.get("country") or "", "countries": countries(),
-                "terms_accepted": s.get("terms_accepted") or "", "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")), **self._look(s), "dist_unit": s.get("dist_unit") or "", "bar_on_top": s.get("bar_on_top", True) is not False,
+                "terms_accepted": s.get("terms_accepted") or "", "guide_seen": bool(s.get("guide_seen")), "p2p_auto": bool(s.get("p2p_auto")), "on_top": bool(s.get("on_top")), **self._look(s), "dist_unit": s.get("dist_unit") or "", "bar_on_top": s.get("bar_on_top", True) is not False,
                 "lookup": lookup if isinstance(lookup, list) else [lookup],
                 "log_count": qsolog.count(), "receiver": self._receiver_texts(), "mypota": mypota.status()}
 
@@ -297,7 +297,8 @@ class Api:
                 return
             action = "upsert"
         if action == "delete":
-            gone = qsolog.delete(ext_id, rec.get("CALL"), rec.get("QSO_DATE"), rec.get("TIME_ON"))
+            gone = qsolog.delete(ext_id, rec.get("CALL"), rec.get("QSO_DATE"), rec.get("TIME_ON"),
+                                 rec.get("BAND"), mode_of(rec) if rec.get("MODE") else None)
             ev = {"action": "delete", "call": rec.get("CALL"), "uids": gone}
         else:
             if self._recording() and not my_parks_of(rec):
@@ -326,8 +327,7 @@ class Api:
     # ---- achievements reached while recording (mypota.awards): what is new since the recording started
     def _award_keys(self):
         recs = qsolog.records()
-        days = [(d, per) for d, _, _, per, _ in list_activations(recs=recs)]
-        return mypota.awards(recs, days, time.strftime("%Y%m%d", time.gmtime()))
+        return mypota.awards(recs, activation_days(recs), time.strftime("%Y%m%d", time.gmtime()))
 
     def _start_awards(self):
         """What the record reaches when recording starts (on a thread: the log may be long); later QSOs compare to it."""
@@ -419,6 +419,7 @@ class Api:
             self._events.append({"time": tm, "call": act, "parks": parks, "freq": freq, "mode": mode,
                                 "twofer": twofer, "at": time.time(),
                                 "km": distance_km(self._logger.parks, parks) if self._logger else None})
+            self._events = self._events[-500:]             # poll_live looks through them every second
 
     def _on_status(self, msg):
         with self._lock:
@@ -494,7 +495,7 @@ class Api:
         """運用中 → 地図: [lat, lon] of the middle of my parks and of each P2P's parks (the same points as the
         distances: spots.middle of spots.park_at), None where no position is known."""
         def at(refs):
-            m = middle([p for p in map(park_at, split_parks(",".join(refs or []))) if p])
+            m = parks_middle(split_parks(",".join(refs or [])))
             return list(m) if m else None
         return {"me": at(mine), "groups": [at(g) for g in groups or []]}
 
@@ -558,15 +559,14 @@ class Api:
     def my_parks(self, refs):
         """{ref: mypota.activations} - this park's next activation by the operator's record (None per
         park before activator_parks.csv is imported)."""
-        days = [(d, per) for d, _, _, per, _ in list_activations(recs=qsolog.records())]
+        days = activation_days(qsolog.records())
         return {ref: mypota.activations(ref, days) for ref in split_parks(refs)}
 
     def mypota_record(self):
         """実績 page: mypota.record over the app log, each park with its name from the shipped park list
         (no pota.app request, so a long list stays instant)."""
         recs = qsolog.records()
-        days = [(d, per) for d, _, _, per, _ in list_activations(recs=recs)]
-        rec, parks = mypota.record(recs, days), shipped_parks()
+        rec, parks = mypota.record(recs, activation_days(recs)), shipped_parks()
         for row in rec["hunted"] + rec["activated"]:
             name, _, grid, at, _ = parks.get(row["ref"]) or ("", "", "", None, True)
             # [lat, lon] for the map: the park's own position, else the middle of its grid square
@@ -687,7 +687,7 @@ class Api:
         # (builder.find_activation_qsos); each with the twin copy another program sent
         n = 0
         for r, _, _ in find_activation_qsos(qsolog.records([date]), dates=[date]):
-            n += 1 if qsolog.delete(None, r.get("CALL"), r.get("QSO_DATE"), r.get("TIME_ON")) else 0   # a QSO, not its copies
+            n += 1 if qsolog.delete(None, r.get("CALL"), r.get("QSO_DATE"), r.get("TIME_ON"), r.get("BAND"), mode_of(r)) else 0   # a QSO, not its copies
         return {"ok": True, "n": n, "log_count": qsolog.count()}
 
     def qso_history(self):
@@ -826,7 +826,8 @@ def main():
     setup_log()
     updater.cleanup()
     i18n.set_lang(load_settings().get("lang") or "ja")
-    i18n.examples = example_parks(load_settings().get("country") or "")
+    # the shipped park list (97k lines) is read beside the window's start-up, not before it
+    threading.Thread(target=lambda: setattr(i18n, "examples", example_parks(load_settings().get("country") or "")), daemon=True).start()
     api = Api()
     from window import BAR_W
     win = webview.create_window(APP_NAME, resource("ui", "index.html"), js_api=api,
