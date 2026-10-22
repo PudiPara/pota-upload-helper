@@ -155,7 +155,7 @@
  "live.event.tip": "Periodo di un evento POTA o fascia di un diploma (Early / Late Shift: calcolato dalla longitudine del parco)", "res.rover": "{date}: {n} parchi attivati", "res.rover.award": "{date}: {n} parchi attivati — abbastanza per il diploma Rover «{award}»", "res.fix": "Un errore dopo il caricamento? Ricaricare un file corretto lascia le righe sbagliate su pota.app (una riga con un altro CALL o banda viene aggiunta come altro QSO). Entro 24 ore dal caricamento puoi eliminarlo tu da My Log Uploads e ricaricarlo; dopo, chiedi tramite Request Support su pota.app.", "res.fix.open": "Apri My Log Uploads",
  "cfg.ops.h": "Operatore", "cfg.ops.p": "Operando con un nominativo di club, sceglili nella schermata iniziale e durante la registrazione.",
  "b.hunterNoProfile": "! pota.app non ha un profilo per {call} (nominativo non registrato su pota.app?). Il confronto P2P usa solo i dati salvati.",
- "sky.start": "dalle {from} alle {to}", "sky.end": "Questa fascia è finita",
+ "sky.start": "Ora locale {from}–{to}", "sky.utc": "UTC {from}–{to}", "sky.end": "Questa fascia è finita",
  "api.notRecording": "Nessuna registrazione in corso.",
   "api.spotsFail": "Spot non disponibili: {err}", "api.fileNotFound": "File non trovato. Sceglilo di nuovo.",
   "api.logRead": "Impossibile leggere il log: {err}", "api.updCheckFail": "Controllo aggiornamenti fallito: {err}", "api.updFail": "Aggiornamento fallito: {err}",

@@ -155,7 +155,7 @@
  "live.event.tip": "Periodo de un evento POTA o franja de un diploma (Early / Late Shift: calculado por la longitud del parque)", "res.rover": "{date}: {n} parques activados", "res.rover.award": "{date}: {n} parques activados — suficiente para el diploma Rover «{award}»", "res.fix": "¿Un error después de subir? Subir un archivo corregido deja las líneas erróneas en pota.app (una línea con otro CALL o banda se añade como otro QSO). En las 24 horas siguientes a la subida puedes borrarlo tú en My Log Uploads y volver a subirlo; después, pídelo por Request Support en pota.app.", "res.fix.open": "Abrir My Log Uploads",
  "cfg.ops.h": "Operador", "cfg.ops.p": "Al operar con un indicativo de club, elígelos en la pantalla de inicio y durante la grabación.",
  "b.hunterNoProfile": "! pota.app no tiene perfil para {call} (¿indicativo no registrado en pota.app?). El cotejo P2P usa solo los datos guardados.",
- "sky.start": "de {from} a {to}", "sky.end": "Esta franja ha terminado",
+ "sky.start": "Hora local {from}–{to}", "sky.utc": "UTC {from}–{to}", "sky.end": "Esta franja ha terminado",
  "api.notRecording": "No se está registrando.",
   "api.spotsFail": "No se pudieron obtener spots: {err}", "api.fileNotFound": "Archivo no encontrado. Elígelo de nuevo.",
   "api.logRead": "No se pudo leer el log: {err}", "api.updCheckFail": "Fallo al buscar actualizaciones: {err}", "api.updFail": "Fallo al actualizar: {err}",

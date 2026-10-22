@@ -405,7 +405,11 @@
     const sc = SKY[skyScene(shift, rise)], box = $("#sky"), orb = $("#skyOrb"), D = 4200;
     const w = st.shifts[shift], at = (h) => new Date(Date.UTC(2000, 0, 1, h)).toLocaleTimeString(st.lang, { hour: "2-digit", minute: "2-digit" });
     $("#skyName").textContent = SHIFT_NAMES[shift];
+    const utc = (h) => String(h % 24).padStart(2, "0") + ":00";
+    // two lines: the computer's own time (where the operator is, as a rule) and UTC
     $("#skyLine").textContent = rise ? t("sky.start", { from: at(w[0]), to: at(w[0] + w[1]) }) : t("sky.end");
+    $("#skyUtc").textContent = rise ? t("sky.utc", { from: utc(w[0]), to: utc(w[0] + w[1]) }) : "";
+    $("#skyUtc").hidden = !rise;
     orb.className = "sky-orb is-" + sc.orb;
     const id = (playSky.id = (playSky.id || 0) + 1);
     box.getAnimations({ subtree: true }).forEach((a) => a.cancel());   // the last fade-out keeps opacity 0 (fill)
