@@ -732,7 +732,8 @@
       (!sp.newOnly || (e.new || []).length) && (!sp.hideQrt || !e.qrt) &&
       (!q || e.call.toUpperCase().includes(q) || e.parks.some((p) => p.includes(q))));
     $("#spotsPage").innerHTML = list.map((e) => spotRow(e, sp.worked.has(e.base), false, true)).join("");
-    $("#spotsPageEmpty").hidden = list.length > 0; $("#spotsPage").hidden = list.length === 0;
+    $("#spotsPageEmpty").hidden = list.length > 0; $("#spotsPage").hidden = list.length === 0 || sp.tab === "map";
+    drawSpotsMap(list);
     $("#spotsSummary").textContent = sp.items.length ? t("spots.summary", { shown: list.length, total: sp.items.length }) : t("nav.spots.sub");
   }
   $("#spotsRegion").addEventListener("change", (e) => { sp.region = e.target.value; spotsOptions(); renderSpotsPage(); });
@@ -744,6 +745,42 @@
   $("#spotsNew").addEventListener("change", (e) => { sp.newOnly = e.target.checked; renderSpotsPage(); });
   $("#spotsHideQrt").addEventListener("change", (e) => { sp.hideQrt = e.target.checked; renderSpotsPage(); });
   $("#spotsRefresh").addEventListener("click", loadSpotsPage);
+  // 一覧 / 地図: the same filtered stations as dots at their parks (Python's "at"); 2fer amber, worked grey
+  function spotsTab(tab) {
+    sp.tab = tab; segSet("#spotsTabs", "tab", tab); $("#spotsMap").hidden = tab !== "map";
+    renderSpotsPage();
+  }
+  $$("#spotsTabs button").forEach((b) => b.addEventListener("click", () => spotsTab(b.dataset.tab)));
+  function drawSpotsMap(list) {
+    const Lf = window.L;                      // Leaflet (L in this file is the dictionary)
+    if (!Lf || sp.tab !== "map") return;
+    if (!sp.map) {
+      sp.map = Lf.map("spotsMap", { preferCanvas: true, worldCopyJump: true, zoomSnap: 0.25 }).setView([20, 0], 2);
+      Lf.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(sp.map);
+      sp.dots = Lf.layerGroup().addTo(sp.map);
+    }
+    sp.map.invalidateSize(); sp.dots.clearLayers();
+    let wide = 0;
+    const pts = [], named = list.length <= 25;      // a few stations: their calls on the map; many: on hover
+    for (const e of list) {
+      if (!e.at) continue;
+      pts.push(e.at);
+      const worked = sp.worked.has(e.base);
+      const dot = Lf.circleMarker(e.at, { radius: 6, weight: 1.5, color: "#fff", fillOpacity: e.qrt ? .35 : 1,
+                                          fillColor: worked ? "#7D8A83" : e.twofer ? "#C98A1E" : "#2A6A50" }).addTo(sp.dots);
+      const info = `<b>${esc(e.call)}</b> · ${esc(e.parks.join(" + "))}<br>${esc(e.freq || "")} ${esc(e.mode)} · ${esc(e.time)}Z${e.qrt ? " · QRT" : ""}`;
+      if (named) {
+        dot.bindTooltip(esc(e.call), { permanent: true, direction: "right", offset: [6, 0], className: "map-tag" }).bindPopup(info);   // details on a click
+        const el = dot.getTooltip().getElement();
+        if (el) wide = Math.max(wide, el.offsetWidth + 16);
+      }
+      else dot.bindTooltip(info, { className: "map-tag" });
+    }
+    // frame when the filter changes, not on the minutely refresh of the same list
+    const key = [sp.region, sp.country, sp.group, sp.band, sp.q, sp.twofer, sp.newOnly, sp.hideQrt].join("|");
+    if (pts.length && key !== sp.framed) { sp.framed = key; sp.map.fitBounds(pts, { paddingTopLeft: [24, 24], paddingBottomRight: [wide + 24, 24], maxZoom: 9 }); }   // room for the labels
+  }
 
   // ================================================================ build
   $$(".seg-src button").forEach((b) => b.addEventListener("click", () => setSource(b.dataset.src)));
