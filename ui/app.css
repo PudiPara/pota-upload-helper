@@ -818,6 +818,17 @@ body.is-bar .cheer strong { grid-row: 1 / span 2; font-size: 40px; line-height: 
 body.is-bar .cheer span { font-size: 14px; }
 body.is-bar .cheer-hunt .plates { margin: 0; gap: 6px; }
 body.is-bar .cheer-hunt .plate { font-size: 15px; padding: 2px 9px 3px; }
+/* three parks or more at once (hunted() sets is-many): smaller word and plates on one line; wrapped, the word
+   was pushed against the bar's edge and a "+" hung at the end of the first line */
+body.is-bar .cheer-hunt.is-many { column-gap: 12px; }
+body.is-bar .cheer-hunt.is-many strong { font-size: 30px; }
+body.is-bar .cheer-hunt.is-many .plates { flex-wrap: nowrap; gap: 4px; }
+body.is-bar .cheer-hunt.is-many .plate { font-size: 13px; padding: 2px 7px 3px; }
+body.bar-compact .cheer-hunt.is-many strong { font-size: 24px; }
+body.bar-compact .cheer-hunt.is-many .plate { font-size: 12px; padding: 1px 6px 2px; }
+/* too wide even then (hunted() in app.js): two lines, and no "+" left hanging at a line's end */
+body.is-bar .cheer-hunt.is-wrap .plates { flex-wrap: wrap; row-gap: 3px; max-width: calc(100vw - 150px); }
+body.is-bar .cheer-hunt.is-wrap .plate-join { display: none; }
 
 /* ---------- the bar's shapes (設定 → ウインドウ → バーの形; app.js BAR_SIZES) ---------- */
 .seg-shape button { display: inline-flex; align-items: center; gap: 7px; }
@@ -880,7 +891,9 @@ body.bar-square .ask .chip { padding: 4px 14px; }
 body.bar-square .cheer { grid-template-columns: auto; justify-items: center; text-align: center; gap: 6px; }
 body.bar-square .cheer strong { grid-row: auto; font-size: 34px; top: 0; }
 body.bar-square .cheer > span:nth-child(2):last-child { grid-row: auto; }
-body.bar-square .cheer-hunt .plates { flex-wrap: wrap; justify-content: center; }
+body.bar-square .cheer-hunt .plates, body.bar-square .cheer-hunt.is-many .plates { flex-wrap: wrap; justify-content: center; }
+body.bar-square .cheer-hunt.is-many .plates { max-width: 170px; }   /* two and one, clear of the edges */
+body.bar-square .cheer-hunt.is-many .plate-join { display: none; }   /* wrapped: no "+" hanging at a line's end */
 body.bar-square #award { grid-auto-flow: row; justify-items: center; text-align: center; }
 body.bar-square #award .award-text { justify-items: center; text-align: center; }
 body.bar-square #award strong { white-space: pre-line; }
@@ -1008,3 +1021,6 @@ body.bar-square .wxa-info span { white-space: normal; }
 select:not([multiple]) { -webkit-appearance: none; appearance: none; padding-right: 28px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%237E8C85' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 11px center; background-size: 10px 6px; }
+
+/* a prerelease offered to an app with 試験版 on (updater.check(beta)) */
+.upd-pre { display: inline-block; font-size: 11.5px; font-weight: 700; color: var(--amber-ink); background: var(--amber-bg); border-radius: 4px; padding: 0 6px; }
