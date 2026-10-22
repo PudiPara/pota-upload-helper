@@ -118,6 +118,7 @@ class AsciiOut(unittest.TestCase):
         self.assertIn("<MODE:3>SSB <RST", body.replace("<MODE:3>SSB <MY_SIG", "<MODE:3>SSB <RST"))
         self.assertNotIn("<SUBMODE:3>LSB", body)
         self.assertIn("<SUBMODE:3>FT4", body)                    # a data submode stays: it is the mode pota.app keeps
+        self.assertIn("<MY_STATE:2>TK", body)                     # JP-1206 lies in Tokyo only: its location anyway
 
     def test_build_upper_cases_modes(self):
         r = builder.records(recs=[rec(CALL="ja1abc", MODE="mfsk", SUBMODE="ft4x")])[0]
