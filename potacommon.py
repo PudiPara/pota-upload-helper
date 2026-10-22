@@ -15,7 +15,7 @@ API = "https://api.pota.app"
 PARK_RE = re.compile(r"\b([A-Z0-9]{1,4}-\d{4,5})\b")
 APP_NAME = "Potaroo"
 OLD_NAME = "POTA Upload Helper"      # the name until 2.0.0: its data folder is moved over on first start
-VERSION = "2.0.46"
+VERSION = "2.0.47"
 
 
 def _moved(new, old):
@@ -163,6 +163,18 @@ def save_settings(d):
 
 
 CALL_RE = re.compile(r"[A-Z0-9/]{3,}")
+
+
+def pota_events(year):
+    """POTA's event periods of a year in UTC: New Year's Week (1-7 January) and Support Your Parks (the third
+    full weekend of January, April, July and October). -> [{"name", "start", "end"}], ISO, end exclusive."""
+    out = [{"name": "New Year's Week", "start": "%d-01-01T00:00:00Z" % year, "end": "%d-01-08T00:00:00Z" % year}]
+    for m in (1, 4, 7, 10):
+        first = dt.date(year, m, 1)
+        sat = first + dt.timedelta(days=(5 - first.weekday()) % 7 + 14)     # the first Saturday's Sunday is in the month
+        out.append({"name": "Support Your Parks", "start": sat.isoformat() + "T00:00:00Z",
+                    "end": (sat + dt.timedelta(days=2)).isoformat() + "T00:00:00Z"})
+    return out
 
 
 def my_call():

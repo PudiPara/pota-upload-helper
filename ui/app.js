@@ -243,16 +243,29 @@
     if (parks.length > 1 && st.noOverlap) { ($("#parkApart").hidden ? $("#parkLoc") : $("#parkApart")).scrollIntoView({ block: "nearest" }); return; }   // that row says why
     if ((st.locOptions || []).length > 1 && !st.loc) return showError(err, t("live.err.loc"));
     showError(err, ""); $("#doneCard").hidden = true;
-    const r = await api.start_live(parks.join(","), st.call, st.loc || "");
+    const r = await api.start_live(parks.join(","), st.call, st.loc || "", $("#liveOp").value);
     if (!r.ok) return showError(err, r.error);
-    enterRunning(r.parks, r.start, r.locs);
+    st.operators = { ...(st.operators || {}), [st.call]: r.operator };
+    enterRunning(r);
   }
   $("#startLive").addEventListener("click", startLive);
+  // a club station hands over without stopping: QSOs from now on carry the new OPERATOR
+  $("#dashOp").addEventListener("change", async (e) => {
+    const r = await api.set_operator(e.target.value);
+    if (!r.ok) { toast(r.error); e.target.value = st.operator; return; }
+    st.operator = r.operator; e.target.value = r.operator; st.operators = { ...(st.operators || {}), [st.call]: r.operator }; showOperator();
+    if (r.operator) toast(t("live.operator.now", { op: r.operator }));
+    else $("#dashOpBox").hidden = true;
+  });
+  $("#dashOp").addEventListener("keydown", (e) => { if (e.key === "Enter") e.target.blur(); });
 
   const refHtml = (p) => `<span class="ref">${refInner(p)}</span>`;
-  async function enterRunning(parks, start, locs) {
+  // live: {parks, start, locs, operator, shifts} from start_live, or get_state's running session
+  async function enterRunning(live) {
+    const { parks, start } = live;
     st.spots.clear(); st.qsos.clear(); st.lastAt = 0; st.start = utcMs(start); st.cheered = null; st.parks = parks; st.seq = 0;
-    st.locs = locs || {}; st.day = utcDay();
+    st.locs = live.locs || {}; st.day = utcDay(); st.shifts = live.shifts || {};
+    st.operator = live.operator || ""; $("#dashOpBox").hidden = !st.operator; $("#dashOp").value = st.operator;   // club station only
     $("#liveIdle").hidden = true; $("#liveRun").hidden = false; $("#liveDot").hidden = false;
     $("#signParks").innerHTML = parks.map((p) =>
       `<div class="sign-park">${plate(p)}<span class="name" data-ref="${esc(p)}"></span></div>`).join("");
@@ -260,7 +273,7 @@
     $("#liveStatus").textContent = t("live.status.first");
     for (const q of await api.session_qsos(start, parks.join(","))) { q.seq = ++st.seq; st.qsos.set(q.uid, q); huntedNow(q).forEach((p) => st.huntedShown.add(p)); }
     st.lastQ = Date.now() / 1000 - 1;
-    renderSpots(); renderQsos();
+    renderSpots(); renderQsos(); if (!BAR) renderEvent();
     clearTimeout(st.timer); tick();
     st.pollOn = true; schedulePoll();
     if (!BAR) setBar(true);
@@ -285,6 +298,7 @@
     if (!BAR && s % 15 === 0) renderStats();      // "N 分前" and the last hour move on with the clock
     if (utcDay() !== st.day) newDay();            // 0000Z: a new activation starts, the session goes on
     else if (s % 15 === 0) renderCount();         // the minutes left before 0000Z
+    if (!BAR && s % 15 === 0) renderEvent();
   }
   // Poll every second on the second, in both windows: a QSO (and its celebration) shows in the main window
   // and the bar at the same moment (separate 2.5 s timers put the bar up to 2.5 s behind)
@@ -348,6 +362,16 @@
     st.cheered = 0;                               // the next 10 is a new activation: celebrate it
     if (!BAR) toast(t("live.newDay", { n, state: t(n >= 10 ? "live.newDay.ok" : "live.newDay.short") }));
     renderQsos();
+  }
+  // POTA event periods (Python sends their UTC dates) and the Early / Late Shift hours of these parks, beside 運用中
+  function renderEvent() {
+    const now = Date.now(), h = new Date(now).getUTCHours();
+    const names = (st.events || []).filter((e) => Date.parse(e.start) <= now && now < Date.parse(e.end)).map((e) => e.name);
+    for (const [k, name] of [["early", "Early Shift"], ["late", "Late Shift"]]) {
+      const w = (st.shifts || {})[k];
+      if (w && (h - w[0] + 24) % 24 < w[1]) names.push(name);
+    }
+    $("#dashEvent").textContent = names.join(" · "); $("#dashEvent").hidden = !names.length;
   }
   // the count, the ring and the note under it; from 30 minutes before 0000Z the note says how long is left
   function renderCount() {
@@ -836,7 +860,11 @@
           <div class="qrow${q.parks.length ? " is-p2p" : ""}"><span class="muted">${hhmm(q.time)}</span>
           <span class="qrow-call">${esc(q.call)}</span><span class="qrow-bm">${esc(q.band)} ${esc(q.mode)}</span>
           ${q.parks.length ? `<span class="plates">${plates(q.parks)}</span><span class="src ${SRC_CLASS[q.source] || "src-log"}">${esc(t("src." + q.source))}</span>` : ""}</div>`;
-    return (files.length ? uploadHoursHtml() : "") + (files.length ? `<div class="res-tools"><label class="switch switch-sm"><input type="checkbox" class="res-p2p-only"><span class="switch-ui"></span><span>${esc(t("res.p2pOnly"))}</span></label></div>` : "") +
+    // Rover: parks activated in one UTC day; the award names are POTA's own
+    const rover = (r.rover || []).map((x) => `<p class="res-rover">${esc(t(x.award ? "res.rover.award" : "res.rover", { date: fmtDate(x.date), n: x.parks, award: x.award }))}</p>`).join("");
+    // a wrong line is not replaced by uploading again: delete the upload (My Log Uploads, 24 h) or ask POTA
+    const fix = files.length ? `<p class="res-fix">${esc(t("res.fix"))} <button class="link" data-url="https://pota.app/#/user/logs">${esc(t("res.fix.open"))}</button></p>` : "";
+    return (files.length ? uploadHoursHtml() : "") + rover + (files.length ? `<div class="res-tools"><label class="switch switch-sm"><input type="checkbox" class="res-p2p-only"><span class="switch-ui"></span><span>${esc(t("res.p2pOnly"))}</span></label></div>` : "") +
       files.map((f) => `
       <article class="file">
         <div class="file-head">
@@ -850,8 +878,9 @@
           : f.p2p.length ? `<div class="p2p">${f.p2p.map((p) => row({ ...p, band: "", mode: "" })).join("")}</div>` : `<div class="p2p-none">${esc(t("res.noP2P"))}</div>`}
       </article>`).join("") +
       (files.length && r.notes && r.notes.length ? `<div class="notes"><h3>${esc(t("res.notes"))}</h3><ul>${r.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul></div>` : "") +
-      (!files.length && r.notes && r.notes.length ? `<p class="muted">${esc(r.notes[0])}</p>` : "");
+      (!files.length && r.notes && r.notes.length ? `<p class="muted">${esc(r.notes[0])}</p>` : "") + fix;
   }
+  document.addEventListener("click", (e) => { const b = e.target.closest(".res-fix [data-url]"); if (b) api.open_url(b.dataset.url); });
   document.addEventListener("change", (e) => {           // the "P2P only" switch inside any results box
     if (e.target.classList && e.target.classList.contains("res-p2p-only")) e.target.closest(".res-tools").parentElement.classList.toggle("is-p2p-only", e.target.checked);
   });
@@ -993,7 +1022,7 @@
     $("#liveCall").innerHTML = st.calls.map((c) => `<option value="${esc(c)}"${c === st.call ? " selected" : ""}>${esc(c)}</option>`).join("");
   }
   async function saveCalls(calls, call) {
-    st.calls = calls; st.call = call;
+    st.calls = calls; st.call = call; showOperator();
     await api.save({ calls, call });
     renderCalls();
   }
@@ -1012,7 +1041,27 @@
     const calls = st.calls.filter((c) => c !== b.dataset.del);
     saveCalls(calls, calls.includes(st.call) ? st.call : calls[0]);
   });
+  // the operator is remembered per call: a club call's operator must not follow into a personal call's session
+  const showOperator = () => { $("#liveOp").value = (st.operators || {})[st.call] || ""; };
   $("#liveCall").addEventListener("change", (e) => saveCalls(st.calls, e.target.value));
+  // 設定 → クラブ局のオペレーター: offered in the operator boxes (still free to type)
+  function renderOps() {
+    $("#ops").innerHTML = (st.opList || []).map((c) => `
+      <li class="call-row"><span class="call-name">${esc(c)}</span>
+        <button class="link" data-del="${esc(c)}">${esc(t("cfg.calls.remove"))}</button></li>`).join("");
+    $("#opList").innerHTML = (st.opList || []).map((c) => `<option value="${esc(c)}"></option>`).join("");
+  }
+  async function saveOps(list) { st.opList = list; renderOps(); await api.save({ op_list: list }); }
+  $("#opsAdd").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const err = $("#opsError"), c = $("#opNew").value.trim().toUpperCase();
+    if (!/^[A-Z0-9/]{3,}$/.test(c)) return showError(err, t("cfg.calls.err"));       // = potacommon.CALL_RE
+    showError(err, ""); $("#opNew").value = "";
+    if (!st.opList.includes(c)) saveOps([...st.opList, c]);
+  });
+  $("#ops").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-del]"); if (b) saveOps(st.opList.filter((c) => c !== b.dataset.del));
+  });
   $("#p2pAuto").addEventListener("change", (e) => api.save({ p2p_auto: e.target.checked }));
   function renderMypota() {
     const m = st.mypota || {}, day = (iso) => fmtDate(iso.slice(0, 10).replace(/-/g, ""));
@@ -1247,7 +1296,7 @@
     applyLook(s); segSet("#fontScale", "scale", String(LOOK.font_scale)); segSet("#themeSel", "theme", LOOK.theme);
     st.distUnit = s.dist_unit || "";
     Object.assign(st, { call: s.call || "", calls: s.calls || [], prefix: s.prefix, out: s.out, adif: s.adif, source: s.source || "app", listeners: s.listeners,
-                        langs: s.langs || [["ja", "日本語"]], termsAccepted: s.terms_accepted || "", countries: s.countries || [] });
+                        langs: s.langs || [["ja", "日本語"]], events: s.events || [], termsAccepted: s.terms_accepted || "", countries: s.countries || [] });
     $("#lang").innerHTML = st.langs.map(([c, name]) => `<option value="${esc(c)}">${esc(name)}</option>`).join("");
     const lang = s.lang || pickLang(navigator.language);
     if (!s.lang) api.save({ lang });
@@ -1259,7 +1308,7 @@
     $("#version").textContent = `v${s.version}`;
     st.dataVersion = s.data_version || "";
     $("#dataVersion").textContent = st.dataVersion ? t("ver.data", { v: st.dataVersion }) : "";
-    renderCalls(); $("#p2pAuto").checked = !!s.p2p_auto; $("#onTop").checked = !!s.on_top; $("#barOnTop").checked = s.bar_on_top !== false;
+    st.operators = s.operators || {}; st.opList = s.op_list || []; renderOps(); renderCalls(); showOperator(); $("#p2pAuto").checked = !!s.p2p_auto; $("#onTop").checked = !!s.on_top; $("#barOnTop").checked = s.bar_on_top !== false;
     st.lookup = s.lookup || ["qrz"]; renderLookup();
     st.mypota = s.mypota || {}; renderMypota();
     setParks(s.parks);
@@ -1270,10 +1319,10 @@
     setSource(st.source);
     if (BAR) {                                      // the bar window: the running activation only
       document.body.classList.add("is-bar"); $("#bar").hidden = false;
-      if (s.live) { await enterRunning(s.live.parks, s.live.start, s.live.locs); await document.fonts.ready; fitBar(); } else api.set_bar(false);
+      if (s.live) { await enterRunning(s.live); await document.fonts.ready; fitBar(); } else api.set_bar(false);
       return;
     }
-    if (s.live) enterRunning(s.live.parks, s.live.start, s.live.locs);
+    if (s.live) enterRunning(s.live);
     if (st.termsAccepted !== TERMS_VERSION) showTerms(true);
     setTimeout(promptUpdate, 1500);                 // the first thing after the window is up
   }

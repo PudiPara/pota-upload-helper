@@ -31,15 +31,15 @@ from builder import build, find_activation_qsos, list_activations
 from i18n import t
 from potacommon import (APP_NAME, CALL_RE, DEFAULT_OUT, VERSION, adif_mode, band_name, base_call, data_path, data_version, fetch_json, grid_center,
                         iso_date,
-                        iso_minutes, load_settings, lock_instance, count_key, mode_known, mode_of, my_call, my_parks_of, read_adif, rec_minutes, resource,
+                        iso_minutes, load_settings, lock_instance, count_key, mode_known, mode_of, my_call, my_parks_of, pota_events, read_adif, rec_minutes, resource,
                         save_settings, split_parks, LOG_NAME, setup_log)
 from qsolog import decided_parks
 from receiver import DEFAULT_LISTENERS, Receiver, describe_state
 from spots import (SESSION_MARGIN, SpotLogger, clear_records, common_locations, countries, example_parks, history_parks,
-                   distance_km, middle, park_at, park_info, park_status, shipped_parks, summarize, tag_candidate)
+                   distance_km, middle, park_at, park_info, park_status, shift_hours, shipped_parks, summarize, tag_candidate)
 from window import BarMode, set_zoom
 
-SETTINGS_KEYS = ("call", "calls", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "p2p_auto", "lookup", "on_top", "font_scale", "theme", "dist_unit")   # "live" is set by start_live/finish_live only
+SETTINGS_KEYS = ("call", "calls", "op_list", "parks", "prefix", "adif", "out", "source", "lang", "country", "terms_accepted", "p2p_auto", "lookup", "on_top", "font_scale", "theme", "dist_unit")   # "live" is set by start_live/finish_live only
 DATE_RE = re.compile(r"\d{8}")
 LOOK_SCALES = (1, 1.15, 1.3)            # 設定 → 表示 → 文字の大きさ
 LOOK_THEMES = ("", "light", "dark")     # 設定 → 表示 → 配色 ("" = the OS)
@@ -106,6 +106,7 @@ class Api:
         self._recv_status = {}         # listener name -> state dict (codes; see receiver.describe_state)
         self._lock = threading.Lock()
         self._locs = {}               # {park: location} of the running session (parks across prefectures)
+        self._operator = ""           # a club station's operator (OPERATOR) for QSOs whose logger sends none
         self._hunted = (0, None)      # (computed at, mypota.first_hunted) - the "New" marks
         self._spots_cache = (0, [])   # (fetched at, raw spots) for the アクティベート中 page
         self.start_receiver()
@@ -121,6 +122,7 @@ class Api:
                                   on_activator=self._on_spot, on_status=self._on_status)
         self._logger.start(resume={"id": live.get("id"), "start": live["start"]})
         self._locs = live.get("locs") or {}
+        self._operator = live.get("operator") or ""
 
     def _first_hunted(self, max_age=30):
         """mypota.first_hunted over the app log, recomputed at most every max_age seconds."""
@@ -149,10 +151,12 @@ class Api:
     # ================================================================ settings
     def get_state(self):
         s = load_settings()
-        live = {"parks": self._logger.parks, "start": self._logger.session["start"]} if self._recording() else None
+        live = ({"parks": self._logger.parks, "start": self._logger.session["start"], "locs": self._locs,
+                 "operator": self._operator, "shifts": shift_hours(self._logger.parks)} if self._recording() else None)
+        year = time.gmtime().tm_year
         calls = clean_calls(s.get("calls"), s.get("call"))
         lookup = s.get("lookup") or ["qrz"]
-        return {"version": VERSION, "data_version": data_version(), "call": calls[0] if calls else "", "calls": calls, "parks": s.get("parks", ""),
+        return {"version": VERSION, "data_version": data_version(), "call": calls[0] if calls else "", "calls": calls, "operators": s.get("operators") or {}, "op_list": clean_calls(s.get("op_list"), ""), "events": pota_events(year) + pota_events(year + 1), "parks": s.get("parks", ""),
                 "prefix": "home" if s.get("prefix", "home") else "", "adif": s.get("adif", ""), "out": s.get("out", DEFAULT_OUT),
                 "source": s.get("source", "app"), "live": live, "bar": bool(self._bar and self._bar.active),
                 "listeners": self.listeners(), "lang": s.get("lang") or "", "langs": i18n.available(),
@@ -180,6 +184,8 @@ class Api:
             keep.pop("theme")
         if "dist_unit" in keep and keep["dist_unit"] not in ("km", "mi"):
             keep.pop("dist_unit")
+        if "op_list" in keep:                     # a club station's operators (設定 → 基本), offered at the start
+            keep["op_list"] = clean_calls(keep["op_list"], "")
         if "calls" in keep or "call" in keep:
             s = load_settings()
             calls = clean_calls(keep.get("calls", s.get("calls")), keep.get("call", s.get("call")))
@@ -250,6 +256,10 @@ class Api:
                     rec["MY_POTA_REF"] = ",".join(self._logger.parks)
                 if self._locs:
                     rec["MY_POTA_LOCS"] = dict(self._locs)        # parks spanning prefectures/states -> where I was
+            if self._recording():
+                rec.setdefault("SESSION_CALL", self._logger.call)   # whose log: a club call's QSOs never go into mine
+                if self._operator and not rec.get("OPERATOR"):
+                    rec["OPERATOR"] = self._operator            # club station: who was at the radio (HAMLOG sends none)
             info = tag_candidate(rec)
             accept = info["parks"] if info["auto"] and load_settings().get("p2p_auto") else None   # 設定 → P2P
             uid = qsolog.received(rec, ext_id, listener, accept)
@@ -261,13 +271,18 @@ class Api:
             self._qso_events = self._qso_events[-500:]
 
     # ================================================================ the activation (運用中)
-    def start_live(self, parks, call, loc=""):
+    def start_live(self, parks, call, loc="", operator=""):
         parks = split_parks(parks)
         if not parks:
             return {"ok": False, "error": t("api.badPark")}
         call = (call or "").strip().upper()
         if not CALL_RE.fullmatch(call):
             return {"ok": False, "error": t("api.noCall")}
+        operator = (operator or "").strip().upper()
+        if operator == call:
+            operator = ""                      # not a club station: OPERATOR = the call, as before
+        if operator and not CALL_RE.fullmatch(operator):
+            return {"ok": False, "error": t("api.badOperator")}
         if len(parks) > 1:
             cl = common_locations(parks)
             if cl["none"]:                     # no prefecture/state in common: no 2fer
@@ -279,13 +294,30 @@ class Api:
         self._stop_logger()
         with self._lock:
             self._events, self._status = [], i18n.Text("api.firstSpot")
-        save_settings({"parks": ",".join(parks), "call": call})
+        save_settings({"parks": ",".join(parks), "call": call, "operators": dict(load_settings().get("operators") or {}, **{call: operator})})
         self._logger = SpotLogger(parks, call, SPOT_INTERVAL, on_activator=self._on_spot, on_status=self._on_status)
         self._logger.start()
         sess = self._logger.session
-        self._locs = locs
-        save_settings({"live": {"id": sess["id"], "parks": parks, "call": call, "start": sess["start"], "locs": locs}})
-        return {"ok": True, "parks": parks, "start": sess["start"], "loc": loc, "locs": locs}
+        self._locs, self._operator = locs, operator
+        save_settings({"live": {"id": sess["id"], "parks": parks, "call": call, "start": sess["start"], "locs": locs,
+                                "operator": operator}})
+        return {"ok": True, "parks": parks, "start": sess["start"], "loc": loc, "locs": locs, "operator": operator,
+                "shifts": shift_hours(parks)}
+
+    def set_operator(self, operator):
+        """A club station changes operators without stopping: QSOs from now on carry the new OPERATOR."""
+        live = load_settings().get("live")
+        if not self._recording() or not live:
+            return {"ok": False, "error": t("api.notRecording")}
+        operator = (operator or "").strip().upper()
+        if operator == live.get("call"):
+            operator = ""
+        if operator and not CALL_RE.fullmatch(operator):
+            return {"ok": False, "error": t("api.badOperator")}
+        self._operator = operator
+        save_settings({"operators": dict(load_settings().get("operators") or {}, **{live["call"]: operator}),
+                       "live": dict(live, operator=operator)})
+        return {"ok": True, "operator": operator}
 
     def _in_session(self, rec):
         """Does this QSO belong in the running session's list: logged at one of its parks today (a park

@@ -372,6 +372,16 @@ def middle(points):
     return (math.degrees(math.atan2(z, math.hypot(x, y))), math.degrees(math.atan2(y, x)))
 
 
+def shift_hours(parks):
+    """POTA's Early / Late Shift awards for these parks: [UTC hour they start, hours long]. They start at 02 and 18
+    local by the park pin's longitude, rounded to the hour. {} with no position.
+    ponytail: the middle of the parks; for a park across states the docs take the location's pin (not shipped)."""
+    m = middle([p for p in map(park_at, parks) if p])
+    if not m:
+        return {}
+    return {"early": [math.floor(2.5 - m[1] / 15) % 24, 6], "late": [math.floor(18.5 - m[1] / 15) % 24, 8]}
+
+
 def great_circle_km(a, b):
     """Distance over the earth's surface between two (lat, lon) points (haversine, mean radius)."""
     la1, lo1, la2, lo2 = map(math.radians, (a[0], a[1], b[0], b[1]))

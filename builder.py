@@ -26,6 +26,7 @@ ORDER = ["STATION_CALLSIGN", "OPERATOR", "CALL", "QSO_DATE", "TIME_ON", "BAND", 
          "MY_STATE", "MY_GRIDSQUARE", "GRIDSQUARE", "COMMENT"]
 KEEP = ["CALL", "QSO_DATE", "TIME_ON", "BAND", "FREQ", "MODE", "SUBMODE", "RST_SENT", "RST_RCVD",
         "MY_GRIDSQUARE", "GRIDSQUARE"]
+ROVER = ((30, "Lion"), (25, "Leopard"), (20, "Ostrich"), (15, "Cheetah"), (10, "Rhino"), (5, "Warthog"))   # parks a UTC day
 HUNTER_WINDOW = 15     # minutes: hunter log time vs your log time (pota.app's P2P match: "within 15 minutes")
 
 
@@ -172,7 +173,8 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
     if not call:
         raise ValueError(tr("api.noCall"))
     out_dir = out_dir or DEFAULT_OUT
-    recs = records(adif_path, recs)
+    # a club call's QSOs (recorded under another call) never go into this call's files, nor the other way round
+    recs = [r for r in records(adif_path, recs) if (r.get("SESSION_CALL") or call) == call]
     hunter = load_hunter(call, offline, log)
     spots = load_spots()
     activ = find_activation_qsos(recs, dates, my_parks)
@@ -190,6 +192,7 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
     notes = list(untimed)
     used_hunter = set()
     differ = set()                 # the logger's own callsigns when they are not the one chosen here
+    operators = set()              # OPERATOR other than the call: a club log
 
     for r, t, mp_list in activ:
         b = base_call(r["CALL"])
@@ -201,9 +204,10 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
         exact = {x.get("callsign", "").upper() for _, x in h} - {r["CALL"]}
         if exact:                                  # pota.app matches a P2P on the call as written, not the base call
             notes.append(tr("b.note.callExact", date=r["QSO_DATE"], time=hhmm(r), call=r["CALL"], theirs=",".join(sorted(exact))))
-        for k in ("STATION_CALLSIGN", "OPERATOR"):
-            if (r.get(k) or call).upper() != call:
-                differ.add(r[k].upper())
+        if (r.get("STATION_CALLSIGN") or call) != call:
+            differ.add(r["STATION_CALLSIGN"])
+        if (r.get("OPERATOR") or call) != call:
+            operators.add(r["OPERATOR"])
         for _, x in h:
             used_hunter.add(id(x))
         decided, d_parks = decided_parks(r)
@@ -259,6 +263,8 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
 
     if differ:
         notes.insert(0, tr("b.note.callDiffers", call=call, logger=", ".join(sorted(differ))))
+    if operators:                  # Club Activation Guide: upload from the club's account only, never a personal one
+        notes.insert(0, tr("b.note.club", call=call, ops=", ".join(sorted(operators))))
     days = {k[1] for k in files}
     for lst in hunter.values():
         for m, hb, p, x in lst:
@@ -289,10 +295,16 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
         lines.append(tr("b.line.file", date=d, park=mp, n=n, stations=len(rep["calls"]), short="" if counted >= 10 else tr("b.short"), file=fn))
         for tm, c, ps, src in rep["p2p"]:
             lines.append("      P2P %s %-10s %-20s [%s]" % (tm, c, ps, src))
+    done = defaultdict(set)        # Rover awards: parks activated (10 QSOs) in one UTC day
+    for f in summary:
+        if f["counted"] >= 10:
+            done[f["date"]].add(f["park"])
+    rover = [{"date": d, "parks": len(p), "award": next((a for n, a in ROVER if len(p) >= n), "")}
+             for d, p in sorted(done.items()) if len(p) > 1]
     if notes:
         lines.append("\n" + tr("b.notes"))
         lines += ["  - " + n for n in notes]
     text = "\n".join(lines)
     with open(os.path.join(out_dir, "report.txt"), "w", encoding="utf-8") as fh:
         fh.write(text + "\n")
-    return {"text": text, "files": written, "out_dir": files_dir, "summary": summary, "notes": notes}
+    return {"text": text, "files": written, "out_dir": files_dir, "summary": summary, "notes": notes, "rover": rover}

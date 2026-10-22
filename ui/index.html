@@ -85,6 +85,11 @@
               <label class="start-label" for="liveCall" data-i18n="live.call">コールサイン</label>
               <select id="liveCall" class="call-select" data-i18n-title="live.call"></select>
             </div>
+            <datalist id="opList"></datalist>
+            <div class="start-field">
+              <label class="start-label" for="liveOp" data-i18n="live.operator">オペレーター</label>
+              <input id="liveOp" class="op-input" list="opList" placeholder="クラブ局のときだけ" data-i18n-ph="live.operator.ph" spellcheck="false" autocomplete="off">
+            </div>
             <div class="start-field">
               <label class="start-label start-label-top" for="parks" data-i18n="live.parksLabel">公園</label>
               <div class="start-parks">
@@ -134,9 +139,11 @@
           <div class="dash-main">
             <div class="dash-head">
               <span class="dash-onair"><i class="bar-live"></i><span data-i18n="bar.title">運用中</span></span>
+              <span class="dash-event" id="dashEvent" hidden data-i18n-title="live.event.tip"></span>
               <span class="dash-status" id="liveStatus"></span>
             </div>
             <div class="dash-parks" id="signParks"></div>
+            <label class="dash-op" id="dashOpBox" hidden><span data-i18n="live.operator">オペレーター</span><input id="dashOp" list="opList" spellcheck="false" autocomplete="off" data-i18n-title="live.operator.change"></label>
             <div class="dash-foot">
               <div class="clock" id="elapsed">00:00:00</div>
               <div class="dash-actions">
@@ -335,6 +342,16 @@
             <button class="btn" type="submit" data-i18n="cfg.calls.add">追加</button>
           </form>
           <p class="error" id="callsError" hidden></p>
+        </section>
+        <section class="cfg-block" data-tab="general">
+          <h2 data-i18n="cfg.ops.h">オペレーター</h2>
+          <p class="cfg-help" data-i18n="cfg.ops.p">クラブのコールで運用するときに、記録を始める画面と運用中の画面で選べます。</p>
+          <ul class="calls" id="ops"></ul>
+          <form class="calls-add" id="opsAdd">
+            <input id="opNew" placeholder="JA1ABC" spellcheck="false" autocomplete="off">
+            <button class="btn" type="submit" data-i18n="cfg.calls.add">追加</button>
+          </form>
+          <p class="error" id="opsError" hidden></p>
         </section>
         <section class="cfg-block" data-tab="qso">
           <h2 data-i18n="cfg.lookup.h">コールサインの検索先</h2>
