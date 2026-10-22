@@ -13,8 +13,8 @@ import os
 from collections import defaultdict
 
 from i18n import t as tr
-from potacommon import (DEFAULT_OUT, base_call, data_path, fetch_json, iso_minutes, mode_of, pota_key, read_adif,
-                        read_json, rec_minutes, split_parks, write_adif, write_json)
+from potacommon import (DEFAULT_OUT, base_call, data_path, fetch_json, iso_minutes, mode_of, my_parks_of, pota_key,
+                        read_adif, read_json, rec_minutes, split_parks, their_parks_of, write_adif, write_json)
 from qsolog import decided_parks
 from spots import load_sessions, load_spots, their_parks_at
 
@@ -73,8 +73,8 @@ def find_activation_qsos(recs, dates=None, my_parks=None, sessions=None):
         if t is None:
             continue
         mp = override
-        if not mp and (r.get("MY_SIG", "POTA").upper() in ("POTA", "")):
-            mp = split_parks(r.get("MY_POTA_REF") or r.get("MY_SIG_INFO"))   # recorded with the QSO: wins
+        if not mp:
+            mp = my_parks_of(r)                 # recorded with the QSO: wins
         if not mp:
             for a, b, parks in sessions:        # else the session window it fell in (windows carry a margin,
                 if a <= t <= b:                 # so they must never override a QSO's own parks)
@@ -143,7 +143,7 @@ def build(adif_path=None, dates=None, my_parks=None, call="", out_dir=None, offl
                 notes.append(tr("b.note.unconfirmed", date=r["QSO_DATE"], time=hhmm(r), call=r["CALL"], parks=",".join(cand)))
         else:
             s_parks, s_sure = their_parks_at(spots.get(b, []), t)
-            log_parks = split_parks(r.get("POTA_REF") or r.get("SIG_INFO")) if r.get("SIG", "POTA").upper() in ("POTA", "") else []
+            log_parks = their_parks_of(r)
         if h_parks:
             theirs, src = h_parks, "hunter"        # src codes: hunter | confirmed | manual | log | spot | logspot
             extra = [p for p in log_parks + s_parks if p not in h_parks]

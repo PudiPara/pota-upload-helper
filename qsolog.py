@@ -11,7 +11,7 @@ import threading
 import time
 from contextlib import contextmanager
 
-from potacommon import base_call, data_path, minutes, mode_of, rec_minutes, split_parks
+from potacommon import base_call, data_path, minutes, mode_of, my_parks_of, rec_minutes, split_parks, their_parks_of
 
 TWIN_WINDOW = 3          # minutes
 _lock = threading.Lock()
@@ -86,7 +86,7 @@ def received(rec, ext_id=None, source="", accept=None):
     """A QSO a logger sent. Their park typed in the logger (SIG_INFO / POTA_REF) is the decision
     "log"; a decision made on the other copy is kept; accept = spot candidate parks to record as "yes"
     without asking (設定 → P2P). -> uid. rec is updated in place."""
-    logged = split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO"))
+    logged = their_parks_of(rec)
     if logged and not rec.get("P2P_DECISION"):
         apply_decision(rec, "log", logged)
     uid = upsert(rec, ext_id, source)
@@ -138,7 +138,7 @@ def decided_parks(rec):
         return False, []
     if dec == "no":
         return True, []
-    return True, split_parks(rec.get("POTA_REF") or rec.get("SIG_INFO"))
+    return True, their_parks_of(rec)
 
 
 def set_p2p(uid, decision, parks):
@@ -237,7 +237,7 @@ def history():
         recs.append(r)
     out = [{"uid": r["_uid"], "date": r.get("QSO_DATE", ""), "time": (r.get("TIME_ON") or "")[:4],
             "call": r.get("CALL", ""), "band": r.get("BAND", ""), "mode": mode_of(r),
-            "my": split_parks(r.get("MY_SIG_INFO") or r.get("MY_POTA_REF") or ""),
+            "my": my_parks_of(r),
             "their": decided_parks(r)[1], "p2p": r.get("P2P_DECISION") or "", "source": r["_source"]}
            for r in dedupe(recs)]
     return out[::-1]
@@ -270,7 +270,7 @@ def dedupe(recs):
             continue
         # my parks are part of the key: the same station worked again minutes later from another
         # park is a second QSO, not the logger's copy of the first one
-        k = (base_call(r.get("CALL")), (r.get("BAND") or "").lower(), mode_of(r), r.get("MY_SIG_INFO") or "")
+        k = (base_call(r.get("CALL")), (r.get("BAND") or "").lower(), mode_of(r), tuple(my_parks_of(r)))
         if k in last and t - last[k][0] <= TWIN_WINDOW:
             prev = last[k][1]
             if (bool(r.get("P2P_DECISION")), len(r)) > (bool(prev.get("P2P_DECISION")), len(prev)):

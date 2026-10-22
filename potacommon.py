@@ -14,7 +14,7 @@ API = "https://api.pota.app"
 PARK_RE = re.compile(r"\b([A-Z0-9]{1,4}-\d{4,5})\b")
 APP_NAME = "Potaroo"
 OLD_NAME = "POTA Upload Helper"      # the name until 2.0.0: its data folder is moved over on first start
-VERSION = "2.0.42"
+VERSION = "2.0.43"
 
 
 def _moved(new, old):
@@ -279,10 +279,25 @@ def split_parks(value):
         value = ",".join(value)
     out = []
     for p in re.split(r"[,\s;]+", (value or "").upper()):
-        p = p.strip()
+        p = p.split("@")[0].strip()          # ADIF POTARef: "US-4239@US-MI" carries the location per park
         if p and PARK_RE.fullmatch(p) and p not in out:
             out.append(p)
     return out
+
+
+def _sig_parks(rec, ref, sig, info):
+    # *_SIG_INFO holds the reference of whatever *_SIG names: a WWFF "JAFF-0123" looks like a park
+    return split_parks(rec.get(ref)) or (split_parks(rec.get(info)) if (rec.get(sig) or "POTA").upper() == "POTA" else [])
+
+
+def their_parks_of(rec):
+    """The other station's POTA parks in a record: POTA_REF, else SIG_INFO when SIG is POTA (or unset)."""
+    return _sig_parks(rec, "POTA_REF", "SIG", "SIG_INFO")
+
+
+def my_parks_of(rec):
+    """My POTA parks in a record: MY_POTA_REF, else MY_SIG_INFO when MY_SIG is POTA (or unset)."""
+    return _sig_parks(rec, "MY_POTA_REF", "MY_SIG", "MY_SIG_INFO")
 
 
 # ---------- ADIF ----------
