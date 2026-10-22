@@ -267,7 +267,8 @@
     const { parks, start } = live;
     st.spots.clear(); st.qsos.clear(); st.lastAt = 0; st.start = utcMs(start); st.cheered = null; st.parks = parks; st.seq = 0;
     st.locs = live.locs || {}; st.day = utcDay(); st.shifts = live.shifts || {};
-    // the bar opens with the session: a fresh start inside a shift plays its rise; a reopened bar does not
+    st.wxSeq = live.weather ? live.weather.seq : 0; renderWeather(live.weather, false);   // no notice for a reopened window
+  // the bar opens with the session: a fresh start inside a shift plays its rise; a reopened bar does not
     st.shiftOn = BAR && Date.now() - utcMs(start) < 60e3 ? [] : activeShifts();
     st.operator = live.operator || ""; $("#dashOpBox").hidden = !st.operator; $("#dashOp").innerHTML = opOptions(st.operator);   // club station only
     $("#liveIdle").hidden = true; $("#liveRun").hidden = false; $("#liveDot").hidden = false;
@@ -316,6 +317,7 @@
     if (BAR && !r.running) { api.set_bar(false); return; }             // finished in the main window
     if (BAR && r.look && applyLook(r.look)) { st.barW = 0; fitBar(); }  // 設定 → 表示 changed in the main window
     if (r.status) $("#liveStatus").textContent = r.status;
+    if (r.weather && r.weather.seq !== st.wxSeq) { st.wxSeq = r.weather.seq; renderWeather(r.weather, true); }
     if (!BAR) {
       $("#clockWarn").hidden = r.clock == null;
       if (r.clock != null) $("#clockWarn").textContent = t(r.clock > 0 ? "live.warn.clockAhead" : "live.warn.clockBehind", { m: Math.max(1, Math.round(Math.abs(r.clock) / 60)) });
@@ -385,6 +387,30 @@
     $("#dashEvent").textContent = names.concat(activeShifts().map((k) => SHIFT_NAMES[k])).join(" · ");
     $("#dashEvent").hidden = !$("#dashEvent").textContent;
   }
+  // The weather at the parks (Python asks Open-Meteo at the start and every 30 min: weather.py). One line on the
+  // 運用中 page; an alert (thunderstorm, rain, strong gusts within 3 h) turns it amber, shows a short word in the bar
+  // and, when it is new, a toast. Open-Meteo's data is CC BY 4.0: its credit links to it wherever it shows.
+  const WX_ICON = { clear: "☀️", cloudy: "⛅", overcast: "☁️", fog: "🌫️", drizzle: "🌦️", rain: "🌧️", snow: "❄️", showers: "🌦️", thunder: "⛈️" };
+  const fmtTemp = (c) => (distUnit() === "mi" ? Math.round(c * 9 / 5 + 32) + "°F" : Math.round(c) + "°C");
+  const fmtWind = (ms) => (distUnit() === "mi" ? Math.round(ms * 2.237) + " mph" : Math.round(ms) + " m/s");
+  function renderWeather(w, notify) {
+    const line = $("#wxLine"), alerts = Object.keys((w && w.alerts) || {});
+    const alertText = (k) => t("wx.alert." + k, { p: w.alerts.rain, g: fmtWind(w.alerts.wind || 0) });
+    line.hidden = !w; $("#barWx").hidden = !alerts.length;
+    if (!w) return;
+    const parts = [`${WX_ICON[w.group] || ""} ${t("wx." + w.group)}`];
+    if (w.temp != null) parts.push(fmtTemp(w.temp));
+    if (w.wind != null) parts.push(t("wx.wind", { v: fmtWind(w.wind), g: fmtWind(w.gust != null ? w.gust : w.wind) }));
+    if (w.rain != null) parts.push(t("wx.pop", { p: w.rain }));
+    if (w.sun) parts.push(t("wx." + w.sun.kind, { at: w.sun.at }));
+    line.innerHTML = `<span>${esc(parts.join(" · "))}</span>` + alerts.map((k) => `<span class="wx-alert">${esc(alertText(k))}</span>`).join("") +
+      `<button class="link wx-src" data-url="https://open-meteo.com/">Weather data by Open-Meteo.com</button>`;
+    line.classList.toggle("is-alert", alerts.length > 0);
+    $("#barWx").textContent = alerts.map((k) => t("wx.short." + k)).join(" · ");
+    if (BAR) fitBar();
+    if (notify && !BAR && (w.new || []).length) toast(w.new.map(alertText).join(" "));
+  }
+  document.addEventListener("click", (e) => { const b = e.target.closest(".wx-src[data-url]"); if (b) api.open_url(b.dataset.url); });
   // The bar's sky, by the local hour of the shift (POTA's shifts are 15° bands: Late 18-02, Early 02-08 local):
   // Late starts at dusk (the moon rises), its second half and Early's first are the middle of the night (stars, the
   // moon high), Early's second half is the dawn (the sun rises) and it ends in the morning (the sun climbs into the

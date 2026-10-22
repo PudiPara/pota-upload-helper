@@ -156,6 +156,7 @@
  "cfg.ops.h": "操作員", "cfg.ops.p": "用俱樂部呼號運用時，可在開始記錄畫面和運用中畫面選擇。",
  "b.hunterNoProfile": "! pota.app 上找不到 {call} 的資料（未在 pota.app 註冊的呼號等）。P2P 核對僅使用已儲存的資料。",
  "sky.start": "當地 {from}–{to}", "sky.utc": "UTC {from}–{to}", "sky.end": "這個時段結束了",
+ "wx.clear": "晴", "wx.cloudy": "晴時多雲", "wx.overcast": "陰", "wx.fog": "霧", "wx.drizzle": "毛毛雨", "wx.rain": "雨", "wx.snow": "雪", "wx.showers": "陣雨", "wx.thunder": "雷雨", "wx.wind": "風 {v}（陣風 {g}）", "wx.pop": "3 小時降雨機率 {p}%", "wx.sunrise": "日出 {at}", "wx.sunset": "日落 {at}", "wx.alert.thunder": "⚡ 3 小時內預報有雷雨，請準備收起天線", "wx.alert.rain": "☔ 3 小時內預報有雨（降雨機率 {p}%）", "wx.alert.wind": "💨 預報有強陣風（最大 {g}）", "wx.short.thunder": "⚡ 雷雨預報", "wx.short.rain": "☔ 降雨預報", "wx.short.wind": "💨 強風預報",
  "api.notRecording": "未在記錄。",
   "api.spotsFail": "無法取得 spot：{err}", "api.fileNotFound": "找不到檔案。請重新選擇。",
   "api.logRead": "無法讀取日誌：{err}", "api.updCheckFail": "檢查更新失敗：{err}", "api.updFail": "更新失敗：{err}",
@@ -163,5 +164,5 @@
   "updater.fromSource": "從原始碼執行，無法自動更新。", "updater.unsupportedOs": "此作業系統不支援自動更新。",
   "updater.noApp": "更新檔案中沒有應用程式。", "updater.noExe": "更新檔案中沒有可執行檔。",
   "terms.title": "使用條款與免責聲明", "terms.accept": "同意並使用", "terms.link": "使用條款與免責聲明",
-  "terms.body": "<p>本程式是個人業餘開發的軟體，依「現狀」提供，不作任何保證，以 MIT 授權發布。</p><ul><li><strong>對於使用本程式造成的任何損失，作者概不負責</strong>，包括向 pota.app 上傳錯誤內容、QSO 重複或遺漏、日誌或檔案遺失、對日誌軟體或網路設定的影響等。上傳前請務必自行檢查檔案內容。</li><li>P2P 與 2fer 的判斷是基於 pota.app 的 spot 與獵人日誌的推測，不保證正確。</li><li>本程式與 Parks on the Air®（POTA）及 pota.app 無關。它讀取 pota.app 公開的資料，但未獲得 POTA 的官方支援。POTA 的規則與上傳要求，請始終以 pota.app 的說明為準。</li><li>收到的 QSO、spot 記錄與設定只保存在本機，不會傳送到外部。程式會存取 api.pota.app 取得 spot、公園與獵人日誌，存取 GitHub 檢查更新，存取 OpenStreetMap 顯示地圖。</li><li>繼續使用即視為同意以上內容。</li></ul>"
+  "terms.body": "<p>本程式是個人業餘開發的軟體，依「現狀」提供，不作任何保證，以 MIT 授權發布。</p><ul><li><strong>對於使用本程式造成的任何損失，作者概不負責</strong>，包括向 pota.app 上傳錯誤內容、QSO 重複或遺漏、日誌或檔案遺失、對日誌軟體或網路設定的影響等。上傳前請務必自行檢查檔案內容。</li><li>P2P 與 2fer 的判斷是基於 pota.app 的 spot 與獵人日誌的推測，不保證正確。</li><li>本程式與 Parks on the Air®（POTA）及 pota.app 無關。它讀取 pota.app 公開的資料，但未獲得 POTA 的官方支援。POTA 的規則與上傳要求，請始終以 pota.app 的說明為準。</li><li>收到的 QSO、spot 記錄與設定只保存在本機，不會傳送到外部。程式會存取 api.pota.app 取得 spot、公園與獵人日誌，存取 GitHub 檢查更新，存取 OpenStreetMap 顯示地圖，記錄期間存取 Open-Meteo 取得公園天氣。</li><li>繼續使用即視為同意以上內容。</li></ul>"
 }

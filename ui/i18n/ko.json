@@ -156,6 +156,7 @@
  "cfg.ops.h": "오퍼레이터", "cfg.ops.p": "클럽 콜로 운용할 때 기록 시작 화면과 운용 중 화면에서 고를 수 있습니다.",
  "b.hunterNoProfile": "! pota.app에 {call}의 프로필이 없습니다(pota.app에 등록하지 않은 콜 등). P2P 대조에는 저장된 데이터만 사용합니다.",
  "sky.start": "현지 {from}~{to}", "sky.utc": "UTC {from}~{to}", "sky.end": "이 시간대가 끝났습니다",
+ "wx.clear": "맑음", "wx.cloudy": "구름 조금", "wx.overcast": "흐림", "wx.fog": "안개", "wx.drizzle": "이슬비", "wx.rain": "비", "wx.snow": "눈", "wx.showers": "소나기", "wx.thunder": "뇌우", "wx.wind": "바람 {v}(돌풍 {g})", "wx.pop": "3시간 강수확률 {p}%", "wx.sunrise": "일출 {at}", "wx.sunset": "일몰 {at}", "wx.alert.thunder": "⚡ 3시간 안에 뇌우 예보가 있습니다. 안테나를 내릴 준비를", "wx.alert.rain": "☔ 3시간 안에 비 예보(강수확률 {p}%)", "wx.alert.wind": "💨 강한 돌풍 예보(최대 {g})", "wx.short.thunder": "⚡ 뇌우 예보", "wx.short.rain": "☔ 비 예보", "wx.short.wind": "💨 강풍 예보",
  "api.notRecording": "기록 중이 아닙니다.",
   "api.spotsFail": "스팟을 가져오지 못했습니다: {err}", "api.fileNotFound": "파일을 찾을 수 없습니다. 다시 선택하세요.",
   "api.logRead": "로그를 읽지 못했습니다: {err}", "api.updCheckFail": "업데이트 확인 실패: {err}", "api.updFail": "업데이트 실패: {err}",
@@ -163,5 +164,5 @@
   "updater.fromSource": "소스에서 실행 중이라 자동 업데이트를 할 수 없습니다.", "updater.unsupportedOs": "이 OS에서는 자동 업데이트를 지원하지 않습니다.",
   "updater.noApp": "업데이트 파일에 앱이 없습니다.", "updater.noExe": "업데이트 파일에 실행 파일이 없습니다.",
   "terms.title": "이용 약관 및 면책 사항", "terms.accept": "동의하고 사용", "terms.link": "이용 약관 및 면책 사항",
-  "terms.body": "<p>이 앱은 개인이 취미로 만든 소프트웨어로, 어떠한 보증도 없이 ‘있는 그대로’ MIT 라이선스로 배포됩니다.</p><ul><li><strong>이 앱을 사용하여 발생한 어떠한 손해에 대해서도 제작자는 책임지지 않습니다.</strong> pota.app에 잘못된 내용을 업로드한 것, QSO의 중복이나 누락, 로그나 파일의 손실, 로거나 네트워크 설정에 미치는 영향 등을 포함합니다. 업로드할 파일의 내용은 반드시 직접 확인하세요.</li><li>P2P와 2fer 판정은 pota.app의 스팟과 헌터 로그에 기반한 추정이며, 정확성을 보증하지 않습니다.</li><li>이 앱은 Parks on the Air®(POTA) 및 pota.app과 무관합니다. pota.app이 공개한 데이터를 읽지만 POTA의 공식 지원을 받은 것은 아닙니다. POTA 규칙과 업로드 요건은 항상 pota.app의 안내를 따르세요.</li><li>받은 QSO, 스팟 기록, 설정은 이 컴퓨터 안에만 저장되며 외부로 보내지 않습니다. 스팟·공원·헌터 로그를 위해 api.pota.app에, 업데이트 확인을 위해 GitHub에, 지도 표시를 위해 OpenStreetMap에 접속합니다.</li><li>계속 사용하면 이 내용에 동의한 것으로 봅니다.</li></ul>"
+  "terms.body": "<p>이 앱은 개인이 취미로 만든 소프트웨어로, 어떠한 보증도 없이 ‘있는 그대로’ MIT 라이선스로 배포됩니다.</p><ul><li><strong>이 앱을 사용하여 발생한 어떠한 손해에 대해서도 제작자는 책임지지 않습니다.</strong> pota.app에 잘못된 내용을 업로드한 것, QSO의 중복이나 누락, 로그나 파일의 손실, 로거나 네트워크 설정에 미치는 영향 등을 포함합니다. 업로드할 파일의 내용은 반드시 직접 확인하세요.</li><li>P2P와 2fer 판정은 pota.app의 스팟과 헌터 로그에 기반한 추정이며, 정확성을 보증하지 않습니다.</li><li>이 앱은 Parks on the Air®(POTA) 및 pota.app과 무관합니다. pota.app이 공개한 데이터를 읽지만 POTA의 공식 지원을 받은 것은 아닙니다. POTA 규칙과 업로드 요건은 항상 pota.app의 안내를 따르세요.</li><li>받은 QSO, 스팟 기록, 설정은 이 컴퓨터 안에만 저장되며 외부로 보내지 않습니다. 스팟·공원·헌터 로그를 위해 api.pota.app에, 업데이트 확인을 위해 GitHub에, 지도 표시를 위해 OpenStreetMap에, 기록 중 공원 날씨를 위해 Open-Meteo에 접속합니다.</li><li>계속 사용하면 이 내용에 동의한 것으로 봅니다.</li></ul>"
 }

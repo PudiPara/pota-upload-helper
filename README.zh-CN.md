@@ -163,4 +163,4 @@ python3 -m unittest discover -s tests
 
 MIT
 
-国旗显示使用了随附的 [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill)（MIT）字体，其中只收录了 Twemoji（CC-BY 4.0）的国旗。地图使用 [Leaflet](https://leafletjs.com/)（BSD-2-Clause）和 © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors 的地图瓦片。
+国旗显示使用了随附的 [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill)（MIT）字体，其中只收录了 Twemoji（CC-BY 4.0）的国旗。地图使用 [Leaflet](https://leafletjs.com/)（BSD-2-Clause）和 © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors 的地图瓦片。天气数据来自 [Open-Meteo](https://open-meteo.com/)（CC BY 4.0）。

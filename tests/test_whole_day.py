@@ -10,6 +10,7 @@ os.environ.setdefault("POTAROO_DATA", os.path.join(tempfile.mkdtemp(), "data")) 
 sys.modules.setdefault("webview", types.SimpleNamespace(OPEN_DIALOG=1, FOLDER_DIALOG=2))  # app.py imports it
 sys.path.insert(0, ROOT)
 import app  # noqa: E402
+app.weather.fetch = lambda lat, lon: (_ for _ in ()).throw(OSError("offline test"))   # tests stay offline
 import potacommon  # noqa: E402
 import qsolog  # noqa: E402
 

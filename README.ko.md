@@ -163,4 +163,4 @@ python3 -m unittest discover -s tests
 
 MIT
 
-국기 표시에는 Twemoji(CC-BY 4.0)의 국기만 담은 [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill)(MIT) 글꼴을 함께 넣었습니다. 지도는 [Leaflet](https://leafletjs.com/)(BSD-2-Clause)과 © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors의 타일을 사용합니다.
+국기 표시에는 Twemoji(CC-BY 4.0)의 국기만 담은 [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill)(MIT) 글꼴을 함께 넣었습니다. 지도는 [Leaflet](https://leafletjs.com/)(BSD-2-Clause)과 © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors의 타일을 사용합니다. 날씨는 [Open-Meteo](https://open-meteo.com/)의 데이터(CC BY 4.0)입니다.
