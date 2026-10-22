@@ -20,7 +20,8 @@ from i18n import t
 from potacommon import USER_AGENT, VERSION, data_version, fetch_json
 
 REPO = "PudiPara/potaroo"
-LATEST = "https://api.github.com/repos/%s/releases/latest" % REPO
+LATEST = "https://api.github.com/repos/%s/releases/latest" % REPO        # public releases only (no prerelease)
+RELEASES = "https://api.github.com/repos/%s/releases?per_page=20" % REPO   # 試験版 on: prereleases too
 PAGE = "https://github.com/%s/releases/latest" % REPO
 DOWNLOAD_PREFIX = "https://github.com/%s/releases/download/" % REPO
 # the repo was PudiPara/pota-upload-helper until 2.0.2; GitHub redirects that name to this one
@@ -81,12 +82,16 @@ def summarize(rel, platform=None, installed=None, current_data=None):
     return {"current": VERSION, "latest": tag.lstrip("vV").partition("-data-")[0], "newer": newer_app or newer_data,
             "data_only": newer_data and not newer_app, "data_latest": data,
             "data_current": current_data if current_data is not None else data_version(),
-            "notes": (rel.get("body") or "")[:3000], "page": rel.get("html_url") or PAGE, "asset": url,
+            "notes": (rel.get("body") or "")[:3000], "prerelease": bool(rel.get("prerelease")), "page": rel.get("html_url") or PAGE, "asset": url,
             "can_install": bool(url and installed), "translocated": translocated(installed)}
 
 
-def check():
-    return summarize(fetch_json(LATEST, timeout=15))
+def check(beta=False):
+    """The newest public release; with beta (設定 → 試験版も受け取る) the newest of all, prereleases included."""
+    if not beta:
+        return summarize(fetch_json(LATEST, timeout=15))
+    rels = [r for r in fetch_json(RELEASES, timeout=15) or [] if not r.get("draft")]
+    return summarize(max(rels, key=lambda r: parse_tag(r.get("tag_name")), default={}))
 
 
 # ---------------------------------------------------------------- download / install

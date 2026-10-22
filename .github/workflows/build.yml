@@ -16,7 +16,7 @@ permissions:
   contents: write
 
 # One build at a time, in push order: two at once let the older version finish last and take
-# "Latest" (2.0.41 over 2.0.42), and the updater only reads releases/latest. Only one run waits;
+# "Latest" (2.0.41 over 2.0.42), and the updater only reads releases/latest (a prerelease: only apps with 試験版 on). Only one run waits;
 # a third push skips the middle version, never the newest.
 concurrency:
   group: release
@@ -38,8 +38,11 @@ jobs:
       - name: Data release - the released code with this commit's data
         if: inputs.data_release
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          VER="$(sed -n 's/^VERSION = "\(.*\)"/\1/p' potacommon.py)"
+          # the last public release's code (releases/latest skips prereleases: a version still being tried stays out)
+          VER="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name | sed 's/^v//; s/-data-.*//')"
           git fetch --depth=1 origin "refs/tags/v$VER:refs/tags/v$VER"
           git checkout "v$VER"
           git checkout "$GITHUB_SHA" -- assets/parks.tsv.gz assets/pota-data.txt locations.py
@@ -100,9 +103,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: ver
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           VER="v$(python3 -c 'import potacommon; print(potacommon.VERSION)')"
           if [ "${{ inputs.data_release }}" = "true" ]; then
+            VER="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name | sed 's/-data-.*//')"   # as the build job
+            echo "pre=false" >> "$GITHUB_OUTPUT"      # the public version with new data: for everyone
             DV="$(cat assets/pota-data.txt)"      # the updater reads "-data-" (updater.parse_tag)
             echo "v=$VER-data-$DV" >> "$GITHUB_OUTPUT"
             echo "name=Potaroo $VER (park data $DV)" >> "$GITHUB_OUTPUT"
@@ -112,6 +119,7 @@ jobs:
             echo "v=$VER" >> "$GITHUB_OUTPUT"
             echo "name=Potaroo $VER" >> "$GITHUB_OUTPUT"
             echo "notes=true" >> "$GITHUB_OUTPUT"
+            echo "pre=true" >> "$GITHUB_OUTPUT"       # tried on the air first; made public by hand (CLAUDE.md)
           fi
       - uses: actions/download-artifact@v4
         with:
@@ -130,3 +138,5 @@ jobs:
             POTA-Upload-Helper-macOS.zip
             POTA-Upload-Helper-Windows.zip
           generate_release_notes: ${{ steps.ver.outputs.notes == 'true' }}
+          prerelease: ${{ steps.ver.outputs.pre == 'true' }}
+          make_latest: ${{ steps.ver.outputs.pre == 'true' && 'false' || 'true' }}

@@ -895,7 +895,18 @@
     if (!parks.length) return;
     parks.forEach((p) => st.huntedShown.add(p));
     $("#huntedParks").innerHTML = plates(parks);
+    const box = $("#hunted");
+    box.classList.toggle("is-many", parks.length > 2);   // a 3fer: smaller type, so the bar keeps it on one line
+    box.classList.remove("is-wrap");
     celebrate("#hunted", burst());
+    if (BAR && !document.body.classList.contains("bar-square")) {   // the square one wraps anyway
+      // still wider than the bar (a 4fer, the compact shape): smaller plates, then two lines
+      const ps = $("#huntedParks"), edge = 8;        // centred, it overflows on both sides: scrollWidth misses the left one
+      const tight = () => [...box.children].some((e) => e.offsetLeft < edge || e.offsetLeft + e.offsetWidth > innerWidth - edge);   // layout, not the cheer-in scale
+      ps.style.zoom = "";
+      for (let z = 1; tight() && z > 0.85;) { z = Math.round((z - 0.05) * 100) / 100; ps.style.zoom = z; }
+      if (tight()) { ps.style.zoom = ""; box.classList.add("is-wrap"); }
+    }
   }
   function hideCelebrations() { $("#hunted").hidden = true; $("#cheer").hidden = true; $("#award").hidden = true; }
   // An achievement reached while recording (not confirmed until the log is uploaded): the medal drops in spinning,
@@ -1353,6 +1364,7 @@
   function showUpdate(txt, go) {
     txt.innerHTML = (upd.data_only ? t("upd.dataAvailable", { latest: esc(upd.data_latest), current: esc(upd.data_current || "-") })
                                    : t("upd.available", { latest: esc(upd.latest), current: esc(upd.current) })) + " " +
+      (upd.prerelease ? `<span class="upd-pre">${esc(t("upd.pre"))}</span> ` : "") +
       (upd.can_install ? esc(t(upd.translocated ? "upd.install.dl" : "upd.install.swap"))
         : `<button class="link upd-page">${esc(t("upd.page"))}</button>`);
     const pg = txt.querySelector(".upd-page"); if (pg) pg.addEventListener("click", () => api.open_url(upd.page));
@@ -1483,6 +1495,7 @@
     const b = e.target.closest("[data-del]"); if (b) saveOps(st.opList.filter((c) => c !== b.dataset.del));
   });
   $("#p2pAuto").addEventListener("change", (e) => api.save({ p2p_auto: e.target.checked }));
+  $("#beta").addEventListener("change", async (e) => { await api.save({ beta: e.target.checked }); checkUpdate(false); });   // look again at once
   function renderMypota() {
     const m = st.mypota || {}, day = (iso) => fmtDate(iso.slice(0, 10).replace(/-/g, ""));
     // one line per CSV: which file, and what was read from it (or that it is still missing)
@@ -1736,7 +1749,7 @@
     $("#version").textContent = `v${s.version}`;
     st.dataVersion = s.data_version || "";
     $("#dataVersion").textContent = st.dataVersion ? t("ver.data", { v: st.dataVersion }) : "";
-    st.operators = s.operators || {}; st.opList = s.op_list || []; renderOps(); renderCalls(); showOperator(); $("#p2pAuto").checked = !!s.p2p_auto; $("#onTop").checked = !!s.on_top; $("#barOnTop").checked = s.bar_on_top !== false;
+    st.operators = s.operators || {}; st.opList = s.op_list || []; renderOps(); renderCalls(); showOperator(); $("#p2pAuto").checked = !!s.p2p_auto; $("#beta").checked = !!s.beta; $("#onTop").checked = !!s.on_top; $("#barOnTop").checked = s.bar_on_top !== false;
     st.lookup = s.lookup || ["qrz"]; renderLookup();
     st.mypota = s.mypota || {}; renderMypota();
     setParks(s.parks);
