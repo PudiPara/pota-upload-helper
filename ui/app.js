@@ -398,7 +398,9 @@
     // Japan: the JMA's warnings (Python: jma.py) are alerts "jma:<code>"; the rest are the forecast's (Open-Meteo)
     const om = alerts.filter((k) => !k.startsWith("jma:")), official = (w && w.jma) || [];
     const jmaName = (x) => t("jma." + x.code);
-    const shorts = official.map(jmaName).concat(om.map((k) => t("wx.short." + k)));
+    // the bar's weather: one short line - the gravest of the JMA's (how many more, where), else the forecast's words
+    const barLine = official.length ? jmaName(official[0]) + (official.length > 1 ? " " + t("wx.more", { n: official.length - 1 }) : "") +
+      (w && w.jma_place ? t("jma.at", { place: w.jma_place }) : "") : om.map((k) => t("wx.short." + k)).join(" · ");
     const alertText = (k) => { const a = w.alerts[k] || {};
       return t("wx.alert." + k, { when: whenText(a.in), p: a.p, g: fmtWind(a.g || 0) }); };
     line.hidden = !w;
@@ -424,7 +426,7 @@
     }
     if (notify && notices.length) showNotices(notices, w);   // thunder and wind: their own notice, apart from the weather
     // the bar: the first look of a recording, and a new alert, play the weather over the bar
-    if (notify && BAR && (w.seq === 1 || fresh.length)) playWx(w, shorts);
+    if (notify && BAR && (w.seq === 1 || fresh.length)) playWx(w, barLine ? [barLine] : []);
   }
   // A thunderstorm on the way is dangerous at a park with an antenna up: both windows put a yellow screen over
   // everything with what to do, flashing for a few seconds, and it stays until the operator closes it.
