@@ -1024,3 +1024,6 @@ select:not([multiple]) { -webkit-appearance: none; appearance: none; padding-rig
 
 /* a prerelease offered to an app with 試験版 on (updater.check(beta)) */
 .upd-pre { display: inline-block; font-size: 11.5px; font-weight: 700; color: var(--amber-ink); background: var(--amber-bg); border-radius: 4px; padding: 0 6px; }
+
+/* offline (renderNet): an amber word beside the parks in the bar, like the event chip on 運用中 */
+.bar-net { flex: none; font-size: 11px; font-weight: 700; color: var(--amber-ink); background: var(--amber-bg); border-radius: 4px; padding: 0 6px; }

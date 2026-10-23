@@ -11,13 +11,15 @@ import sys
 import threading
 import time
 import unicodedata
+import urllib.error
+import urllib.parse
 import urllib.request
 
 API = "https://api.pota.app"
 PARK_RE = re.compile(r"\b([A-Z0-9]{1,4}-\d{4,5})\b")
 APP_NAME = "Potaroo"
 OLD_NAME = "POTA Upload Helper"      # the name until 2.0.0: its data folder is moved over on first start
-VERSION = "2.0.67"
+VERSION = "2.0.68"
 
 
 def _moved(new, old):
@@ -196,6 +198,51 @@ def my_call():
     return ""
 
 
+# ---------- the network: offline mode (設定 → 通信) and hosts that did not answer
+NET_RETRY = 60           # seconds a host that did not answer is left alone: nothing waits for its timeout again
+_down = {}               # host -> when it last did not answer (no connection, not an HTTP error)
+
+
+class Offline(urllib.error.URLError):
+    """Not asked at all: offline mode is on, or this host did not answer a moment ago."""
+
+
+def _host(url):
+    return urllib.parse.urlsplit(url).hostname or ""
+
+
+def net_check(url):
+    """Before a request: raise Offline at once instead of waiting for a timeout."""
+    if load_settings().get("offline"):
+        raise Offline("offline mode")
+    t = _down.get(_host(url))
+    if t and time.time() - t < NET_RETRY:
+        raise Offline("no connection")
+
+
+def net_result(url, answered):
+    """After a request: the host answered (any HTTP status) or not (DNS, refused, timed out)."""
+    if answered:
+        _down.pop(_host(url), None)
+    else:
+        _down[_host(url)] = time.time()
+
+
+def cert_problem(e):
+    """A certificate error (Python without certificates, python.org on macOS): the one case the system curl helps."""
+    r = getattr(e, "reason", e)
+    return isinstance(r, ssl.SSLError) or "CERTIFICATE" in str(r).upper()
+
+
+def offline():
+    """For the UI: "manual" (設定 → 通信), "down" (pota.app has not answered lately - the spot logger asks every
+    minute) or ""."""
+    if load_settings().get("offline"):
+        return "manual"
+    t = _down.get(_host(API))
+    return "down" if t and time.time() - t < NET_RETRY * 2 else ""
+
+
 CLOCK_WARN = 60          # seconds: P2P needs both logs within 15 min, and the other side's clock may be off too
 _skew = None
 
@@ -222,14 +269,20 @@ def fetch_json(path, timeout=20):
     """GET api.pota.app/<path>. Falls back to the system curl when Python's
     SSL certificates are not set up (common with python.org installs on macOS)."""
     url = path if path.startswith("http") else API + "/" + path.lstrip("/")
+    net_check(url)                     # offline: raise at once, nothing waits
     try:
         req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(req, timeout=timeout) as r:
+            net_result(url, True)
             if url.startswith(API + "/"):      # pota.app's own clock only: a CDN's cached answer (the JMA's) carries an old Date
                 _note_clock(r.headers.get("Date"), r.headers.get("Age"))
             return json.loads(r.read().decode("utf-8"))
-    except (ssl.SSLError, urllib.error.URLError) as e:
-        if isinstance(e, urllib.error.HTTPError):
+    except urllib.error.HTTPError:
+        net_result(url, True)          # the host answered
+        raise
+    except (ssl.SSLError, urllib.error.URLError, OSError) as e:
+        if not cert_problem(e):        # no answer: offline for a moment (asking curl too used to double every wait)
+            net_result(url, False)
             raise
         kw = {"creationflags": 0x08000000} if os.name == "nt" else {}   # no console window on Windows
         out = subprocess.run(["curl", "-sS", "-m", str(timeout), "-A", USER_AGENT, url],

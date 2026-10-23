@@ -17,7 +17,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from potacommon import USER_AGENT, data_path, fetch_json, read_json, write_json
+from potacommon import USER_AGENT, cert_problem, data_path, fetch_json, net_check, net_result, read_json, write_json
 
 AREA_URL = "https://www.jma.go.jp/bosai/common/const/area.json"
 # since the new system of late May 2026 (危険警報): data/r8/<office>.json, one latest report per kind (VPWW55 大雨, 58 暴風 ...);
@@ -165,16 +165,22 @@ def _feed_text():
     head = {"User-Agent": USER_AGENT, "Accept-Encoding": "gzip"}
     if _feed["etag"]:
         head["If-None-Match"] = _feed["etag"]
+    net_check(FEED_URL)
     try:
         with urllib.request.urlopen(urllib.request.Request(FEED_URL, headers=head), timeout=15) as r:
+            net_result(FEED_URL, True)
             body = r.read()
             _feed["etag"] = r.headers.get("ETag")
             return (gzip.decompress(body) if r.headers.get("Content-Encoding") == "gzip" else body).decode("utf-8")
     except urllib.error.HTTPError as e:
+        net_result(FEED_URL, True)
         if e.code == 304:
             return None
         raise
-    except urllib.error.URLError:     # Python without certificates (python.org on macOS): the system curl, every time
+    except (urllib.error.URLError, OSError) as e:   # Python without certificates (python.org on macOS): the system curl
+        if not cert_problem(e):
+            net_result(FEED_URL, False)
+            raise
         kw = {"creationflags": 0x08000000} if os.name == "nt" else {}
         out = subprocess.run(["curl", "-sS", "--compressed", "-m", "15", "-A", USER_AGENT, FEED_URL], capture_output=True, check=True, **kw)
         return out.stdout.decode("utf-8")

@@ -29,7 +29,7 @@ from urllib.parse import quote
 
 from i18n import Text, t
 from locations import NAMES as LOCATION_NAMES
-from potacommon import (band_from_khz, base_call, data_path, fetch_json, grid_center, iso_minutes, mode_group, parks_in,
+from potacommon import (band_from_khz, base_call, data_path, fetch_json, grid_center, iso_minutes, mode_group, offline, parks_in,
                         read_json, rec_minutes, resource, split_parks, utc_minutes, utc_stamp, write_json)
 
 SPOT_BEFORE = 30       # minutes
@@ -621,9 +621,10 @@ class SpotLogger:
         try:
             spots = fetch_json("spot/activator")
             self.on_status(Text("spot.updated", time=now.strftime("%H:%M"), n=len(spots)))
-        except Exception as e:
+        except Exception as e:                # no connection: what that means for the operator, not the error's words
             spots = []
-            self.on_status(Text("spot.fetchFail", time=now.strftime("%H:%M"), err=str(e)))
+            self.on_status(Text("spot.offline", time=now.strftime("%H:%M")) if offline()
+                           else Text("spot.fetchFail", time=now.strftime("%H:%M"), err=str(e)))
         path = data_path("spots-%s.jsonl" % now.strftime("%Y%m%d"))
         with open(path, "a", encoding="utf-8") as fh:
             for s in spots:
@@ -648,7 +649,7 @@ class SpotLogger:
                                       s.get("frequency"), s.get("mode"), len(before) > 1)
         self.session["end"] = utc_stamp(now)
         self._update_session()
-        if polls % 10 == 0:
+        if polls % 10 == 0 and not offline():     # offline: the saved hunter log is used as it is
             try:
                 load_hunter(self.call, False, log=self.on_status)
             except Exception as e:
